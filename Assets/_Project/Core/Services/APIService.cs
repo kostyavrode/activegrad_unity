@@ -46,27 +46,31 @@ public class APIService
         {
             try
             {
-                var tokenResponse = JsonUtility.FromJson<TokenResponse>(response);
-                _token = tokenResponse?.token;
+                var loginResponse = JsonUtility.FromJson<LoginResponse>(response);
+                _token = loginResponse.access;
+                return !string.IsNullOrEmpty(_token);
             }
             catch (Exception e)
             {
-                Debug.LogError($"[APIService] Ошибка парсинга токена: {e.Message}");
+                Debug.LogError($"[APIService] Ошибка парсинга ответа логина: {e.Message}");
                 return false;
             }
         }
 
-        return success && IsLoggedIn;
+        return false;
     }
 
+
+
+
     // ----------- UPDATE CLOTHES -----------
-    public async Task<(bool success, string message)> UpdateClothes(int boots, int pants, int tshirt, int cap)
+    public async Task<(bool success, string message)> UpdateClothes(int boots, int pants, int tshirt, int cap, string gender)
     {
         if (!IsLoggedIn)
             return (false, "Not logged in");
 
         var url = $"{BaseUrl}update-clothes/";
-        var payload = new ClothesRequest { boots = boots, pants = pants, tshirt = tshirt, cap = cap };
+        var payload = new ClothesRequest { boots = boots, pants = pants, tshirt = tshirt, cap = cap,  gender = gender };
 
         return await SendRequest(url, "PATCH", payload, requireAuth: true);
     }
@@ -134,11 +138,33 @@ public class APIService
         public int pants;
         public int tshirt;
         public int cap;
+        public string gender;
     }
 
     [Serializable]
     private class TokenResponse
     {
         public string token;
+    }
+    [Serializable]
+    private class LoginResponse
+    {
+        public string access;
+        public string refresh;
+        public UserResponse user;
+    }
+
+    [Serializable]
+    private class UserResponse
+    {
+        public int id;
+        public string username;
+        public string first_name;
+        public string last_name;
+        public int coins;
+        public int boots;
+        public int pants;
+        public int tshirt;
+        public int cap;
     }
 }
