@@ -5,13 +5,6 @@ using Zenject;
 
 public class SceneLoader
 {
-    private readonly DiContainer _container;
-
-    public SceneLoader(DiContainer container)
-    {
-        _container = container;
-    }
-
     public void LoadScene(string sceneName)
     {
         SceneManager.LoadScene(sceneName);

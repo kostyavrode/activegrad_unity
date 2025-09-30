@@ -17,8 +17,13 @@ public class UIInitializer : IInitializable
         _uiManager.RegisterSceneWindows(_sceneWindows);
 
         if (_uiManager.HasWindow<LoginWindow>())
+        {
             _uiManager.Show<LoginWindow>();
+        }
+        
         else if (_uiManager.HasWindow<MenuWindow>())
+        {
             _uiManager.Show<MenuWindow>();
+        }
     }
 }

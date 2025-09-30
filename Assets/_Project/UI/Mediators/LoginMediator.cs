@@ -7,12 +7,14 @@ public class LoginMediator : IInitializable, IDisposable
     private readonly LoginWindow _loginWindow;
     private readonly APIService _apiService;
     private readonly UIManager _uiManager;
+    private readonly SceneLoader _sceneLoader;
 
-    public LoginMediator(LoginWindow loginWindow, APIService apiService, UIManager uiManager)
+    public LoginMediator(LoginWindow loginWindow, APIService apiService, UIManager uiManager, SceneLoader sceneLoader)
     {
         _loginWindow = loginWindow;
         _apiService = apiService;
         _uiManager = uiManager;
+        _sceneLoader = sceneLoader;
     }
 
     public void Initialize()
@@ -36,7 +38,8 @@ public class LoginMediator : IInitializable, IDisposable
         if (success)
         {
             Debug.Log("LoginMediator: вход успешен!");
-            _uiManager.Show<MenuWindow>();
+            //_uiManager.Show<MenuWindow>();
+            _sceneLoader.LoadScene("SampleScene");
         }
         else
         {

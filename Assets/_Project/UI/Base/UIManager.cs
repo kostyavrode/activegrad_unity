@@ -12,14 +12,15 @@ public class UIManager : IInitializable, IDisposable
 
     public void Initialize()
     {
-        HideAll();
+        //HideAll();
         Debug.Log("UIManager initialized");
     }
 
     public void RegisterSceneWindows(List<IWindow> sceneWindows)
     {
-        HideAll();
+        //HideAll();
         _windows.Clear();
+        _openWindows.Clear();
         _defaultWindow = null;
 
         for (int i = 0; i < sceneWindows.Count; i++)
@@ -27,11 +28,12 @@ public class UIManager : IInitializable, IDisposable
             var window = sceneWindows[i];
             RegisterWindow(window);
 
-            if (i == 0) // запоминаем первое
+            if (i == 0)
+            {
                 _defaultWindow = window;
+            }
         }
-
-        // Если есть дефолтное окно — открываем его
+        
         if (_defaultWindow != null)
         {
             _defaultWindow.Show();
@@ -56,7 +58,9 @@ public class UIManager : IInitializable, IDisposable
         if (_windows.TryGetValue(type, out var window))
         {
             if (_openWindows.Count > 0)
+            {
                 _openWindows.Peek().Hide();
+            }
 
             window.Show();
             _openWindows.Push(window);
@@ -77,7 +81,9 @@ public class UIManager : IInitializable, IDisposable
         top.Hide();
 
         if (_openWindows.Count > 0)
+        {
             _openWindows.Peek().Show();
+        }
     }
 
     public void HideAll()

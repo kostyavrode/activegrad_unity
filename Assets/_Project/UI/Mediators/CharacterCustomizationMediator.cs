@@ -46,12 +46,19 @@ public class CharacterCustomizationMediator : IInitializable, IDisposable
 
     private void HandleClothesChanged(int category, int delta)
     {
+        if (category < 0 || category >= _clothes.Length)
+        {
+            Debug.LogError($"HandleClothesChanged: неверный индекс {category}, всего категорий {_clothes.Length}");
+            return;
+        }
+
         int newValue = _clothes[category] + delta;
         newValue = Mathf.Clamp(newValue, MinValue, MaxValue);
         _clothes[category] = newValue;
 
         _window.SetClothesValue(category, newValue);
     }
+
 
     private async void HandleConfirm()
     {

@@ -12,11 +12,15 @@ public class ProjectInstaller : MonoInstaller
 
         // APIService — нужен MonoBehaviour для корутин
         Container.Bind<APIService>().AsSingle().WithArguments(coroutineRunner).NonLazy();
+        
+        Container.Bind<SceneLoader>().AsSingle().NonLazy();
 
         // UIManager
         Container.Bind<UIManager>().AsSingle().NonLazy();
 
         // Другие сервисы
         //Container.Bind<AchievementsService>().AsSingle();
+        
+        Container.Bind<UserDataService>().AsSingle().NonLazy();
     }
 }
