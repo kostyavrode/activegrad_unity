@@ -20,7 +20,7 @@ public class MapPresenter : MonoBehaviour
 
     private async void Update()
     {
-        Debug.Log(_mapLoading+ " | "+_locationService);
+//        Debug.Log(_mapLoading+ " | "+_locationService);
         if (_mapLoading) return;
 
         Vector2 coords = _locationService.GetCoordinates();
@@ -30,7 +30,7 @@ public class MapPresenter : MonoBehaviour
             _mapLoading = true;
             _lastCoords = coords;
             
-            Debug.Log(coords.x+ coords.y);
+//            Debug.Log(coords.x+ coords.y);
 
             Texture2D tex = await _mapService.LoadMap(coords.x.ToString().Replace(',', '.'), coords.y.ToString().Replace(',', '.'), zoom: 17);
 

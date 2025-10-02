@@ -9,5 +9,7 @@ public class OtherInstaller : MonoInstaller
         Container.BindInterfacesAndSelfTo<LocationService>().AsSingle();
         
         Container.Bind<MapService>().AsSingle().WithArguments("7955252a-2f7b-4c01-968f-19e1c095f7b5").NonLazy();
+        
+        Container.BindInterfacesAndSelfTo<CharacterService>().AsSingle().NonLazy();
     }
 }

@@ -5,14 +5,18 @@ public class GPSLocationProvider : ILocationProvider
     private Vector2 _lastCoordinates = Vector2.zero;
 
     // Границы для тестовых координат (Москва)
-    private readonly Vector2 _minCoords = new Vector2(55.70f, 37.60f); // min lat, lon
-    private readonly Vector2 _maxCoords = new Vector2(55.80f, 37.70f); // max lat, lon
+    private readonly Vector2 _minCoords = new Vector2(55.70f, 37.60f); 
+    private readonly Vector2 _maxCoords = new Vector2(55.80f, 37.70f);
+
+    private float _updateInterval = 5f; // раз в 5 секунд
+    private float _timer = 0f;
 
     public void Start()
     {
 #if UNITY_ANDROID || UNITY_IOS
         Input.location.Start();
 #else
+        // стартовая точка
         _lastCoordinates = GetRandomCoords();
 #endif
     }
@@ -26,8 +30,12 @@ public class GPSLocationProvider : ILocationProvider
             _lastCoordinates = new Vector2(data.latitude, data.longitude);
         }
 #else
-        // На ПК просто каждые апдейты меняем координаты
-        _lastCoordinates = GetRandomCoords();
+        _timer += Time.deltaTime;
+        if (_timer >= _updateInterval)
+        {
+            _timer = 0f;
+            _lastCoordinates = GetRandomCoords();
+        }
 #endif
     }
 
