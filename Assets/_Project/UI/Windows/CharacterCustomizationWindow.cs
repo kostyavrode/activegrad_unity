@@ -18,9 +18,12 @@ public class CharacterCustomizationWindow : BaseWindow
     public event Action OnToggleGender;
     public event Action<int, int> OnClothesChanged; // (category, value)
     public event Action OnConfirm;
+    public event Action OnActivate;
 
     protected override void OnShow()
     {
+        OnActivate?.Invoke();
+        
         genderButton.onClick.AddListener(() => OnToggleGender?.Invoke());
         confirmButton.onClick.AddListener(() => OnConfirm?.Invoke());
 

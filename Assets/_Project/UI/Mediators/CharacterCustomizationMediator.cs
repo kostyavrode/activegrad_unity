@@ -7,17 +7,20 @@ public class CharacterCustomizationMediator : IInitializable, IDisposable
     private readonly CharacterCustomizationWindow _window;
     private readonly APIService _apiService;
     private readonly UIManager _uiManager;
+    private readonly CharacterPreviewService _characterPreviewService;
 
     private bool _isMale = true;
     private readonly int[] _clothes = new int[4]; // boots, pants, tshirt, cap
     private const int MinValue = 0;
     private const int MaxValue = 4;
 
-    public CharacterCustomizationMediator(CharacterCustomizationWindow window, APIService apiService, UIManager uiManager)
+    public CharacterCustomizationMediator(CharacterCustomizationWindow window, APIService apiService,
+        UIManager uiManager, CharacterPreviewService characterPreviewService)
     {
         _window = window;
         _apiService = apiService;
         _uiManager = uiManager;
+        _characterPreviewService = characterPreviewService;
     }
 
     public void Initialize()
@@ -25,6 +28,7 @@ public class CharacterCustomizationMediator : IInitializable, IDisposable
         _window.OnToggleGender += HandleToggleGender;
         _window.OnClothesChanged += HandleClothesChanged;
         _window.OnConfirm += HandleConfirm;
+        _window.OnActivate += SpawnPreviewCharacter;
         
         _window.SetGender(_isMale);
         for (int i = 0; i < _clothes.Length; i++)
@@ -36,8 +40,14 @@ public class CharacterCustomizationMediator : IInitializable, IDisposable
         _window.OnToggleGender -= HandleToggleGender;
         _window.OnClothesChanged -= HandleClothesChanged;
         _window.OnConfirm -= HandleConfirm;
+        _window.OnActivate -= SpawnPreviewCharacter;
     }
 
+    private void SpawnPreviewCharacter()
+    {
+        _characterPreviewService.SpawnPreviewCharacter();
+    }
+    
     private void HandleToggleGender()
     {
         _isMale = !_isMale;
@@ -57,11 +67,14 @@ public class CharacterCustomizationMediator : IInitializable, IDisposable
         _clothes[category] = newValue;
 
         _window.SetClothesValue(category, newValue);
+        _characterPreviewService.ApplyClothing(_clothes);
     }
 
 
     private async void HandleConfirm()
     {
+        _characterPreviewService.Dispose();
+        
         var (success, message) = await _apiService.UpdateClothes(
             boots: _clothes[0],
             pants: _clothes[1],
@@ -69,6 +82,8 @@ public class CharacterCustomizationMediator : IInitializable, IDisposable
             cap: _clothes[3],
             gender: "M"
         );
+        
+        
 
         if (success)
         {

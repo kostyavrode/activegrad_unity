@@ -17,6 +17,13 @@ public class ClothingApplier : MonoBehaviour
         LoadAndEquip("Pants", data.pants.ToString(), legsSlot);
         LoadAndEquip("Boots", data.boots.ToString(), feetSlot);
     }
+    public void ApplyClothing(int[] data)
+    {
+        LoadAndEquip("Cap", data[0].ToString(), headSlot);
+        LoadAndEquip("Tshirt", data[1].ToString(), bodySlot);
+        LoadAndEquip("Pants", data[2].ToString(), legsSlot);
+        LoadAndEquip("Boots", data[3].ToString(), feetSlot);
+    }
 
     private void LoadAndEquip(string type, string itemName, Transform parent)
     {
@@ -42,6 +49,9 @@ public class ClothingApplier : MonoBehaviour
         }
         
         GameObject instance = Instantiate(prefab, parent);
+        Animator animator = instance.GetComponent<Animator>();
+        animator.runtimeAnimatorController = GetComponentInChildren<Animator>().runtimeAnimatorController;
+        
         instance.transform.localPosition = Vector3.zero;
         instance.transform.localRotation = Quaternion.identity;
 

@@ -22,5 +22,7 @@ public class ProjectInstaller : MonoInstaller
         //Container.Bind<AchievementsService>().AsSingle();
         
         Container.Bind<UserDataService>().AsSingle().NonLazy();
+        
+        Container.Bind<CharacterPreviewService>().AsSingle().NonLazy();
     }
 }
