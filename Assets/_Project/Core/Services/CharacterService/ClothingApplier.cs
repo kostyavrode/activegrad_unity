@@ -49,9 +49,16 @@ public class ClothingApplier : MonoBehaviour
         }
         
         GameObject instance = Instantiate(prefab, parent);
-        Animator animator = instance.GetComponent<Animator>();
-        animator.runtimeAnimatorController = GetComponentInChildren<Animator>().runtimeAnimatorController;
-        animator.playbackTime = 0;
+        var bodyAnimator = GetComponentInChildren<Animator>();
+        var bodyRenderer = bodyAnimator.GetComponentInChildren<SkinnedMeshRenderer>();
+        var newRenderer = instance.GetComponentInChildren<SkinnedMeshRenderer>();
+
+        if (newRenderer != null && bodyRenderer != null)
+        {
+            newRenderer.rootBone = bodyRenderer.rootBone;
+            newRenderer.bones = bodyRenderer.bones;
+        }
+
         
         instance.transform.localPosition = Vector3.zero;
         instance.transform.localRotation = Quaternion.identity;

@@ -15,7 +15,7 @@ public class LoginWindow : BaseWindow
 
     protected override void OnShow()
     {
-        Debug.Log($"{name}.OnShow()");
+        //Debug.Log($"{name}.OnShow()");
         loginButton.onClick.AddListener(HandleLoginClicked);
         registerButton.onClick.AddListener(() => OnRegisterClicked?.Invoke());
     }

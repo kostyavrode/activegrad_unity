@@ -36,5 +36,6 @@ public class ProfileWindow : BaseWindow
         _lastNameText.text = userData[2];
         _levelText.text = userData[3];
         _expText.text = userData[4];
+        _registrationDateText.text = userData[5].Substring(0, 10);
     }
 }

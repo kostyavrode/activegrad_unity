@@ -38,7 +38,7 @@ public class UIManager : IInitializable, IDisposable
         {
             _defaultWindow.Show();
             _openWindows.Push(_defaultWindow);
-            Debug.Log($"Default window {_defaultWindow.GetType().Name} opened");
+            //Debug.Log($"Default window {_defaultWindow.GetType().Name} opened");
         }
     }
 
@@ -48,7 +48,7 @@ public class UIManager : IInitializable, IDisposable
         if (!_windows.ContainsKey(type))
         {
             _windows.Add(type, window);
-            Debug.Log($"Registering window {type.Name}");
+            //Debug.Log($"Registering window {type.Name}");
         }
     }
 

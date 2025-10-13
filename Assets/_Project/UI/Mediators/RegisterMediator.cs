@@ -54,6 +54,6 @@ public class RegisterMediator : IInitializable, IDisposable
 
     private void HandleBackClicked()
     {
-        _uiManager.Show<LoginWindow>();
+        _uiManager.Back();
     }
 }

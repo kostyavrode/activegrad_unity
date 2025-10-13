@@ -6,6 +6,9 @@ public class UserData
 {
     public string username;
     public string password;
+    public string firstName;
+    public string lastName;
+    public string dateOfStart;
 
     public string accessToken;
     public string refreshToken;
@@ -36,15 +39,18 @@ public class UserDataService
     public string Username => _data.username;
     public string Password => _data.password;
     
-    public string FirstName => "FirstName";
+    public string FirstName => _data.firstName;
+    public string LastName => _data.lastName;
     
-    public string LastName => "LastName";
+    
     public string AccessToken => _data.accessToken;
     public string RefreshToken => _data.refreshToken;
     public int Coins => _data.coins;
     public int Level => _data.level;
     public int Experience => _data.experience;
     public int Steps => _data.dailySteps;
+    
+    public string DateOfStart => _data.dateOfStart;
 
     public UserDataService()
     {
@@ -55,6 +61,7 @@ public class UserDataService
     public void Save()
     {
         var json = JsonUtility.ToJson(_data);
+        Debug.Log(json);
         PlayerPrefs.SetString(Key, json);
         PlayerPrefs.Save();
     }
@@ -87,7 +94,7 @@ public class UserDataService
         Save();
     }
 
-    public void SetProfile(string gender, int boots, int pants, int tshirt, int cap, int coins, int level, int exp, int steps)
+    public void SetProfile(string gender, int boots, int pants, int tshirt, int cap, int coins, int level, int exp, int steps, string firstName, string lastName, string dateOfStart)
     {
         _data.gender = gender;
         _data.boots = boots;
@@ -98,6 +105,9 @@ public class UserDataService
         _data.level = level;
         _data.experience = exp;
         _data.dailySteps = steps;
+        _data.lastName = lastName;
+        _data.firstName = firstName;
+        _data.dateOfStart = dateOfStart;
         Save();
     }
 

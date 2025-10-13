@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.Serialization;
 using Zenject;
 
 public class APIService
@@ -42,6 +43,7 @@ public class APIService
 
     public async Task<bool> Login(string username, string password)
     {
+        
         var url = $"{BaseUrl}login/";
         var payload = new LoginRequest { username = username, password = password };
 
@@ -55,10 +57,13 @@ public class APIService
                 _accessToken = loginResponse.access;
                 _refreshToken = loginResponse.refresh;
                 
+                Debug.Log("Login="+loginResponse.user.registration_date);
+                
                 _userData.SetAuthData(username, password, _accessToken, _refreshToken);
 
                 if (loginResponse.user != null)
                 {
+                    Debug.Log(loginResponse.user);
                     _userData.SetProfile(
                         gender: loginResponse.user.gender,
                         boots: loginResponse.user.boots,
@@ -68,7 +73,10 @@ public class APIService
                         coins: loginResponse.user.coins,
                         level: loginResponse.user.level,
                         exp: loginResponse.user.exp,
-                        steps: loginResponse.user.steps
+                        steps: loginResponse.user.steps,
+                        firstName: loginResponse.user.first_name,
+                        lastName: loginResponse.user.last_name,
+                        dateOfStart: loginResponse.user.registration_date
                     );
                 }
 
@@ -79,6 +87,10 @@ public class APIService
                 Debug.LogError($"[APIService] Ошибка парсинга ответа логина: {e.Message}");
                 return false;
             }
+        }
+        else
+        {
+            Debug.Log("Ne success login");
         }
 
         return false;
@@ -138,7 +150,7 @@ public class APIService
 
         if (result.success)
         {
-            _userData.SetProfile(gender, boots, pants, tshirt, cap, _userData.Coins, _userData.Level, _userData.Experience, _userData.Steps);
+            _userData.SetProfile(gender, boots, pants, tshirt, cap, _userData.Coins, _userData.Level, _userData.Experience, _userData.Steps, _userData.FirstName, _userData.LastName, _userData.DateOfStart);
         }
 
         return result;
@@ -255,6 +267,7 @@ public class APIService
         public string username;
         public string first_name;
         public string last_name;
+        public string registration_date;
         public string gender;
         public int coins;
         public int boots;
