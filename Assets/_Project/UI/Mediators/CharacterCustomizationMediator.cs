@@ -8,6 +8,7 @@ public class CharacterCustomizationMediator : IInitializable, IDisposable
     private readonly APIService _apiService;
     private readonly UIManager _uiManager;
     private readonly CharacterPreviewService _characterPreviewService;
+    private readonly SceneLoader _sceneLoader;
 
     private bool _isMale = true;
     private readonly int[] _clothes = new int[4]; // boots, pants, tshirt, cap
@@ -15,12 +16,13 @@ public class CharacterCustomizationMediator : IInitializable, IDisposable
     private const int MaxValue = 4;
 
     public CharacterCustomizationMediator(CharacterCustomizationWindow window, APIService apiService,
-        UIManager uiManager, CharacterPreviewService characterPreviewService)
+        UIManager uiManager, CharacterPreviewService characterPreviewService, SceneLoader sceneLoader)
     {
         _window = window;
         _apiService = apiService;
         _uiManager = uiManager;
         _characterPreviewService = characterPreviewService;
+        _sceneLoader = sceneLoader;
     }
 
     public void Initialize()
@@ -76,10 +78,10 @@ public class CharacterCustomizationMediator : IInitializable, IDisposable
         _characterPreviewService.Dispose();
         
         var (success, message) = await _apiService.UpdateClothes(
-            boots: _clothes[0],
-            pants: _clothes[1],
-            tshirt: _clothes[2],
-            cap: _clothes[3],
+            boots: _clothes[3],
+            pants: _clothes[2],
+            tshirt: _clothes[1],
+            cap: _clothes[0],
             gender: "M"
         );
         
@@ -88,7 +90,7 @@ public class CharacterCustomizationMediator : IInitializable, IDisposable
         if (success)
         {
             Debug.Log("Одежда успешно обновлена");
-            _uiManager.Show<MenuWindow>();
+            _sceneLoader.LoadScene("SampleScene");
         }
         else
         {

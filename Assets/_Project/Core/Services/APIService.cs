@@ -22,12 +22,10 @@ public class APIService
         _coroutineRunner = coroutineRunner;
         _userData = userData;
 
-        // восстановление токенов при старте
         _accessToken = _userData.AccessToken;
         _refreshToken = _userData.RefreshToken;
     }
 
-    // ----------- REGISTER -----------
     public async Task<(bool success, string message)> Register(string username, string firstName, string lastName, string password)
     {
         var url = $"{BaseUrl}register/";
@@ -42,7 +40,6 @@ public class APIService
         return await SendRequest(url, "POST", payload, requireAuth: false);
     }
 
-    // ----------- LOGIN -----------
     public async Task<bool> Login(string username, string password)
     {
         var url = $"{BaseUrl}login/";
@@ -57,8 +54,7 @@ public class APIService
                 var loginResponse = JsonUtility.FromJson<LoginResponse>(response);
                 _accessToken = loginResponse.access;
                 _refreshToken = loginResponse.refresh;
-
-                // сохраняем в UserDataService
+                
                 _userData.SetAuthData(username, password, _accessToken, _refreshToken);
 
                 if (loginResponse.user != null)
@@ -88,7 +84,6 @@ public class APIService
         return false;
     }
 
-    // ----------- AUTO LOGIN -----------
     public async Task<bool> TryAutoLogin()
     {
         if (string.IsNullOrEmpty(_userData.Username) || string.IsNullOrEmpty(_userData.Password))
@@ -97,12 +92,11 @@ public class APIService
         return await Login(_userData.Username, _userData.Password);
     }
 
-    // ----------- REFRESH TOKEN -----------
     private async Task<bool> RefreshToken()
     {
         if (string.IsNullOrEmpty(_refreshToken))
         {
-            Debug.LogError("[APIService] Нет refresh токена, нужно перелогиниться.");
+            Debug.LogError("[APIService] Нет refresh токена, нужно перелогиниться");
             return false;
         }
 
@@ -131,8 +125,7 @@ public class APIService
 
         return false;
     }
-
-    // ----------- UPDATE CLOTHES -----------
+    
     public async Task<(bool success, string message)> UpdateClothes(int boots, int pants, int tshirt, int cap, string gender)
     {
         if (!IsLoggedIn)
@@ -151,7 +144,6 @@ public class APIService
         return result;
     }
 
-    // ----------- CORE SENDER -----------
     private async Task<(bool success, string response)> SendRequest(string url, string method, object payload, bool requireAuth)
     {
         var json = JsonUtility.ToJson(payload);
@@ -215,8 +207,7 @@ public class APIService
             tcs.TrySetResult((true, response));
         }
     }
-
-    // ----------- DTOs -----------
+    
     [Serializable]
     private class RegisterRequest
     {

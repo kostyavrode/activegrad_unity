@@ -7,15 +7,18 @@ public class RegisterWindow : BaseWindow
 {
     [SerializeField] private TMP_InputField loginInput;
     [SerializeField] private TMP_InputField passwordInput;
+    [SerializeField] private TMP_InputField firstNameInput;
+    [SerializeField] private TMP_InputField lastNameInput;
+    
     [SerializeField] private Button registerButton;
     [SerializeField] private Button backButton;
 
-    public event Action<string, string> OnRegisterClicked;
+    public event Action<string[]> OnRegisterClicked;
     public event Action OnBackClicked;
 
     protected override void OnShow()
     {
-        registerButton.onClick.AddListener(HandleRegisterClicked);
+        registerButton.onClick.AddListener(() => OnRegisterClicked?.Invoke(CollectInfo()));
         backButton.onClick.AddListener(() => OnBackClicked?.Invoke());
     }
 
@@ -25,8 +28,15 @@ public class RegisterWindow : BaseWindow
         backButton.onClick.RemoveAllListeners();
     }
 
-    private void HandleRegisterClicked()
+    private string[] CollectInfo()
     {
-        OnRegisterClicked?.Invoke(loginInput.text, passwordInput.text);
+        string[] result = new string[4];
+        
+        result[0] = loginInput.text;
+        result[1] = passwordInput.text;
+        result[2] = firstNameInput.text;
+        result[3] = lastNameInput.text;
+        
+        return result;
     }
 }

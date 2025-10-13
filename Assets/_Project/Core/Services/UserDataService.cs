@@ -35,6 +35,10 @@ public class UserDataService
 
     public string Username => _data.username;
     public string Password => _data.password;
+    
+    public string FirstName => "FirstName";
+    
+    public string LastName => "LastName";
     public string AccessToken => _data.accessToken;
     public string RefreshToken => _data.refreshToken;
     public int Coins => _data.coins;
@@ -100,7 +104,6 @@ public class UserDataService
     public void AddExperience(int amount)
     {
         _data.experience += amount;
-        // допустим, 100 XP = 1 уровень
         while (_data.experience >= 100)
         {
             _data.experience -= 100;

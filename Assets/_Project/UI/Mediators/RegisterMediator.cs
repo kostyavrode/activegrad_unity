@@ -27,40 +27,33 @@ public class RegisterMediator : IInitializable, IDisposable
         _registerWindow.OnBackClicked -= HandleBackClicked;
     }
 
-    private async void HandleRegisterClicked(string login, string password)
+    private async void HandleRegisterClicked(string[] input)
     {
-        Debug.Log("RegisterMediator: попытка регистрации...");
 
-        var (success, message) = await _apiService.Register(login, firstName: login, lastName: "", password);
+        var (success, message) = await _apiService.Register(input[0], firstName: input[2], lastName: input[3], input[1]);
 
         if (success)
         {
-            Debug.Log("RegisterMediator: регистрация успешна!");
-            var loginSuccess = await _apiService.Login(login, password);
+            var loginSuccess = await _apiService.Login(input[0], input[1]);
 
             if (loginSuccess)
             {
-                Debug.Log("RegisterMediator: вход после регистрации успешен!");
-                // 👉 вместо MenuWindow открываем кастомизацию персонажа
                 _uiManager.Show<CharacterCustomizationWindow>();
             }
             else
             {
                 Debug.LogWarning("RegisterMediator: зарегистрировались, но не смогли войти");
-                // ⚠️ можно кинуть попап вместо возврата
                 _uiManager.Show<LoginWindow>();
             }
         }
         else
         {
             Debug.LogWarning($"RegisterMediator: регистрация не удалась → {message}");
-            // Тут показываешь попап с message
         }
     }
 
     private void HandleBackClicked()
     {
-        Debug.Log("RegisterMediator: возврат к окну логина");
         _uiManager.Show<LoginWindow>();
     }
 }

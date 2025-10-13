@@ -29,7 +29,6 @@ public class MapService
             }
             else
             {
-                Debug.Log("success");
                 return DownloadHandlerTexture.GetContent(www);
             }
         }

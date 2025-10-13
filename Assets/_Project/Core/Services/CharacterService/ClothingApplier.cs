@@ -51,6 +51,7 @@ public class ClothingApplier : MonoBehaviour
         GameObject instance = Instantiate(prefab, parent);
         Animator animator = instance.GetComponent<Animator>();
         animator.runtimeAnimatorController = GetComponentInChildren<Animator>().runtimeAnimatorController;
+        animator.playbackTime = 0;
         
         instance.transform.localPosition = Vector3.zero;
         instance.transform.localRotation = Quaternion.identity;

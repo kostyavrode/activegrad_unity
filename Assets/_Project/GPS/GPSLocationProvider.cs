@@ -3,12 +3,11 @@ using UnityEngine;
 public class GPSLocationProvider : ILocationProvider
 {
     private Vector2 _lastCoordinates = Vector2.zero;
-
-    // Границы для тестовых координат (Москва)
+    
     private readonly Vector2 _minCoords = new Vector2(55.70f, 37.60f); 
     private readonly Vector2 _maxCoords = new Vector2(55.80f, 37.70f);
 
-    private float _updateInterval = 5f; // раз в 5 секунд
+    private float _updateInterval = 5f;
     private float _timer = 0f;
 
     public void Start()
