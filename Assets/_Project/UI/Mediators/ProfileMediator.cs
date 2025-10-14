@@ -18,14 +18,14 @@ public class ProfileMediator : IInitializable, IDisposable
     public void Initialize()
     {
         _profileWindow.OnBackClicked += HandleBackClicked;
-        _profileWindow.OnProfileOpened += LoadInfo;
+        _profileWindow.OnWindowOpened += LoadInfo;
         Debug.Log($"OnProfileOpened");
     }
 
     public void Dispose()
     {
         _profileWindow.OnBackClicked -= HandleBackClicked;
-        _profileWindow.OnProfileOpened -= LoadInfo;
+        _profileWindow.OnWindowOpened -= LoadInfo;
     }
 
     private void LoadInfo()

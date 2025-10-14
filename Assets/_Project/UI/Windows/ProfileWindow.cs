@@ -16,12 +16,12 @@ public class ProfileWindow : BaseWindow
     [SerializeField] private Button _backButton;
     
     public event Action OnBackClicked;
-    public event Action OnProfileOpened;
+    public event Action OnWindowOpened;
 
     protected override void OnShow()
     {
         _backButton.onClick.AddListener(() => OnBackClicked?.Invoke());
-        OnProfileOpened?.Invoke();
+        OnWindowOpened?.Invoke();
     }
 
     protected override void OnHide()

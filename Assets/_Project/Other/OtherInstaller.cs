@@ -13,5 +13,10 @@ public class OtherInstaller : MonoInstaller
         Container.BindInterfacesAndSelfTo<CharacterService>().AsSingle().NonLazy();
         
         Container.BindInterfacesTo<ProfileMediator>().AsSingle();
+
+        Container.BindInterfacesTo<QuestMediator>().AsSingle();
+        
+        Container.BindInterfacesTo<MenuMediator>().AsSingle();
+
     }
 }

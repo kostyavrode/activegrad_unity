@@ -156,6 +156,23 @@ public class APIService
         return result;
     }
 
+    public async Task<(bool success, string message)> GetDailyQuests()
+    {
+        if (!IsLoggedIn)
+            return (false, "Not logged in");
+
+        var url = $"{BaseUrl}quests/daily";
+        
+        var result = await SendRequest(url, "GET", null, requireAuth: true);
+
+        if (result.success)
+        {
+            Debug.Log("Daily Quests achieved succesfully");
+        }
+
+        return result;
+    }
+
     private async Task<(bool success, string response)> SendRequest(string url, string method, object payload, bool requireAuth)
     {
         var json = JsonUtility.ToJson(payload);
