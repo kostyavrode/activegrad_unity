@@ -9,7 +9,7 @@ using Zenject;
 
 public class APIService
 {
-    private const string BaseUrl = "http://127.0.0.1:8000/api/";
+    private const string BaseUrl = "http://87.228.97.188/api/";
     private readonly MonoBehaviour _coroutineRunner;
     private readonly UserDataService _userData;
 

@@ -4,15 +4,14 @@ using Zenject;
 
 public class UIInstaller : MonoInstaller
 {
-    [SerializeField] private List<MonoBehaviour> sceneWindows; // перетащи сюда все окна сцены
+    [SerializeField] private List<MonoBehaviour> sceneWindows;
 
     public override void InstallBindings()
     {
         var windows = GetSceneWindows();
 
         Container.Bind<List<IWindow>>().FromInstance(windows).AsSingle();
-
-        // Пробиндить каждый window отдельно
+        
         foreach (var window in windows)
         {
             Container.Bind(window.GetType()).FromInstance(window as MonoBehaviour).AsSingle();

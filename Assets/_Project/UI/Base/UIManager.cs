@@ -8,7 +8,7 @@ public class UIManager : IInitializable, IDisposable
     private readonly Dictionary<Type, IWindow> _windows = new Dictionary<Type, IWindow>();
     private readonly Stack<IWindow> _openWindows = new Stack<IWindow>();
 
-    private IWindow _defaultWindow; // то самое окно с index=0
+    private IWindow _defaultWindow;
 
     public void Initialize()
     {

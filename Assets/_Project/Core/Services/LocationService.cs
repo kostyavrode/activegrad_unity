@@ -2,23 +2,13 @@ using System;
 using UnityEngine;
 using Zenject;
 
-public class LocationService : ITickable, IInitializable, IDisposable
+public class LocationService : IDisposable
 {
     private readonly ILocationProvider _provider;
 
     public LocationService(ILocationProvider provider)
     {
         _provider = provider;
-    }
-
-    public void Initialize()
-    {
-        _provider.Start();
-    }
-
-    public void Tick()
-    {
-        _provider.Update();
     }
 
     public void Dispose()

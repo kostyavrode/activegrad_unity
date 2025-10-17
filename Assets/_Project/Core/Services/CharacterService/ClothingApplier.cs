@@ -43,7 +43,6 @@ public class ClothingApplier : MonoBehaviour
 
         if (prefab == null)
         {
-            Debug.LogWarning($"[ClothingApplier] Prefab не найден по пути: {path}");
             _currentClothes[type] = null;
             return;
         }

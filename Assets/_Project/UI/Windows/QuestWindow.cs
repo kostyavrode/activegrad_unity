@@ -6,8 +6,11 @@ using UnityEngine.UI;
 public class QuestWindow : BaseWindow
 {
     [SerializeField] private TMP_Text[] _questFields;
+    [SerializeField] private Transform _contentParent;
     
     [SerializeField] private Button _backButton;
+    
+    public Transform ContentParent => _contentParent;
     
     public event Action OnBackClicked;
     public event Action OnWindowOpened;
@@ -21,13 +24,15 @@ public class QuestWindow : BaseWindow
     protected override void OnHide()
     {
         _backButton.onClick.RemoveAllListeners();
+        ClearQuests();
     }
 
-    public void SetQuests(Quest[] quests)
+    public void ClearQuests()
     {
-        for (int i = 0; i < quests.Length; i++)
+        QuestItemView[] quests = _contentParent.GetComponentsInChildren<QuestItemView>();
+        foreach (var VARIABLE in quests)
         {
-            _questFields[i].text = quests[i].title;
+            Destroy(VARIABLE.gameObject);
         }
     }
 }

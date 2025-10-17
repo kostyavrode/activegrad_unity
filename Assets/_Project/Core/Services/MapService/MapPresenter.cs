@@ -18,12 +18,13 @@ public class MapPresenter : MonoBehaviour
         _locationService = locationService;
     }
 
-    private async void Update()
+    private async void FixedUpdate()
     {
 //        Debug.Log(_mapLoading+ " | "+_locationService);
         if (_mapLoading) return;
-
+        
         Vector2 coords = _locationService.GetCoordinates();
+        //Debug.Log(coords);
         
         if (coords != _lastCoords && coords != Vector2.zero)
         {

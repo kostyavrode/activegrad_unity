@@ -27,8 +27,7 @@ public class AudioManager : IInitializable, IDisposable
         _sfxSource = go.AddComponent<AudioSource>();
         _sfxSource.loop = false;
         _sfxSource.volume = PlayerPrefs.GetFloat("SfxVolume", 0.8f);
-
-        // Запускаем фоновую музыку
+        
         PlayMusic(_mainTheme);
     }
 

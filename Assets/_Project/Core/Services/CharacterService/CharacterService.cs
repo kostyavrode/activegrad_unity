@@ -11,6 +11,8 @@ public class CharacterService : IInitializable
     private Vector2 _lastCoords;
 
     private readonly Vector3 _spawnPoint = Vector3.zero;
+    
+    //public Transform CharacterTransform => _character.transform;
 
     public CharacterService(UserDataService userData, LocationService locationService, DiContainer container)
     {
@@ -51,5 +53,10 @@ public class CharacterService : IInitializable
             Vector3 direction = new Vector3(delta.y, 0, delta.x); 
             _character.Move(direction);
         }
+    }
+
+    public Transform GetCharacterTransform()
+    {
+        return _character.transform;
     }
 }

@@ -26,7 +26,9 @@ public class CharacterPreviewService : IInitializable, IDisposable
     {
         var prefab = Resources.Load<GameObject>("Character/CharacterBase");
         _previewInstance = _container.InstantiatePrefab(prefab, _previewSpawnPoint, Quaternion.identity, null);
-
+        _previewInstance.transform.position = new Vector3(-0.0340000018f, 0.870999992f, -5.62200022f);
+        _previewInstance.transform.rotation = Quaternion.Euler(0,180,0);
+        
         Debug.Log("CharacterPreviewService initialized");
         _clothing = _previewInstance.GetComponent<ClothingApplier>();
         _clothing.ApplyClothing(_userData.Data);

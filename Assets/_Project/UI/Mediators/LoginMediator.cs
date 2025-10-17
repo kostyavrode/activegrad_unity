@@ -44,7 +44,7 @@ public class LoginMediator : IInitializable, IDisposable
         else
         {
             Debug.LogWarning("LoginMediator: неверный логин/пароль");
-            // можно показать popup с ошибкой
+            // error popup
         }
     }
 

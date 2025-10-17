@@ -9,9 +9,9 @@ public class CharacterCustomizationWindow : BaseWindow
     [SerializeField] private TextMeshProUGUI genderText;
 
     [Header("Clothes selectors")]
-    [SerializeField] private Button[] leftButtons;   // массив из 5 кнопок "<"
-    [SerializeField] private Button[] rightButtons;  // массив из 5 кнопок ">"
-    [SerializeField] private TextMeshProUGUI[] valuesText; // отображение текущего значения
+    [SerializeField] private Button[] leftButtons;
+    [SerializeField] private Button[] rightButtons;
+    [SerializeField] private TextMeshProUGUI[] valuesText;
 
     [SerializeField] private Button confirmButton;
 

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        package="com.yourcompany.yourgame">
+
+    <!-- 🔹 Разрешения для GPS -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <!-- (опционально, если нужно получать местоположение в фоне) -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" tools:ignore="BackgroundLocationPermission" />
+
+    <application>
+        <!--Used when Application Entry is set to Activity, otherwise remove this activity block-->
+        <activity android:name="com.unity3d.player.UnityPlayerActivity"
+                  android:theme="@style/UnityThemeSelector">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data android:name="unityplayer.UnityActivity" android:value="true" />
+        </activity>
+
+        <!--Used when Application Entry is set to GameActivity, otherwise remove this activity block-->
+        <activity android:name="com.unity3d.player.UnityPlayerGameActivity"
+                  android:theme="@style/BaseUnityGameActivityTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data android:name="unityplayer.UnityActivity" android:value="true" />
+            <meta-data android:name="android.app.lib_name" android:value="game" />
+        </activity>
+    </application>
+</manifest>

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using Zenject;
 
@@ -23,15 +25,18 @@ public class QuestMediator : IInitializable, IDisposable
     private readonly QuestWindow _questWindow;
     private readonly UIManager _uiManager;
     private readonly APIService _apiService;
+    private readonly QuestItemView.Factory _questItemFactory;
     
     private Quest[] _quests;
+    private readonly List<QuestItemView> _spawnedItems = new();
     
 
-    public QuestMediator(UIManager uiManager, APIService apiService, QuestWindow questWindow)
+    public QuestMediator(UIManager uiManager, APIService apiService, QuestWindow questWindow, QuestItemView.Factory questItemFactory)
     {
         _uiManager = uiManager;
         _apiService = apiService;
         _questWindow = questWindow;
+        _questItemFactory = questItemFactory;
     }
     
     public void Initialize()
@@ -49,12 +54,26 @@ public class QuestMediator : IInitializable, IDisposable
     private async void LoadQuests()
     {
         var (success, message) = await _apiService.GetDailyQuests();
-        if (success)
+        if (!success)
         {
-            Quest[] quests = PostProcessQuests(message);
-            Debug.Log($"Quests loaded: {quests.Length}");
-            _questWindow.SetQuests(quests);
+            Debug.LogWarning($"Failed to load quests: {message}");
+            return;
         }
+
+        var quests = PostProcessQuests(message);
+        Debug.Log($"Quests loaded: {quests.Length}");
+
+        foreach (var quest in quests)
+        {
+            var view = _questItemFactory.Create();
+            view.SetData(quest);
+            _spawnedItems.Add(view);
+        }
+    }
+
+    private void ClearQuests()
+    {
+        _spawnedItems.Clear();
     }
 
     private Quest[] PostProcessQuests(string message)
@@ -68,5 +87,6 @@ public class QuestMediator : IInitializable, IDisposable
     private void HandleBackClicked()
     {
         _uiManager.Back();
+        ClearQuests();
     }
 }

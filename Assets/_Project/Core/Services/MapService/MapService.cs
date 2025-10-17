@@ -19,6 +19,7 @@ public class MapService
         using (UnityWebRequest www = UnityWebRequestTexture.GetTexture(url))
         {
             var op = www.SendWebRequest();
+            Debug.Log(url);
             while (!op.isDone)
                 await Task.Yield();
 
