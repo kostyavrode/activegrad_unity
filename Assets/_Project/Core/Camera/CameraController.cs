@@ -5,15 +5,14 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
 {
     [SerializeField] private Transform cameraTransform;
     [SerializeField] private float rotationSpeed = 100f;
-    [SerializeField] private float zoomSpeed = 0.02f;
+    [SerializeField] private float zoomSpeed = 0.01f;
     [SerializeField] private float minDistance = 3f;
     [SerializeField] private float maxDistance = 10f;
     [SerializeField] private float distance = 5f;
     [SerializeField] private float height = 2f;
-
-    [Header("Пороговые значения (чувствительность)")]
-    [SerializeField] private float horizontalThreshold = 30f; // пиксели
-    [SerializeField] private float verticalThreshold = 60f;   // пиксели
+    
+    [SerializeField] private float horizontalThreshold = 30f;
+    [SerializeField] private float verticalThreshold = 120f;
 
     private CharacterService _characterService;
     private Transform _target;
@@ -41,13 +40,12 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
                 return;
         }
 
-#if UNITY_EDITOR || UNITY_STANDALONE
+//#if UNITY_EDITOR || UNITY_STANDALONE
         HandleMouseInput();
-#else
-        HandleTouchInput();
-#endif
+//#else
+//        HandleTouchInput();
+//#endif
 
-        // Вычисляем позицию камеры
         Vector3 offset = Quaternion.Euler(0, _currentAngle, 0) * new Vector3(0, 0, -distance);
         Vector3 targetPos = _target.position + Vector3.up * height;
 
@@ -61,8 +59,7 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
         {
             float deltaX = Input.GetAxis("Mouse X");
             float deltaY = Input.GetAxis("Mouse Y");
-
-            // Выбираем, какое движение сильнее
+            
             if (Mathf.Abs(deltaX) > Mathf.Abs(deltaY))
             {
                 if (Mathf.Abs(deltaX) < horizontalThreshold * 0.01f) return;
@@ -86,8 +83,7 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
             if (touch.phase == TouchPhase.Moved)
             {
                 Vector2 delta = touch.deltaPosition;
-
-                // Если движение больше по X → вращаем, иначе → зумируем
+                
                 if (Mathf.Abs(delta.x) > Mathf.Abs(delta.y))
                 {
                     if (Mathf.Abs(delta.x) < horizontalThreshold) return;

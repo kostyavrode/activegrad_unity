@@ -1207,14 +1207,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cameraTransform: {fileID: 330585546}
-  rotationSpeed: 200
-  zoomSpeed: 0.02
+  rotationSpeed: 100
+  zoomSpeed: 0.01
   minDistance: 3
   maxDistance: 10
   distance: 5
   height: 2
-  horizontalThreshold: 6
-  verticalThreshold: 60
+  horizontalThreshold: 60
+  verticalThreshold: 200
 --- !u!1 &371892856
 GameObject:
   m_ObjectHideFlags: 0
@@ -5335,7 +5335,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1818038770}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bfd69b43f9aefdd43b536330ca509553, type: 3}
+  m_Script: {fileID: 11500000, guid: 92ae89d70a0d00c4fb8bcf6485be578d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _questItemPrefab: {fileID: 146727809647397927, guid: 059e32dbb22cf934a9ba8546c2dfa599, type: 3}
