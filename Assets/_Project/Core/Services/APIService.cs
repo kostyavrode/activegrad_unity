@@ -12,19 +12,22 @@ public class APIService
     private const string BaseUrl = "http://87.228.97.188/api/";
     private readonly MonoBehaviour _coroutineRunner;
     private readonly UserDataService _userData;
+    private readonly IPopupService _popupService;
+
 
     private string _accessToken;
     private string _refreshToken;
 
     public bool IsLoggedIn => !string.IsNullOrEmpty(_accessToken);
 
-    public APIService([Inject] MonoBehaviour coroutineRunner, [Inject] UserDataService userData)
+    public APIService([Inject] MonoBehaviour coroutineRunner, [Inject] UserDataService userData, IPopupService popupService)
     {
         _coroutineRunner = coroutineRunner;
         _userData = userData;
 
         _accessToken = _userData.AccessToken;
         _refreshToken = _userData.RefreshToken;
+        _popupService = popupService;
     }
 
     public async Task<(bool success, string message)> Register(string username, string firstName, string lastName, string password)
@@ -84,7 +87,7 @@ public class APIService
             }
             catch (Exception e)
             {
-                Debug.LogError($"[APIService] Ошибка парсинга ответа логина: {e.Message}");
+                _popupService.ShowError($"Ошибка регистрации: {e.Message}");
                 return false;
             }
         }
@@ -106,13 +109,14 @@ public class APIService
 
     private async Task<bool> RefreshToken()
     {
+        Debug.Log("Refresh Token");
         if (string.IsNullOrEmpty(_refreshToken))
         {
             Debug.LogError("[APIService] Нет refresh токена, нужно перелогиниться");
             return false;
         }
 
-        var url = $"{BaseUrl}refresh/";
+        var url = $"{BaseUrl}token/refresh/";
         var payload = new RefreshRequest { refresh = _refreshToken };
 
         var (success, response) = await SendRequest(url, "POST", payload, requireAuth: false);
@@ -130,7 +134,7 @@ public class APIService
             }
             catch (Exception e)
             {
-                Debug.LogError($"[APIService] Ошибка парсинга refresh: {e.Message}");
+                _popupService.ShowError($"Ошибка обновления токена: {e.Message}");
                 return false;
             }
         }
@@ -227,6 +231,7 @@ public class APIService
         if (request.result is UnityWebRequest.Result.ConnectionError or UnityWebRequest.Result.ProtocolError)
         {
             Debug.LogError($"[APIService] Error: {request.error}");
+            _popupService.ShowError($"[APIService] Error: {request.error}");
             tcs.TrySetResult((false, request.error));
         }
         else

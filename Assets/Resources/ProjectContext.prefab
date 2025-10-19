@@ -107,3 +107,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   coroutineRunner: {fileID: 9027176577245011185}
+  popupPrefab: {fileID: 7716077420535813231, guid: 3ffec195090fc17429f45458cb4ac09f, type: 3}
