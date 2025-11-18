@@ -7,7 +7,7 @@ public class AudioInstaller : MonoInstaller
 
     public override void InstallBindings()
     {
-        Container.Bind<AudioClip>().WithId("MainTheme").FromInstance(mainTheme).AsSingle();
-        Container.BindInterfacesAndSelfTo<AudioManager>().AsSingle();
+        //Container.Bind<AudioClip>().WithId("MainTheme").FromInstance(mainTheme).AsSingle();
+        //Container.BindInterfacesAndSelfTo<AudioManager>().AsSingle();
     }
 }

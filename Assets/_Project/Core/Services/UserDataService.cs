@@ -61,7 +61,7 @@ public class UserDataService
     public void Save()
     {
         var json = JsonUtility.ToJson(_data);
-        Debug.Log(json);
+//        Debug.Log(json);
         PlayerPrefs.SetString(Key, json);
         PlayerPrefs.Save();
     }

@@ -22,6 +22,8 @@ public class OtherInstaller : MonoInstaller
         Container.BindInterfacesTo<QuestMediator>().AsSingle();
         
         Container.BindInterfacesTo<MenuMediator>().AsSingle();
+        
+        Container.BindInterfacesTo<SettingsMediator>().AsSingle();
 
         Container.BindFactory<QuestItemView, QuestItemView.Factory>()
             .FromComponentInNewPrefab(_questItemPrefab)

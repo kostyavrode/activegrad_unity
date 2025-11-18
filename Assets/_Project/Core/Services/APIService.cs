@@ -10,7 +10,7 @@ using Zenject;
 public class APIService
 {
     private const string BaseUrl = "http://87.228.97.188/api/";
-    private readonly MonoBehaviour _coroutineRunner;
+    private readonly MonoBehaviour _coroutineRunner;    
     private readonly UserDataService _userData;
     private readonly IPopupService _popupService;
 
