@@ -8,7 +8,7 @@ public class WikipediaApiClient
 
     public async Task<string> GetAsync(string url)
     {
-        Debug.Log("[WikipediaApi] Request: " + url);
+//        Debug.Log("[WikipediaApi] Request: " + url);
 
         using var request = UnityWebRequest.Get(url);
         var operation = request.SendWebRequest();
@@ -24,15 +24,13 @@ public class WikipediaApiClient
 
         string text = request.downloadHandler.text;
 
-        Debug.Log("[WikipediaApi] Response OK, length = " + text.Length);
-
         return text;
     }
 
 
     public string BuildGeoSearchUrl(Vector2 coordinates, int radius)
     {
-        Debug.Log("[WikipediaApi] BuildGeoSearchUrl");
+//        Debug.Log("[WikipediaApi] BuildGeoSearchUrl");
         var lat = coordinates.x.ToString(System.Globalization.CultureInfo.InvariantCulture);
         var lon = coordinates.y.ToString(System.Globalization.CultureInfo.InvariantCulture);
 

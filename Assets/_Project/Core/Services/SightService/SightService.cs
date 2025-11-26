@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 using Newtonsoft.Json.Linq;
@@ -20,7 +21,7 @@ public class SightService : ISightService
     {
         Debug.Log("LoadNearestSightsAsync");
         string url = _client.BuildGeoSearchUrl(coordinates, radius);
-        Debug.Log("url:"+url);
+//        Debug.Log("url:"+url);
         string json = await _client.GetAsync(url);
         
         Debug.Log(json);
@@ -44,6 +45,7 @@ public class SightService : ISightService
                     Latitude = item["lat"].Value<double>(),
                     Longitude = item["lon"].Value<double>()
                 });
+                
             }
         }
         catch (Exception e)
@@ -66,19 +68,24 @@ public class SightService : ISightService
 
         JObject root = JObject.Parse(json);
         JObject pages = (JObject)root["query"]["pages"];
-        JObject page = (JObject)pages[pages.First.Path.Split('.').Length == 1 ? pages.First.Path : pages.First.First.Path];
+        JObject page = (JObject)pages.First.First;
 
         string description = page["extract"]?.Value<string>() ?? "";
-        string imageUrl = page["thumbnail"]?["source"]?.Value<string>();
+
+        string thumbUrl = page["thumbnail"]?["source"]?.Value<string>();
+        string originalUrl = page["original"]?["source"]?.Value<string>();
 
         return new SightFullInfo
         {
             PageId = pageId,
             Title = page["title"].Value<string>(),
             Description = description,
-            ImageUrl = imageUrl
+            ImageUrl = thumbUrl,
+            OriginalImageUrl = originalUrl ?? thumbUrl // fallback
         };
     }
+
+
 
     public async Task<Texture2D> LoadImageAsync(string url)
     {
