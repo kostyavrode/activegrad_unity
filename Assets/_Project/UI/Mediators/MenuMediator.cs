@@ -18,6 +18,7 @@ public class MenuMediator : IInitializable, IDisposable
         _menuWindow.OnQuestsClicked += HandleQuestsClicked;
         _menuWindow.OnProfileClicked += HandleProfileClicked;
         _menuWindow.OnSettingsClicked += HandleSettingsClicked;
+        _menuWindow.OnSightClicked += HandleSightsClicked;
     }
 
     public void Dispose()
@@ -25,6 +26,8 @@ public class MenuMediator : IInitializable, IDisposable
         _menuWindow.OnQuestsClicked -= HandleQuestsClicked;
         _menuWindow.OnProfileClicked -= HandleProfileClicked;
         _menuWindow.OnSettingsClicked -= HandleSettingsClicked;
+        _menuWindow.OnSightClicked -= HandleSightsClicked;
+
     }
 
     private void HandleSettingsClicked()
@@ -40,5 +43,10 @@ public class MenuMediator : IInitializable, IDisposable
     private void HandleQuestsClicked()
     {
         _uiManager.Show<QuestWindow>();
+    }
+
+    private void HandleSightsClicked()
+    {
+        _uiManager.Show<SightsWindow>();
     }
 }

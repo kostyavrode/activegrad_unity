@@ -6,11 +6,11 @@ public class OtherInstaller : MonoInstaller
     [SerializeField] private QuestItemView _questItemPrefab;
     [SerializeField] private Transform _questListParent;
     [SerializeField] private CoroutineRunner _coroutineRunner;
+    [SerializeField] private SightItemView SightItemPrefab;
     public override void InstallBindings()
     {
         Container.BindInterfacesAndSelfTo<GPSLocationProvider>().AsSingle();
-
-
+        
         Container.BindInterfacesAndSelfTo<LocationService>().AsSingle();
         
         Container.Bind<MapService>().AsSingle().WithArguments("7955252a-2f7b-4c01-968f-19e1c095f7b5").NonLazy();
@@ -24,13 +24,33 @@ public class OtherInstaller : MonoInstaller
         Container.BindInterfacesTo<MenuMediator>().AsSingle();
         
         Container.BindInterfacesTo<SettingsMediator>().AsSingle();
+        
+        Container.BindInterfacesTo<SightsMediator>().AsSingle();
 
         Container.BindFactory<QuestItemView, QuestItemView.Factory>()
             .FromComponentInNewPrefab(_questItemPrefab)
             .UnderTransform(_questListParent);
+        
         Container.Bind<CoroutineRunner>().FromInstance(_coroutineRunner).AsSingle();
         
         Container.BindInterfacesAndSelfTo<CameraController>().FromComponentInHierarchy().AsSingle();
+        
+        Container.Bind<WikipediaApiClient>().AsSingle().NonLazy();
+        
+        Container.Bind<ISightService>().To<SightService>().AsSingle().NonLazy();
+        
+        Container.BindInterfacesAndSelfTo<SightsUpdater>().AsSingle().NonLazy();
+        
+        Container.BindFactory<SightItemView, SightItemFactory>()
+            .FromComponentInNewPrefab(SightItemPrefab)
+            .AsTransient();
+        
+        Container.Bind<IImageLoadService>()
+            .To<ImageLoadService>()
+            .AsSingle();
+
+
+
 
     }
 }

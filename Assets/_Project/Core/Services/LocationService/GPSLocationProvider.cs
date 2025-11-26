@@ -21,7 +21,6 @@
         public GPSLocationProvider(CoroutineRunner coroutineRunner)
         {
             _coroutineRunner = coroutineRunner;
-           // Debug.Log();
         }
 
         public void Initialize()
@@ -52,6 +51,8 @@
                 Debug.LogWarning("[GPS] GPS выключен. Ожидание включения пользователем...");
                 yield return new WaitForSeconds(2f);
             }
+    #else 
+            
     #endif
 
             Debug.Log("[GPS] Запуск службы геолокации...");
@@ -83,7 +84,7 @@
 
         public void Tick()
         {
- //           Debug.LogWarning("Zap");
+            Debug.LogWarning("Zap");
     #if UNITY_ANDROID || UNITY_IOS
             if (_isRunning && Input.location.status == LocationServiceStatus.Running)
             {
@@ -98,11 +99,13 @@
             else if (Input.location.status == LocationServiceStatus.Stopped)
             {
                 Debug.LogWarning("[GPS] Служба геолокации остановлена.");
+                _lastCoordinates = GetRandomCoords();
                 _isRunning = false;
             }
     #else
             // Эмуляция координат в редакторе
             _timer += Time.deltaTime;
+            Debub.Log("Randon coordinates: " + _lastCoordinates);
             if (_timer >= _updateInterval)
             {
                 _timer = 0f;
@@ -111,14 +114,19 @@
     #endif
         }
 
-        public Vector2 GetCoordinates() => _lastCoordinates;
-
-    #if !UNITY_ANDROID && !UNITY_IOS
+        public Vector2 GetCoordinates()
+        {
+            if (_lastCoordinates == Vector2.zero)
+            {
+                _lastCoordinates = GetRandomCoords();
+            }
+            return _lastCoordinates;
+        }
+        
         private Vector2 GetRandomCoords()
         {
             float lat = Random.Range(_minCoords.x, _maxCoords.x);
             float lon = Random.Range(_minCoords.y, _maxCoords.y);
-            return new Vector2(lat, lon);
+            return new Vector2(59.874774f, 30.393770f);
         }
-    #endif
     }
