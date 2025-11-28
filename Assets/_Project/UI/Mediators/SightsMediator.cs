@@ -28,14 +28,17 @@ public class SightsMediator : IInitializable, IDisposable
 
     public void Initialize()
     {
-        Debug.Log("Initializing SightsMediator");
         _sightsWindow.OnWindowOpened += LoadSights;
-        _sightsWindow.OnBackClicked += () => _uiManager.Back();  
+        _sightsWindow.OnBackClicked += () => _uiManager.Back();
+        
+        _sightsUpdater.OnImageLoaded += HandleImageLoaded;
     }
 
     public void Dispose()
     {
         _sightsWindow.OnWindowOpened -= LoadSights;
+        
+        _sightsUpdater.OnImageLoaded -= HandleImageLoaded;
     }
 
     private void LoadSights()
@@ -45,83 +48,44 @@ public class SightsMediator : IInitializable, IDisposable
         foreach (var info in _sightsUpdater.CachedNearestSights)
         {
             var item = _factory.Create();
-            
             item.transform.SetParent(_sightsWindow.ContentParent, false);
 
             item.Title.text = info.Title;
             item.Distance.text = $"{info.Distance} м";
-            
-            _sightItemViews.Add(item);
-            
-            /*if (!string.IsNullOrEmpty(info.ImageUrl))
-            {
-                var sprite = await _imageLoader.LoadSpriteAsync(info.ImageUrl);
+            item.PageId = info.PageId;
+            item.OnClicked += HandleItemClicked;
+
+            if (_sightsUpdater.TryGetImage(info.PageId, out var sprite))
                 item.SetImage(sprite);
-            }*/
-        }
-        Debug.Log("Loaded SightsMediator!!!!!!!!!!!!!!!!!");
-        SetImagesInSights();
-    }
 
-    private async void SetImagesInSights()
-    {
-        for (int i = 0; i < _sightItemViews.Count; i++)
-        {
-            Debug.Log(_sightsUpdater.CachedSights[i].OriginalImageUrl);
-            string url = FixUrl(_sightsUpdater.CachedSights[i].OriginalImageUrl);
-
-            if (string.IsNullOrEmpty(url))
-                continue;
-
-            var sprite = await LoadSpriteAsync(url);
-
-            if (sprite != null)
-                _sightItemViews[i].SetImage(sprite);
+            _sightItemViews.Add(item);
         }
     }
-
     
-    public async Task<Sprite> LoadSpriteAsync(string url)
+    private void HandleItemClicked(int pageId)
     {
-        Debug.Log("Loading image: " + url);
+        Debug.Log("Sight clicked: " + pageId);
 
-        using (UnityWebRequest req = UnityWebRequestTexture.GetTexture(url))
-        {
-            var op = req.SendWebRequest();
-
-            while (!op.isDone)
-                await Task.Yield();
-
-            if (req.result != UnityWebRequest.Result.Success)
-            {
-                Debug.LogError($"Image load error ({url}): {req.error}");
-                return null;
-            }
-
-            var tex = DownloadHandlerTexture.GetContent(req);
-            return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(.5f, .5f));
-        }
+        // 👉 вызывем сторонний сервис открытия окна
+        //_uiManager.OpenSightDetails(pageId);
     }
-
-    private string FixUrl(string url)
+    
+    private void HandleImageLoaded(int pageId, Sprite sprite)
     {
-        if (string.IsNullOrEmpty(url))
-            return null;
-
-        url = url.Trim();
-
-        // Википедия часто даёт URL без схемы
-        if (url.StartsWith("//"))
-            url = "https:" + url;
-
-        // Заменяем пробелы
-        url = url.Replace(" ", "%20");
-
-        return url;
+        foreach (var item in _sightItemViews)
+        {
+            if (item.PageId == pageId)
+            {
+                item.SetImage(sprite);
+                break;
+            }
+        }
     }
     
     private void ClearItems()
     {
+        foreach (var item in _sightItemViews)
+            item.OnClicked -= HandleItemClicked;
         foreach (Transform t in _sightsWindow.ContentParent)
         {
             GameObject.Destroy(t.gameObject);

@@ -34,7 +34,7 @@ public class WikipediaApiClient
         var lat = coordinates.x.ToString(System.Globalization.CultureInfo.InvariantCulture);
         var lon = coordinates.y.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
-        return $"https://ru.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord={lat}|{lon}&gsradius={radius}&gslimit=25&format=json";
+        return $"https://ru.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord={lon}|{lat}&gsradius={radius}&gslimit=25&format=json";
     }
 
 

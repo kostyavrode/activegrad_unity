@@ -21,7 +21,7 @@ public class SightService : ISightService
     {
         Debug.Log("LoadNearestSightsAsync");
         string url = _client.BuildGeoSearchUrl(coordinates, radius);
-//        Debug.Log("url:"+url);
+        Debug.Log("url:"+url);
         string json = await _client.GetAsync(url);
         
         Debug.Log(json);
@@ -63,6 +63,7 @@ public class SightService : ISightService
 
     public async Task<SightFullInfo> LoadSightDetailsAsync(int pageId)
     {
+        
         string url = _client.BuildExtractUrl(pageId);
         string json = await _client.GetAsync(url);
 

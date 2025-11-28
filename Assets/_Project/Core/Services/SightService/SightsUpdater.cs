@@ -2,12 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Networking;
 using Zenject;
 
 public class SightsUpdater : IInitializable, IDisposable
 {
     public List<SightShortInfo> CachedNearestSights { get; private set; }
     public List<SightFullInfo> CachedSights { get; private set; }
+
+    public Dictionary<int, Sprite> ImageCache { get; private set; } = new Dictionary<int, Sprite>();
+    
+    public event Action<int, Sprite> OnImageLoaded;
 
     private readonly ISightService _sightService;
     private readonly LocationService _locationService;
@@ -36,32 +41,127 @@ public class SightsUpdater : IInitializable, IDisposable
     {
         while (_isRunning)
         {
-            await UpdateSights();
+            try
+            {
+                await UpdateSights();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("UpdateSights FAILED: " + e.Message);
+            }
+
             await Task.Delay((int)(_interval * 1000));
         }
     }
 
+    private async Task<SightFullInfo> LoadSafeSight(int pageId)
+    {
+        int retry = 3;
+
+        while (retry-- > 0)
+        {
+            try
+            {
+                return await _sightService.LoadSightDetailsAsync(pageId);
+            }
+            catch { await Task.Delay(500); }
+        }
+
+        return null;
+    }
+
     private async Task UpdateSights()
     {
-        Vector2 coords = _locationService.GetCoordinates();
-        Debug.Log("Coords:"+coords.ToString());
+        Vector2 coords = await WaitForValidCoordinates();
 
-        CachedNearestSights = await _sightService.LoadNearestSightsAsync(coords,5000);
-        
+        Debug.Log($"Coords ready: {coords}");
+
+        CachedNearestSights = await _sightService.LoadNearestSightsAsync(coords, 5000);
+
         var tasks = new List<Task<SightFullInfo>>();
 
         foreach (var s in CachedNearestSights)
-        {
-            tasks.Add(_sightService.LoadSightDetailsAsync(s.PageId));
-        }
+            tasks.Add(LoadSafeSight(s.PageId));
 
         var results = await Task.WhenAll(tasks);
-        
+
         CachedSights = new List<SightFullInfo>();
 
-        CachedSights.AddRange(results);
+        foreach (var r in results)
+            if (r != null) CachedSights.Add(r);
 
-        Debug.Log($"Sights updated: {CachedNearestSights.Count}");
+        await LoadAllImages();
+    }
+
+
+    private async Task LoadAllImages()
+    {
+        foreach (var sight in CachedSights)
+        {
+            if (string.IsNullOrEmpty(sight.OriginalImageUrl))
+                continue;
+
+            if (ImageCache.ContainsKey(sight.PageId))
+                continue;
+
+            var url = FixUrl(sight.OriginalImageUrl);
+            var sprite = await LoadSpriteAsync(url);
+
+            if (sprite != null)
+            {
+                ImageCache[sight.PageId] = sprite;
+                
+                OnImageLoaded?.Invoke(sight.PageId, sprite);
+            }
+        }
+    }
+
+    private string FixUrl(string url)
+    {
+        if (string.IsNullOrEmpty(url))
+            return null;
+
+        url = url.Trim();
+
+        if (url.StartsWith("//"))
+            url = "https:" + url;
+
+        return url.Replace(" ", "%20");
+    }
+
+    private async Task<Sprite> LoadSpriteAsync(string url)
+    {
+        using (var req = UnityWebRequestTexture.GetTexture(url))
+        {
+            var op = req.SendWebRequest();
+            while (!op.isDone) await Task.Yield();
+
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("Image load failed: " + req.error);
+                return null;
+            }
+
+            var tex = DownloadHandlerTexture.GetContent(req);
+            return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(.5f, .5f));
+        }
     }
     
+    private async Task<Vector2> WaitForValidCoordinates()
+    {
+        Vector2 coords = _locationService.GetCoordinates();
+
+        // ждём, пока координаты не будут ненулевые
+        while (coords == Vector2.zero)
+        {
+            await Task.Delay(200); // маленькая пауза
+            coords = _locationService.GetCoordinates();
+        }
+
+        return coords;
+    }
+
+    // 🔥 метод для Mediator
+    public bool TryGetImage(int pageId, out Sprite sprite)
+        => ImageCache.TryGetValue(pageId, out sprite);
 }

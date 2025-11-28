@@ -84,7 +84,6 @@
 
         public void Tick()
         {
-            Debug.LogWarning("Zap");
     #if UNITY_ANDROID || UNITY_IOS
             if (_isRunning && Input.location.status == LocationServiceStatus.Running)
             {
@@ -103,7 +102,6 @@
                 _isRunning = false;
             }
     #else
-            // Эмуляция координат в редакторе
             _timer += Time.deltaTime;
             Debub.Log("Randon coordinates: " + _lastCoordinates);
             if (_timer >= _updateInterval)
@@ -118,15 +116,22 @@
         {
             if (_lastCoordinates == Vector2.zero)
             {
+#if UNITY_EDITOR || UNITY_STANDALONE
+
                 _lastCoordinates = GetRandomCoords();
+                
+#endif
             }
+
             return _lastCoordinates;
         }
+
         
         private Vector2 GetRandomCoords()
         {
             float lat = Random.Range(_minCoords.x, _maxCoords.x);
             float lon = Random.Range(_minCoords.y, _maxCoords.y);
-            return new Vector2(59.874774f, 30.393770f);
+            //return new Vector2(59.875774f, 30.394770f);
+            return new Vector2(30.394770f, 59.875774f);
         }
     }
