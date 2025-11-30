@@ -11,6 +11,7 @@ public class SightsMediator : IInitializable, IDisposable
     private readonly UIManager _uiManager;
     private readonly SightsWindow _sightsWindow;
     private readonly SightItemFactory _factory;
+    private readonly IPopupService _popupService;
     
     private List<SightItemView> _sightItemViews = new List<SightItemView>();
 
@@ -18,12 +19,14 @@ public class SightsMediator : IInitializable, IDisposable
         SightsUpdater sightsUpdater,
         UIManager uiManager,
         SightsWindow sightsWindow,
-        SightItemFactory factory)
+        SightItemFactory factory,
+        IPopupService popupService)
     {
         _sightsUpdater = sightsUpdater;
         _uiManager = uiManager;
         _sightsWindow = sightsWindow;
         _factory = factory;
+        _popupService = popupService;
     }
 
     public void Initialize()
@@ -44,22 +47,29 @@ public class SightsMediator : IInitializable, IDisposable
     private void LoadSights()
     {
         ClearItems();
-
-        foreach (var info in _sightsUpdater.CachedNearestSights)
+        try
         {
-            var item = _factory.Create();
-            item.transform.SetParent(_sightsWindow.ContentParent, false);
+            foreach (var info in _sightsUpdater.CachedNearestSights)
+            {
+                var item = _factory.Create();
+                item.transform.SetParent(_sightsWindow.ContentParent, false);
 
-            item.Title.text = info.Title;
-            item.Distance.text = $"{info.Distance} м";
-            item.PageId = info.PageId;
-            item.OnClicked += HandleItemClicked;
+                item.Title.text = info.Title;
+                item.Distance.text = $"{info.Distance} м";
+                item.PageId = info.PageId;
+                item.OnClicked += HandleItemClicked;
 
-            if (_sightsUpdater.TryGetImage(info.PageId, out var sprite))
-                item.SetImage(sprite);
+                if (_sightsUpdater.TryGetImage(info.PageId, out var sprite))
+                    item.SetImage(sprite);
 
-            _sightItemViews.Add(item);
+                _sightItemViews.Add(item);
+            }
         }
+        catch (Exception e)
+        {
+            _popupService.ShowError("Sights not loaded, wait pls.");
+        }
+
     }
     
     private void HandleItemClicked(int pageId)

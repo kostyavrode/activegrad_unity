@@ -17,15 +17,17 @@ public class SightsUpdater : IInitializable, IDisposable
     private readonly ISightService _sightService;
     private readonly LocationService _locationService;
     private readonly SightDetailsView.Factory _sightDetailsViewFactory;
+    private readonly IPopupService _popupService;
 
     private bool _isRunning;
     private readonly float _interval = 5f;
 
-    public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory)
+    public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory, IPopupService popupService)
     {
         _sightService = sightService;
         _locationService = locationService;
         _sightDetailsViewFactory = sightDetailsViewFactory;
+        _popupService = popupService;
     }
 
     public void Initialize()
@@ -38,12 +40,25 @@ public class SightsUpdater : IInitializable, IDisposable
     {
         _isRunning = false;
     }
-    
+
     public void CreateSightDetailsPopup(int pageID)
     {
+        Debug.Log(CachedSights[pageID].Title + CachedSights[pageID].Description);
         var popup = _sightDetailsViewFactory.Create();
         popup.transform.SetParent(GameObject.FindGameObjectWithTag("Canvas").transform, false);
-        popup.Init(ImageCache[pageID], CachedSights[pageID].Title, CachedSights[pageID].Description, CachedSights[pageID].PageId);
+        Sprite sprite;
+        try
+        {
+            sprite = ImageCache[pageID];
+        }
+        catch (Exception e)
+        {
+            _popupService.ShowError(e.Message);
+            sprite = Resources.Load<Sprite>("no_image");
+        }
+
+        popup.Init(sprite, CachedSights[pageID].Title, CachedSights[pageID].Description,
+            CachedSights[pageID].PageId);
     }
 
     private async void RunUpdateLoop()
