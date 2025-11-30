@@ -5,6 +5,7 @@ public class ProjectInstaller : MonoInstaller
 {
     [SerializeField] private MonoBehaviour coroutineRunner;
     [SerializeField] private PopupView popupPrefab;
+    [SerializeField] private SightDetailsView sightDetailsPrefab;
     [SerializeField] private AudioSource _audioRootPrefab;
 
     public override void InstallBindings()
@@ -32,6 +33,9 @@ public class ProjectInstaller : MonoInstaller
         Container.BindFactory<PopupView, PopupView.Factory>()
             .FromComponentInNewPrefab(popupPrefab)
             .UnderTransformGroup("Popups");
+        Container.BindFactory<SightDetailsView, SightDetailsView.Factory>()
+            .FromComponentInNewPrefab(sightDetailsPrefab).
+            UnderTransformGroup("SightDetails");
         
     }
 

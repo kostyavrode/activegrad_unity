@@ -65,9 +65,7 @@ public class SightsMediator : IInitializable, IDisposable
     private void HandleItemClicked(int pageId)
     {
         Debug.Log("Sight clicked: " + pageId);
-
-        // 👉 вызывем сторонний сервис открытия окна
-        //_uiManager.OpenSightDetails(pageId);
+        _sightsUpdater.CreateSightDetailsPopup(pageId);
     }
     
     private void HandleImageLoaded(int pageId, Sprite sprite)

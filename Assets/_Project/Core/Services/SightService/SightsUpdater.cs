@@ -16,14 +16,16 @@ public class SightsUpdater : IInitializable, IDisposable
 
     private readonly ISightService _sightService;
     private readonly LocationService _locationService;
+    private readonly SightDetailsView.Factory _sightDetailsViewFactory;
 
     private bool _isRunning;
     private readonly float _interval = 5f;
 
-    public SightsUpdater(ISightService sightService, LocationService locationService)
+    public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory)
     {
         _sightService = sightService;
         _locationService = locationService;
+        _sightDetailsViewFactory = sightDetailsViewFactory;
     }
 
     public void Initialize()
@@ -35,6 +37,13 @@ public class SightsUpdater : IInitializable, IDisposable
     public void Dispose()
     {
         _isRunning = false;
+    }
+    
+    public void CreateSightDetailsPopup(int pageID)
+    {
+        var popup = _sightDetailsViewFactory.Create();
+        popup.transform.SetParent(GameObject.FindGameObjectWithTag("Canvas").transform, false);
+        popup.Init(ImageCache[pageID], CachedSights[0].Title, CachedSights[0].Description, CachedSights[0].PageId);
     }
 
     private async void RunUpdateLoop()
@@ -150,18 +159,16 @@ public class SightsUpdater : IInitializable, IDisposable
     private async Task<Vector2> WaitForValidCoordinates()
     {
         Vector2 coords = _locationService.GetCoordinates();
-
-        // ждём, пока координаты не будут ненулевые
+        
         while (coords == Vector2.zero)
         {
-            await Task.Delay(200); // маленькая пауза
+            await Task.Delay(200);
             coords = _locationService.GetCoordinates();
         }
 
         return coords;
     }
 
-    // 🔥 метод для Mediator
     public bool TryGetImage(int pageId, out Sprite sprite)
         => ImageCache.TryGetValue(pageId, out sprite);
 }

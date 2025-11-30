@@ -108,4 +108,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   coroutineRunner: {fileID: 4040906184821378527}
   popupPrefab: {fileID: 7716077420535813231, guid: 3ffec195090fc17429f45458cb4ac09f, type: 3}
+  sightDetailsPrefab: {fileID: 8274328014655493864, guid: 9ab5b93e46d0dd848b8bc8c6e08e07c2, type: 3}
   _audioRootPrefab: {fileID: 7482777613926102680, guid: 2b48861d4fc7bcd459673208817b318a, type: 3}

@@ -29,9 +29,4 @@ public class SightItemView : MonoBehaviour
     {
         Image.sprite = sprite;
     }
-
-    private void HandleButtonClick()
-    {
-        
-    }
 }

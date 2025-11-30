@@ -33,4 +33,5 @@ public class PopupService : IPopupService
         popup.transform.SetParent(_uiCanvas.transform, false);
         popup.Setup(message, color);
     }
+    
 }
