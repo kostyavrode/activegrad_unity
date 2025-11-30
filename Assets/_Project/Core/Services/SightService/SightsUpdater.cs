@@ -8,7 +8,7 @@ using Zenject;
 public class SightsUpdater : IInitializable, IDisposable
 {
     public List<SightShortInfo> CachedNearestSights { get; private set; }
-    public List<SightFullInfo> CachedSights { get; private set; }
+    public Dictionary<int, SightFullInfo> CachedSights { get; private set; }
 
     public Dictionary<int, Sprite> ImageCache { get; private set; } = new Dictionary<int, Sprite>();
     
@@ -43,7 +43,7 @@ public class SightsUpdater : IInitializable, IDisposable
     {
         var popup = _sightDetailsViewFactory.Create();
         popup.transform.SetParent(GameObject.FindGameObjectWithTag("Canvas").transform, false);
-        popup.Init(ImageCache[pageID], CachedSights[0].Title, CachedSights[0].Description, CachedSights[0].PageId);
+        popup.Init(ImageCache[pageID], CachedSights[pageID].Title, CachedSights[pageID].Description, CachedSights[pageID].PageId);
     }
 
     private async void RunUpdateLoop()
@@ -94,10 +94,10 @@ public class SightsUpdater : IInitializable, IDisposable
 
         var results = await Task.WhenAll(tasks);
 
-        CachedSights = new List<SightFullInfo>();
+        CachedSights = new Dictionary<int, SightFullInfo>();
 
         foreach (var r in results)
-            if (r != null) CachedSights.Add(r);
+            if (r != null) CachedSights.Add(r.PageId,r);
 
         await LoadAllImages();
     }
@@ -105,12 +105,15 @@ public class SightsUpdater : IInitializable, IDisposable
 
     private async Task LoadAllImages()
     {
-        foreach (var sight in CachedSights)
+        foreach (var pair in CachedSights)
         {
+            int pageId = pair.Key;
+            var sight = pair.Value;
+
             if (string.IsNullOrEmpty(sight.OriginalImageUrl))
                 continue;
 
-            if (ImageCache.ContainsKey(sight.PageId))
+            if (ImageCache.ContainsKey(pageId))
                 continue;
 
             var url = FixUrl(sight.OriginalImageUrl);
@@ -118,9 +121,8 @@ public class SightsUpdater : IInitializable, IDisposable
 
             if (sprite != null)
             {
-                ImageCache[sight.PageId] = sprite;
-                
-                OnImageLoaded?.Invoke(sight.PageId, sprite);
+                ImageCache[pageId] = sprite;
+                OnImageLoaded?.Invoke(pageId, sprite);
             }
         }
     }
