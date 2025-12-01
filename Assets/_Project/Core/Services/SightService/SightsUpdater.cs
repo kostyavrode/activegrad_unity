@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -7,7 +8,7 @@ using Zenject;
 
 public class SightsUpdater : IInitializable, IDisposable
 {
-    public List<SightShortInfo> CachedNearestSights { get; private set; }
+    public Dictionary<int, SightShortInfo> CachedNearestSights { get; private set; }
     public Dictionary<int, SightFullInfo> CachedSights { get; private set; }
 
     public Dictionary<int, Sprite> ImageCache { get; private set; } = new Dictionary<int, Sprite>();
@@ -59,6 +60,11 @@ public class SightsUpdater : IInitializable, IDisposable
 
         popup.Init(sprite, CachedSights[pageID].Title, CachedSights[pageID].Description,
             CachedSights[pageID].PageId);
+
+        if (CachedNearestSights[pageID].Distance <= 300)
+        {
+            popup.SetCheckInButtonInteractable();
+        }
     }
 
     private async void RunUpdateLoop()
@@ -99,23 +105,31 @@ public class SightsUpdater : IInitializable, IDisposable
         Vector2 coords = await WaitForValidCoordinates();
 
         Debug.Log($"Coords ready: {coords}");
+    
+        // Загружаем список ближайших достопримечательностей
+        var nearestList = await _sightService.LoadNearestSightsAsync(coords, 5000);
 
-        CachedNearestSights = await _sightService.LoadNearestSightsAsync(coords, 5000);
+        // Конвертируем в словарь: ключ = PageId
+        CachedNearestSights = nearestList
+            .Where(s => s != null)
+            .ToDictionary(s => s.PageId, s => s);
 
-        var tasks = new List<Task<SightFullInfo>>();
-
-        foreach (var s in CachedNearestSights)
-            tasks.Add(LoadSafeSight(s.PageId));
+        // Готовим задачи на загрузку полных данных
+        var tasks = CachedNearestSights.Keys
+            .Select(pageId => LoadSafeSight(pageId))
+            .ToList();
 
         var results = await Task.WhenAll(tasks);
 
-        CachedSights = new Dictionary<int, SightFullInfo>();
-
-        foreach (var r in results)
-            if (r != null) CachedSights.Add(r.PageId,r);
+        // Создаём словарь для полных данных
+        CachedSights = results
+            .Where(r => r != null)
+            .ToDictionary(r => r.PageId, r => r);
 
         await LoadAllImages();
     }
+
+
 
 
     private async Task LoadAllImages()

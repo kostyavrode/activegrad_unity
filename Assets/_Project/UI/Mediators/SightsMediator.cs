@@ -47,10 +47,13 @@ public class SightsMediator : IInitializable, IDisposable
     private void LoadSights()
     {
         ClearItems();
+
         try
         {
-            foreach (var info in _sightsUpdater.CachedNearestSights)
+            foreach (var kv in _sightsUpdater.CachedNearestSights)
             {
+                var info = kv.Value;
+
                 var item = _factory.Create();
                 item.transform.SetParent(_sightsWindow.ContentParent, false);
 
@@ -69,8 +72,8 @@ public class SightsMediator : IInitializable, IDisposable
         {
             _popupService.ShowError("Sights not loaded, wait pls.");
         }
-
     }
+
     
     private void HandleItemClicked(int pageId)
     {
