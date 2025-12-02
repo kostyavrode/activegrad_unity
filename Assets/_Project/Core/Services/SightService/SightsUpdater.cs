@@ -74,15 +74,16 @@ public class SightsUpdater : IInitializable, IDisposable
     {
         while (_isRunning)
         {
-            try
+            /*try
             {
                 await UpdateSights();
             }
             catch (Exception e)
             {
                 Debug.LogError("UpdateSights FAILED: " + e.Message);
-            }
-
+            }*/
+            
+            await UpdateSights();
             await Task.Delay((int)(_interval * 1000));
         }
     }
@@ -182,6 +183,7 @@ public class SightsUpdater : IInitializable, IDisposable
     private void PushToSpawnOnMap(SightShortInfo[] shortInfos)
     {
         List<string> coords = new List<string>();
+        List<int> pageIds = new List<int>();
         foreach (var sightInfo in shortInfos)
         {
             // Формируем базовую строку
@@ -193,13 +195,15 @@ public class SightsUpdater : IInitializable, IDisposable
             lon = lon.Replace(',', '.');
         
             string coordString = $"{lat},{lon}";
-        
+            pageIds.Add(sightInfo.PageId);
             coords.Add(coordString);
-            Debug.Log(coordString);
+//            Debug.Log(coordString);
         }
     
         string[] finalCoords = coords.ToArray();
+        int[] finalPageIds = pageIds.ToArray();
         _spawnOnMap._locationStrings = finalCoords;
+        _spawnOnMap.pageIds = finalPageIds;
         _spawnOnMap.SpawnObjects();
     }
 

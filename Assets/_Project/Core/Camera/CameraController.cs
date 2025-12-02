@@ -14,14 +14,18 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
     [SerializeField] private float horizontalThreshold = 30f;
     [SerializeField] private float verticalThreshold = 120f;
 
+    [SerializeField] private Transform _menu;
+
     private CharacterService _characterService;
+    private SightsUpdater _sightsUpdater;
     private Transform _target;
     private float _currentAngle;
 
     [Inject]
-    public void Construct(CharacterService characterService)
+    public void Construct(CharacterService characterService, SightsUpdater sightsUpdater)
     {
         _characterService = characterService;
+        _sightsUpdater = sightsUpdater;
     }
 
     public void Initialize()
@@ -55,51 +59,46 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
 
     private void HandleMouseInput()
     {
-        if (Input.GetMouseButton(0))
+        if (_menu.gameObject.activeSelf)
         {
-            float deltaX = Input.GetAxis("Mouse X");
-            float deltaY = Input.GetAxis("Mouse Y");
-            
-            if (Mathf.Abs(deltaX) > Mathf.Abs(deltaY))
+            if (Input.GetMouseButton(0))
             {
-                if (Mathf.Abs(deltaX) < horizontalThreshold * 0.01f) return;
-                _currentAngle += deltaX * rotationSpeed * Time.deltaTime;
-            }
-            else
-            {
-                if (Mathf.Abs(deltaY) < verticalThreshold * 0.01f) return;
-                distance -= deltaY * zoomSpeed * 50f;
-                distance = Mathf.Clamp(distance, minDistance, maxDistance);
-            }
-        }
-    }
-
-    private void HandleTouchInput()
-    {
-        if (Input.touchCount == 1)
-        {
-            Touch touch = Input.GetTouch(0);
-
-            if (touch.phase == TouchPhase.Moved)
-            {
-                Vector2 delta = touch.deltaPosition;
+                /*Ray ray = cameraTransform.GetComponent<Camera>().ScreenPointToRay(Input.mousePosition);
+                CheckHit(ray);*/
                 
-                if (Mathf.Abs(delta.x) > Mathf.Abs(delta.y))
-                {
-                    if (Mathf.Abs(delta.x) < horizontalThreshold) return;
+                
+                float deltaX = Input.GetAxis("Mouse X");
+                float deltaY = Input.GetAxis("Mouse Y");
 
-                    float deltaX = delta.x * rotationSpeed * Time.deltaTime * 0.1f;
-                    _currentAngle += deltaX;
+                if (Mathf.Abs(deltaX) > Mathf.Abs(deltaY))
+                {
+                    if (Mathf.Abs(deltaX) < horizontalThreshold * 0.01f) return;
+                    _currentAngle += deltaX * rotationSpeed * Time.deltaTime;
                 }
                 else
                 {
-                    if (Mathf.Abs(delta.y) < verticalThreshold) return;
-
-                    float deltaY = delta.y * zoomSpeed;
-                    distance -= deltaY;
+                    if (Mathf.Abs(deltaY) < verticalThreshold * 0.01f) return;
+                    distance -= deltaY * zoomSpeed * 50f;
                     distance = Mathf.Clamp(distance, minDistance, maxDistance);
                 }
             }
+        }
+    }
+    
+    private void CheckHit(Ray ray)
+    {
+        if (Physics.Raycast(ray, out var hit))
+        {
+            GameObject clickedObject = hit.collider.gameObject;
+            OnObjectClicked(clickedObject);
+        }
+    }
+    
+    private void OnObjectClicked(GameObject obj)
+    {
+        if (obj.TryGetComponent(out SightObject sightObject))
+        {   
+            _sightsUpdater.CreateSightDetailsPopup(sightObject.GetSightInfo());
         }
     }
 }

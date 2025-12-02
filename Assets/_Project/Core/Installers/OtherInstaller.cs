@@ -12,6 +12,7 @@ public class OtherInstaller : MonoInstaller
     [SerializeField] private SightItemView SightItemPrefab;
     [SerializeField] private AbstractMap _map;
     [SerializeField] private SpawnOnMap _spawnOnMap;
+    [SerializeField] private Camera _mainCamera;
     public override void InstallBindings()
     {
         Container.BindInterfacesAndSelfTo<GPSLocationProvider>().AsSingle();
@@ -57,5 +58,11 @@ public class OtherInstaller : MonoInstaller
         Container.BindInterfacesAndSelfTo<AbstractMap>().FromComponentInHierarchy(_map).AsSingle();
 
         Container.BindInterfacesAndSelfTo<SpawnOnMap>().FromComponentInHierarchy(_spawnOnMap).AsSingle();
+        
+        Container.Bind<Camera>().FromComponentInHierarchy(_mainCamera).AsSingle();
+        
+        Container.BindInterfacesAndSelfTo<PlayerInputService>().AsSingle().NonLazy();
+        
+        
     }
 }

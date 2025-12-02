@@ -15,6 +15,8 @@
 		[SerializeField]
 		[Geocode]
 		public string[] _locationStrings;
+
+		public int[] pageIds;
 		Vector2d[] _locations;
 
 		[SerializeField]
@@ -42,6 +44,20 @@
 
 		public void SpawnObjects()
 		{
+			if (_spawnedObjects != null)
+			{
+				for (int i = _spawnedObjects.Count - 1; i >= 0; i--)
+				{
+					var obj = _spawnedObjects[i];
+					if (obj != null)
+					{
+						Destroy(obj);
+					}
+					_spawnedObjects.RemoveAt(i);
+				}
+			}
+
+			_spawnedObjects = new List<GameObject>();
 			_locations = new Vector2d[_locationStrings.Length];
 			for (int i = 0; i < _locationStrings.Length; i++)
 			{
@@ -50,7 +66,9 @@
 				var instance = Instantiate(_markerPrefab);
 				instance.transform.localPosition = _map.GeoToWorldPosition(_locations[i], true);
 				instance.transform.localScale = new Vector3(_spawnScale, _spawnScale, _spawnScale);
-				//_spawnedObjects.Add(instance);
+				_spawnedObjects.Add(instance);
+				SightObject so=instance.AddComponent<SightObject>();
+				so.SetPageID(pageIds[i]);
 			}
 		}
 

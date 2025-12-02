@@ -1663,6 +1663,7 @@ MonoBehaviour:
   height: 2
   horizontalThreshold: 60
   verticalThreshold: 200
+  _menu: {fileID: 1069679588}
 --- !u!1 &371892856
 GameObject:
   m_ObjectHideFlags: 0
@@ -1891,6 +1892,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Mapbox.Examples.SpawnOnMap
   _map: {fileID: 1613871291}
   _locationStrings: []
+  pageIds: 
   _spawnScale: 5
   _markerPrefab: {fileID: 8174337391774317492, guid: 61fbef72c607b61499004ae099c7b88b, type: 3}
 --- !u!1 &410087039
@@ -8047,7 +8049,8 @@ MonoBehaviour:
   _coroutineRunner: {fileID: 709771330}
   SightItemPrefab: {fileID: 7144805704780561212, guid: a782d89aa3c6e204a84156b11d175b6f, type: 3}
   _map: {fileID: 1613871291}
-  _spawnOnMap: {fileID: 0}
+  _spawnOnMap: {fileID: 402055880}
+  _mainCamera: {fileID: 330585545}
 --- !u!1 &1836121242
 GameObject:
   m_ObjectHideFlags: 0
