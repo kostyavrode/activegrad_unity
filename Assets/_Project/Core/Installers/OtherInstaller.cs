@@ -1,3 +1,6 @@
+using Mapbox.Examples;
+using Mapbox.Unity.Map;
+using Mapbox.Unity.Map.Interfaces;
 using UnityEngine;
 using Zenject;
 
@@ -7,6 +10,8 @@ public class OtherInstaller : MonoInstaller
     [SerializeField] private Transform _questListParent;
     [SerializeField] private CoroutineRunner _coroutineRunner;
     [SerializeField] private SightItemView SightItemPrefab;
+    [SerializeField] private AbstractMap _map;
+    [SerializeField] private SpawnOnMap _spawnOnMap;
     public override void InstallBindings()
     {
         Container.BindInterfacesAndSelfTo<GPSLocationProvider>().AsSingle();
@@ -49,8 +54,8 @@ public class OtherInstaller : MonoInstaller
             .To<ImageLoadService>()
             .AsSingle();
 
+        Container.BindInterfacesAndSelfTo<AbstractMap>().FromComponentInHierarchy(_map).AsSingle();
 
-
-
+        Container.BindInterfacesAndSelfTo<SpawnOnMap>().FromComponentInHierarchy(_spawnOnMap).AsSingle();
     }
 }

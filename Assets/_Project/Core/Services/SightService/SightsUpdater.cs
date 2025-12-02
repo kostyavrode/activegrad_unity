@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Mapbox.Examples;
 using UnityEngine;
 using UnityEngine.Networking;
 using Zenject;
@@ -19,16 +20,18 @@ public class SightsUpdater : IInitializable, IDisposable
     private readonly LocationService _locationService;
     private readonly SightDetailsView.Factory _sightDetailsViewFactory;
     private readonly IPopupService _popupService;
+    private readonly SpawnOnMap _spawnOnMap;
 
     private bool _isRunning;
     private readonly float _interval = 5f;
 
-    public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory, IPopupService popupService)
+    public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory, IPopupService popupService, SpawnOnMap spawnOnMap)
     {
         _sightService = sightService;
         _locationService = locationService;
         _sightDetailsViewFactory = sightDetailsViewFactory;
         _popupService = popupService;
+        _spawnOnMap = spawnOnMap;
     }
 
     public void Initialize()
@@ -109,6 +112,11 @@ public class SightsUpdater : IInitializable, IDisposable
         // Загружаем список ближайших достопримечательностей
         var nearestList = await _sightService.LoadNearestSightsAsync(coords, 5000);
 
+        var spawnData = nearestList.ToArray();
+        //_spawnOnMap._locationStrings = nearestList.ToArray();
+        
+         PushToSpawnOnMap(spawnData);
+
         // Конвертируем в словарь: ключ = PageId
         CachedNearestSights = nearestList
             .Where(s => s != null)
@@ -125,6 +133,8 @@ public class SightsUpdater : IInitializable, IDisposable
         CachedSights = results
             .Where(r => r != null)
             .ToDictionary(r => r.PageId, r => r);
+        
+        
 
         await LoadAllImages();
     }
@@ -167,6 +177,30 @@ public class SightsUpdater : IInitializable, IDisposable
             url = "https:" + url;
 
         return url.Replace(" ", "%20");
+    }
+
+    private void PushToSpawnOnMap(SightShortInfo[] shortInfos)
+    {
+        List<string> coords = new List<string>();
+        foreach (var sightInfo in shortInfos)
+        {
+            // Формируем базовую строку
+            string lat = sightInfo.Latitude.ToString();
+            string lon = sightInfo.Longitude.ToString();
+        
+            // Заменяем запятые на точки в каждом числе
+            lat = lat.Replace(',', '.');
+            lon = lon.Replace(',', '.');
+        
+            string coordString = $"{lat},{lon}";
+        
+            coords.Add(coordString);
+            Debug.Log(coordString);
+        }
+    
+        string[] finalCoords = coords.ToArray();
+        _spawnOnMap._locationStrings = finalCoords;
+        _spawnOnMap.SpawnObjects();
     }
 
     private async Task<Sprite> LoadSpriteAsync(string url)

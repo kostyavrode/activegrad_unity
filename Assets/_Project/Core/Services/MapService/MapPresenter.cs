@@ -9,7 +9,7 @@ public class MapPresenter : MonoBehaviour
     private LocationService _locationService;
 
     private Vector2 _lastCoords;
-    private bool _mapLoading;
+    public bool _mapLoading;
 
     [Inject]
     public void Construct(MapService mapService, LocationService locationService)
