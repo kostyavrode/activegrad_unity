@@ -21,17 +21,19 @@ public class SightsUpdater : IInitializable, IDisposable
     private readonly SightDetailsView.Factory _sightDetailsViewFactory;
     private readonly IPopupService _popupService;
     private readonly SpawnOnMap _spawnOnMap;
+    private readonly APIService _apiService;
 
     private bool _isRunning;
     private readonly float _interval = 5f;
 
-    public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory, IPopupService popupService, SpawnOnMap spawnOnMap)
+    public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory, IPopupService popupService, SpawnOnMap spawnOnMap, APIService apiService)
     {
         _sightService = sightService;
         _locationService = locationService;
         _sightDetailsViewFactory = sightDetailsViewFactory;
         _popupService = popupService;
         _spawnOnMap = spawnOnMap;
+        _apiService = apiService;
     }
 
     public void Initialize()
@@ -61,12 +63,16 @@ public class SightsUpdater : IInitializable, IDisposable
             sprite = Resources.Load<Sprite>("no_image");
         }
 
+        //TEST
+        //_apiService.SetSightMarked(pageID);
+        
         popup.Init(sprite, CachedSights[pageID].Title, CachedSights[pageID].Description,
             CachedSights[pageID].PageId);
 
-        if (CachedNearestSights[pageID].Distance <= 300)
+        if (CachedNearestSights[pageID].Distance <= 600)
         {
             popup.SetCheckInButtonInteractable();
+            popup.OnCheckInClicked += HandleCheckInButtonClicked;
         }
     }
 
@@ -107,30 +113,23 @@ public class SightsUpdater : IInitializable, IDisposable
     private async Task UpdateSights()
     {
         Vector2 coords = await WaitForValidCoordinates();
-
-        Debug.Log($"Coords ready: {coords}");
-    
-        // Загружаем список ближайших достопримечательностей
+        
         var nearestList = await _sightService.LoadNearestSightsAsync(coords, 5000);
 
         var spawnData = nearestList.ToArray();
-        //_spawnOnMap._locationStrings = nearestList.ToArray();
         
          PushToSpawnOnMap(spawnData);
-
-        // Конвертируем в словарь: ключ = PageId
+         
         CachedNearestSights = nearestList
             .Where(s => s != null)
             .ToDictionary(s => s.PageId, s => s);
-
-        // Готовим задачи на загрузку полных данных
+        
         var tasks = CachedNearestSights.Keys
             .Select(pageId => LoadSafeSight(pageId))
             .ToList();
 
         var results = await Task.WhenAll(tasks);
-
-        // Создаём словарь для полных данных
+        
         CachedSights = results
             .Where(r => r != null)
             .ToDictionary(r => r.PageId, r => r);
@@ -138,6 +137,7 @@ public class SightsUpdater : IInitializable, IDisposable
         
 
         await LoadAllImages();
+        await _apiService.GetSightsList(1);
     }
 
 
@@ -236,6 +236,11 @@ public class SightsUpdater : IInitializable, IDisposable
         }
 
         return coords;
+    }
+
+    private void HandleCheckInButtonClicked(int pageId)
+    {
+        _apiService.SetSightMarked(pageId);
     }
 
     public bool TryGetImage(int pageId, out Sprite sprite)

@@ -9,6 +9,7 @@ public class UserData
     public string firstName;
     public string lastName;
     public string dateOfStart;
+    public int id;
 
     public string accessToken;
     public string refreshToken;
@@ -26,6 +27,7 @@ public class UserData
     public int coins;
 
     public string lastStepsDate;
+    public int[] sights;
 }
 
 public class UserDataService
@@ -42,6 +44,8 @@ public class UserDataService
     public string FirstName => _data.firstName;
     public string LastName => _data.lastName;
     
+    public int ID => _data.id;
+    
     
     public string AccessToken => _data.accessToken;
     public string RefreshToken => _data.refreshToken;
@@ -49,6 +53,8 @@ public class UserDataService
     public int Level => _data.level;
     public int Experience => _data.experience;
     public int Steps => _data.dailySteps;
+    
+    public int[] Sights => _data.sights;
     
     public string DateOfStart => _data.dateOfStart;
 
@@ -94,7 +100,7 @@ public class UserDataService
         Save();
     }
 
-    public void SetProfile(string gender, int boots, int pants, int tshirt, int cap, int coins, int level, int exp, int steps, string firstName, string lastName, string dateOfStart)
+    public void SetProfile(string gender, int boots, int pants, int tshirt, int cap, int coins, int level, int exp, int steps, string firstName, string lastName, string dateOfStart, int id)
     {
         _data.gender = gender;
         _data.boots = boots;
@@ -108,6 +114,7 @@ public class UserDataService
         _data.lastName = lastName;
         _data.firstName = firstName;
         _data.dateOfStart = dateOfStart;
+        _data.id = id;
         Save();
     }
 
@@ -126,6 +133,12 @@ public class UserDataService
     {
         CheckDailyStepsReset();
         _data.dailySteps += amount;
+        Save();
+    }
+
+    public void SetSights(int[] sights)
+    {
+        _data.sights = sights;
         Save();
     }
 

@@ -19,9 +19,7 @@ public class SightService : ISightService
 
     public async Task<List<SightShortInfo>> LoadNearestSightsAsync(Vector2 coordinates, int radius = 5000)
     {
-        Debug.Log("LoadNearestSightsAsync");
         string url = _client.BuildGeoSearchUrl(coordinates, radius);
-        Debug.Log("url:"+url);
         string json = await _client.GetAsync(url);
         
         Debug.Log(json);

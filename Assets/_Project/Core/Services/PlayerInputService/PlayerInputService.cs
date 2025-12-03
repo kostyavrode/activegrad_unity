@@ -16,7 +16,6 @@ public class PlayerInputService : ITickable, IDisposable
         _mainCamera = mainCamera;
         _sightsUpdater = sightsUpdater;
         _uiManager = uiManager;
-        Debug.Log("PlayerInputService initialized");
     }
     
     public void Tick()

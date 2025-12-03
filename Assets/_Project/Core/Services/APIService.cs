@@ -60,7 +60,7 @@ public class APIService
                 _accessToken = loginResponse.access;
                 _refreshToken = loginResponse.refresh;
                 
-                Debug.Log("Login="+loginResponse.user.registration_date);
+                Debug.Log("Login="+loginResponse.user.id);
                 
                 _userData.SetAuthData(username, password, _accessToken, _refreshToken);
 
@@ -79,7 +79,8 @@ public class APIService
                         steps: loginResponse.user.steps,
                         firstName: loginResponse.user.first_name,
                         lastName: loginResponse.user.last_name,
-                        dateOfStart: loginResponse.user.registration_date
+                        dateOfStart: loginResponse.user.registration_date,
+                        id: loginResponse.user.id
                     );
                 }
 
@@ -87,7 +88,7 @@ public class APIService
             }
             catch (Exception e)
             {
-                _popupService.ShowError($"Ошибка регистрации: {e.Message}");
+                _popupService.ShowError($"Ошибка login: {e.Message}");
                 return false;
             }
         }
@@ -154,7 +155,7 @@ public class APIService
 
         if (result.success)
         {
-            _userData.SetProfile(gender, boots, pants, tshirt, cap, _userData.Coins, _userData.Level, _userData.Experience, _userData.Steps, _userData.FirstName, _userData.LastName, _userData.DateOfStart);
+            _userData.SetProfile(gender, boots, pants, tshirt, cap, _userData.Coins, _userData.Level, _userData.Experience, _userData.Steps, _userData.FirstName, _userData.LastName, _userData.DateOfStart, _userData.ID);
         }
 
         return result;
@@ -169,9 +170,41 @@ public class APIService
         
         var result = await SendRequest(url, "GET", null, requireAuth: true);
 
+        return result;
+    }
+
+    public async Task<(bool success, string message)> GetSightsList(int playerID)
+    {
+        if (!IsLoggedIn)
+            return (false, "Not logged in");
+        
+        var url = $"{BaseUrl}player/{playerID}/landmarks/";
+
+        var result = await SendRequest(url, "GET", null, requireAuth: true);
+            
+        Debug.Log(result.response);
+        
+        return result;
+    }
+
+    public async Task<(bool success, string message)> SetSightMarked(int sightID)
+    {
+        if (!IsLoggedIn)
+            return (false, "Not logged in");
+
+        var url = $"{BaseUrl}landmarks/save/";
+
+        var payload = new SaveSightRequest
+        {
+            player_id = _userData.ID,
+            external_ids = new[] { sightID.ToString() }
+        };
+
+        var result = await SendRequest(url, "POST", payload, requireAuth: true);
+
         if (result.success)
         {
-            Debug.Log("Daily Quests achieved succesfully");
+            Debug.Log("Set sight marked achieved successfully");
         }
 
         return result;
@@ -299,5 +332,12 @@ public class APIService
         public int level;
         public int exp;
         public int steps;
+    }
+    
+    [Serializable]
+    private class SaveSightRequest
+    {
+        public int player_id;
+        public string[] external_ids;
     }
 }

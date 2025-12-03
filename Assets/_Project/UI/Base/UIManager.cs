@@ -65,7 +65,7 @@ public class UIManager : IInitializable, IDisposable
             window.Show();
             _openWindows.Push(window);
 
-            Debug.Log($"Showing window {type.Name}");
+            //Debug.Log($"Showing window {type.Name}");
         }
         else
         {
