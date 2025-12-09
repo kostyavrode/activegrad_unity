@@ -2,6 +2,7 @@ using Mapbox.Examples;
 using Mapbox.Unity.Map;
 using Mapbox.Unity.Map.Interfaces;
 using UnityEngine;
+using UnityEngine.Rendering;
 using Zenject;
 
 public class OtherInstaller : MonoInstaller
@@ -10,12 +11,16 @@ public class OtherInstaller : MonoInstaller
     [SerializeField] private Transform _questListParent;
     [SerializeField] private CoroutineRunner _coroutineRunner;
     [SerializeField] private SightItemView SightItemPrefab;
+    [SerializeField] private OtherPlayerProfileView _otherPlayerProfilePrefab;
+    [SerializeField] private OtherPlayerSightsDetailsView _otherPlayerSightsDetailsViewPrefab;
     [SerializeField] private AbstractMap _map;
     [SerializeField] private SpawnOnMap _spawnOnMap;
     [SerializeField] private Camera _mainCamera;
     public override void InstallBindings()
     {
         Container.BindInterfacesAndSelfTo<GPSLocationProvider>().AsSingle();
+        
+        Container.BindInterfacesAndSelfTo<GamePopupService>().AsSingle().NonLazy();
         
         Container.BindInterfacesAndSelfTo<LocationService>().AsSingle();
         
@@ -32,6 +37,8 @@ public class OtherInstaller : MonoInstaller
         Container.BindInterfacesTo<SettingsMediator>().AsSingle();
         
         Container.BindInterfacesTo<SightsMediator>().AsSingle();
+
+        Container.BindInterfacesTo<PlayerSearchMediator>().AsSingle();
 
         Container.BindFactory<QuestItemView, QuestItemView.Factory>()
             .FromComponentInNewPrefab(_questItemPrefab)
@@ -54,7 +61,11 @@ public class OtherInstaller : MonoInstaller
         Container.Bind<IImageLoadService>()
             .To<ImageLoadService>()
             .AsSingle();
-
+        
+        Container.BindFactory<OtherPlayerProfileView, OtherPlayerProfileView.Factory>()
+            .FromComponentInNewPrefab(_otherPlayerProfilePrefab)
+            .AsTransient();
+        
         Container.BindInterfacesAndSelfTo<AbstractMap>().FromComponentInHierarchy(_map).AsSingle();
 
         Container.BindInterfacesAndSelfTo<SpawnOnMap>().FromComponentInHierarchy(_spawnOnMap).AsSingle();
@@ -63,6 +74,8 @@ public class OtherInstaller : MonoInstaller
         
         Container.BindInterfacesAndSelfTo<PlayerInputService>().AsSingle().NonLazy();
         
-        
+        Container.BindFactory<OtherPlayerSightsDetailsView, OtherPlayerSightsDetailsView.Factory>()
+            .FromComponentInNewPrefab(_otherPlayerSightsDetailsViewPrefab)
+            .AsTransient();
     }
 }

@@ -22,11 +22,13 @@ public class SightsUpdater : IInitializable, IDisposable
     private readonly IPopupService _popupService;
     private readonly SpawnOnMap _spawnOnMap;
     private readonly APIService _apiService;
+    private readonly UserDataService _userData;
 
     private bool _isRunning;
     private readonly float _interval = 5f;
 
-    public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory, IPopupService popupService, SpawnOnMap spawnOnMap, APIService apiService)
+    public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory, IPopupService popupService, SpawnOnMap spawnOnMap, 
+        APIService apiService, UserDataService userDataService)
     {
         _sightService = sightService;
         _locationService = locationService;
@@ -34,6 +36,7 @@ public class SightsUpdater : IInitializable, IDisposable
         _popupService = popupService;
         _spawnOnMap = spawnOnMap;
         _apiService = apiService;
+        _userData = userDataService;
     }
 
     public void Initialize()
@@ -47,7 +50,7 @@ public class SightsUpdater : IInitializable, IDisposable
         _isRunning = false;
     }
 
-    public void CreateSightDetailsPopup(int pageID)
+    public void CreateSightDetailsPopup(int pageID, bool isOtherSights=false)
     {
         Debug.Log(CachedSights[pageID].Title + CachedSights[pageID].Description);
         var popup = _sightDetailsViewFactory.Create();
@@ -69,7 +72,7 @@ public class SightsUpdater : IInitializable, IDisposable
         popup.Init(sprite, CachedSights[pageID].Title, CachedSights[pageID].Description,
             CachedSights[pageID].PageId);
 
-        if (CachedNearestSights[pageID].Distance <= 600)
+        if (CachedNearestSights[pageID].Distance <= 600 && _userData.CheckSight(pageID))
         {
             popup.SetCheckInButtonInteractable();
             popup.OnCheckInClicked += HandleCheckInButtonClicked;
@@ -137,7 +140,10 @@ public class SightsUpdater : IInitializable, IDisposable
         
 
         await LoadAllImages();
-        await _apiService.GetSightsList(1);
+        //await _apiService.GetSightsList(1);
+        var (s, message) = await _apiService.GetSightsList(_userData.ID);
+        _userData.SetSights(_apiService.ParseExternalIds(message));
+        //_userData.SetSights(message.ToArray());
     }
 
 
@@ -242,6 +248,7 @@ public class SightsUpdater : IInitializable, IDisposable
     {
         _apiService.SetSightMarked(pageId);
     }
+    
 
     public bool TryGetImage(int pageId, out Sprite sprite)
         => ImageCache.TryGetValue(pageId, out sprite);

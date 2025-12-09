@@ -1,4 +1,5 @@
 using System;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using Zenject;
 
@@ -19,6 +20,7 @@ public class MenuMediator : IInitializable, IDisposable
         _menuWindow.OnProfileClicked += HandleProfileClicked;
         _menuWindow.OnSettingsClicked += HandleSettingsClicked;
         _menuWindow.OnSightClicked += HandleSightsClicked;
+        _menuWindow.OnSearchPlayerClicked += HandleSearchPlayerClicked;
     }
 
     public void Dispose()
@@ -27,7 +29,7 @@ public class MenuMediator : IInitializable, IDisposable
         _menuWindow.OnProfileClicked -= HandleProfileClicked;
         _menuWindow.OnSettingsClicked -= HandleSettingsClicked;
         _menuWindow.OnSightClicked -= HandleSightsClicked;
-
+        _menuWindow.OnSearchPlayerClicked -= HandleSearchPlayerClicked;
     }
 
     private void HandleSettingsClicked()
@@ -48,5 +50,10 @@ public class MenuMediator : IInitializable, IDisposable
     private void HandleSightsClicked()
     {
         _uiManager.Show<SightsWindow>();
+    }
+
+    private void HandleSearchPlayerClicked()
+    {
+        _uiManager.Show<PlayerSearchWindow>();
     }
 }

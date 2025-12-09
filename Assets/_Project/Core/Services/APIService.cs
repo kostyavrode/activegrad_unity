@@ -1,7 +1,10 @@
 using System;
 using System.Collections;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Mapbox.Json;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.Serialization;
@@ -173,6 +176,18 @@ public class APIService
         return result;
     }
 
+    public async Task<(bool success, string message)> SearchPlayer(int playerID)
+    {
+        if (!IsLoggedIn)
+            return (false, "Not logged in");
+        
+        var url = $"{BaseUrl}player/{playerID}";
+        
+        var result = await SendRequest(url, "GET", null, requireAuth: true);
+        
+        return result;
+    }
+
     public async Task<(bool success, string message)> GetSightsList(int playerID)
     {
         if (!IsLoggedIn)
@@ -181,10 +196,21 @@ public class APIService
         var url = $"{BaseUrl}player/{playerID}/landmarks/";
 
         var result = await SendRequest(url, "GET", null, requireAuth: true);
-            
-        Debug.Log(result.response);
         
         return result;
+    }
+    
+    public int[] ParseExternalIds(string json)
+    {
+        var data = JsonConvert.DeserializeObject<ResponseData>(json);
+
+        if (data.external_ids == null)
+            return new int[0];
+
+        return data.external_ids
+            .Where(x => !string.IsNullOrEmpty(x))
+            .Select(int.Parse)
+            .ToArray();
     }
 
     public async Task<(bool success, string message)> SetSightMarked(int sightID)
@@ -339,5 +365,15 @@ public class APIService
     {
         public int player_id;
         public string[] external_ids;
+    }
+    
+    [Serializable]
+    public class ResponseData
+    {
+        public bool success { get; set; }
+        public int player_id { get; set; }
+        public string player_username { get; set; }
+        public string[] external_ids { get; set; }
+        public int total_count { get; set; }
     }
 }
