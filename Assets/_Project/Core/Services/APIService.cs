@@ -200,6 +200,18 @@ public class APIService
         return result;
     }
     
+    public async Task<(bool success, string message)> GetShopitemsList()
+    {
+        if (!IsLoggedIn)
+            return (false, "Not logged in");
+        
+        var url = $"{BaseUrl}shop/items/";
+
+        var result = await SendRequest(url, "GET", null, requireAuth: true);
+        
+        return result;
+    }
+    
     public int[] ParseExternalIds(string json)
     {
         var data = JsonConvert.DeserializeObject<ResponseData>(json);
@@ -375,5 +387,16 @@ public class APIService
         public string player_username { get; set; }
         public string[] external_ids { get; set; }
         public int total_count { get; set; }
+    }
+    
+    [System.Serializable]
+    public class PurchaseResult
+    {
+        public bool success;
+        public string message;
+        public string item_name;
+        public int price_paid;
+        public int remaining_coins;
+        public string promo_code;
     }
 }
