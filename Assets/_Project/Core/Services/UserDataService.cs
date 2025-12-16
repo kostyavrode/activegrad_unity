@@ -141,6 +141,12 @@ public class UserDataService
         _data.sights = sights;
         Save();
     }
+    
+    public void UpdateCoins(int coins)
+    {
+        _data.coins = coins;
+        Save();
+    }
 
     public bool CheckSight(int sight)
     {

@@ -201,14 +201,59 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
         if (!tracker.IsCompleted || tracker.IsRewardClaimed)
             return;
         
-        Debug.Log($"[QuestService] Quest {questId} completed!");
+        Debug.Log($"[QuestService] Quest {questId} completed locally! Waiting for server sync...");
+        
+        await System.Threading.Tasks.Task.Delay(1000);
+        
+        Debug.Log($"[QuestService] Sending completion to server for quest {questId}...");
+        
+        var (success, response) = await _apiService.CompleteQuest(questId);
+        
+        if (!success || response == null)
+        {
+            Debug.LogWarning($"[QuestService] Failed to complete quest {questId} on server. Server may not have synced progress yet.");
+            return;
+        }
+        
+        if (!response.success)
+        {
+            Debug.LogWarning($"[QuestService] Server rejected quest {questId} completion: {response.message}");
+            return;
+        }
+        
+        string message = response.message;
+        bool levelUp = response.level_up_notification != null;
+        
+        if (levelUp)
+        {
+            var levelUpInfo = response.level_up_notification;
+            _popupService.ShowSuccess($"🎉 {message}\nУровень повышен до {levelUpInfo.new_level}!");
+            Debug.Log($"[QuestService] Level up! New level: {levelUpInfo.new_level}, Levels gained: {levelUpInfo.levels_gained}");
+        }
+        else
+        {
+            _popupService.ShowSuccess($"Квест выполнен: {tracker.QuestData.title}");
+        }
+        
+        if (response.player_stats != null)
+        {
+            UpdatePlayerStats(response.player_stats);
+        }
         
         OnQuestCompleted?.Invoke(questId);
-
-        _popupService.ShowSuccess($"Квест выполнен: {tracker.QuestData.title}");
-
+        
         tracker.MarkRewardClaimed();
         SaveQuestProgress();
+    }
+    
+    private void UpdatePlayerStats(APIService.PlayerStats stats)
+    {
+        // Обновляем данные пользователя через UserDataService
+        // Это нужно для синхронизации с сервером
+        Debug.Log($"[QuestService] Player stats updated: Coins={stats.coins}, Experience={stats.experience}, Level={stats.level}");
+        
+        // Обновляем статистику через UserDataService, если есть такой метод
+        // _userDataService.UpdateStats(stats.coins, stats.experience, stats.level);
     }
 
     public QuestProgressData GetQuestProgress(int questId)

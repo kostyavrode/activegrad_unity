@@ -12,16 +12,18 @@ public class ShopMediator : IInitializable, IDisposable
     private readonly APIService _apiService;
     private readonly ShopItemView.Factory _shopItemViewFactory;
     private readonly IImageLoadService _imageLoadService;
+    private readonly UserDataService _userDataService;
     
     private List<ShopItemView> _shopItemViews = new List<ShopItemView>();
 
-    public ShopMediator(ShopWindow shopWindow, UIManager uiManager, APIService apiService, ShopItemView.Factory shopItemViewFactory, IImageLoadService imageLoadService)
+    public ShopMediator(ShopWindow shopWindow, UIManager uiManager, APIService apiService, ShopItemView.Factory shopItemViewFactory, IImageLoadService imageLoadService, UserDataService userDataService)
     {
         _shopWindow = shopWindow;
         _uiManager = uiManager;
         _apiService = apiService;
         _shopItemViewFactory = shopItemViewFactory;
         _imageLoadService = imageLoadService;
+        _userDataService = userDataService;
     }
     
     public void Initialize()
@@ -45,6 +47,10 @@ public class ShopMediator : IInitializable, IDisposable
 
     private async void CreateShopItems()
     {
+        _shopWindow.UpdateCoinsDisplay(_userDataService.Coins);
+        
+        await LoadPlayerStats();
+        
         DestroyShopItems();
         var (success, message) = await _apiService.GetShopitemsList();
         ShopApiResponse response = JsonConvert.DeserializeObject<ShopApiResponse>(message);
@@ -63,6 +69,22 @@ public class ShopMediator : IInitializable, IDisposable
             _shopItemViews[i].Init(response.Items[i].Name, response.Items[i].Description, response.Items[i].Price.ToString());
             
             _ = LoadAndApplyImageAsync(sItem, response.Items[i].ImageUrl);
+        }
+    }
+    
+    private async Task LoadPlayerStats()
+    {
+        var (success, response) = await _apiService.GetPlayerCoins();
+        
+        if (success && response != null)
+        {
+            _shopWindow.UpdateCoinsDisplay(response.coins);
+            _userDataService.UpdateCoins(response.coins);
+            Debug.Log($"[ShopMediator] Player coins updated: {response.coins}");
+        }
+        else
+        {
+            Debug.LogWarning("[ShopMediator] Failed to load coins from server, using local data");
         }
     }
     

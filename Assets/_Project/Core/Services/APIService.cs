@@ -260,11 +260,100 @@ public class APIService
         {
             Debug.Log("Set sight marked achieved successfully");
             
-            // Вызываем событие для системы квестов
             SightMarkedEvent.Invoke(sightID);
         }
 
         return result;
+    }
+    
+    public async Task<(bool success, QuestCompleteResponse response)> CompleteQuest(int questId)
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}quests/{questId}/complete/";
+        
+        var payload = new QuestCompleteRequest
+        {
+            player_id = _userData.ID
+        };
+        
+        var (success, message) = await SendRequest(url, "POST", payload, requireAuth: true);
+        
+        if (!success)
+        {
+            return (false, null);
+        }
+        
+        try
+        {
+            var response = JsonConvert.DeserializeObject<QuestCompleteResponse>(message);
+            
+            if (response != null && !response.success)
+            {
+                Debug.LogWarning($"[APIService] Server rejected quest completion: {response.message}");
+                return (false, response);
+            }
+            
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse quest complete response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+    
+    public async Task<(bool success, PlayerStatsResponse response)> GetPlayerStats()
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}me/stats/";
+        
+        var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
+        
+        if (!success)
+        {
+            return (false, null);
+        }
+        
+        try
+        {
+            var response = JsonConvert.DeserializeObject<PlayerStatsResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse player stats response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+    
+    public async Task<(bool success, CoinsResponse response)> GetPlayerCoins()
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}player/coins/";
+        
+        var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
+        
+        if (!success)
+        {
+            return (false, null);
+        }
+        
+        try
+        {
+            var response = JsonConvert.DeserializeObject<CoinsResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse coins response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
     }
 
     private async Task<(bool success, string response)> SendRequest(string url, string method, object payload, bool requireAuth)
@@ -320,8 +409,28 @@ public class APIService
 
         if (request.result is UnityWebRequest.Result.ConnectionError or UnityWebRequest.Result.ProtocolError)
         {
-            Debug.LogError($"[APIService] Error: {request.error + request.downloadHandler.text}");
-            _popupService.ShowError($"[APIService] Error: {request.error + request.downloadHandler.text}");
+            var errorText = request.downloadHandler.text;
+            
+            if (request.responseCode == 400 && !string.IsNullOrEmpty(errorText))
+            {
+                try
+                {
+                    var errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(errorText);
+                    if (errorResponse != null && !string.IsNullOrEmpty(errorResponse.message))
+                    {
+                        Debug.LogWarning($"[APIService] Server error (400): {errorResponse.message}");
+                        tcs.TrySetResult((false, errorResponse.message));
+                        yield break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[APIService] Failed to parse error response: {ex.Message}");
+                }
+            }
+            
+            Debug.LogError($"[APIService] Error: {request.error}\nResponse: {errorText}");
+            _popupService.ShowError($"[APIService] Error: {request.error}");
             tcs.TrySetResult((false, request.error));
         }
         else
@@ -423,5 +532,89 @@ public class APIService
         public int price_paid;
         public int remaining_coins;
         public string promo_code;
+    }
+    
+    [Serializable]
+    public class QuestCompleteRequest
+    {
+        public int player_id;
+    }
+    
+    [Serializable]
+    public class QuestCompleteResponse
+    {
+        public bool success;
+        public string message;
+        public RewardGiven reward_given;
+        public PlayerStats player_stats;
+        public LevelUpNotification level_up_notification;
+    }
+    
+    [Serializable]
+    public class RewardGiven
+    {
+        public string type;
+        public int amount;
+        public int new_experience;
+    }
+    
+    [Serializable]
+    public class PlayerStats
+    {
+        public int coins;
+        public int experience;
+        public int level;
+        public int experience_to_next_level;
+        public LevelUpInfo level_up;
+    }
+    
+    [Serializable]
+    public class LevelUpInfo
+    {
+        public int new_level;
+        public int levels_gained;
+    }
+    
+    [Serializable]
+    public class LevelUpNotification
+    {
+        public int new_level;
+        public int levels_gained;
+    }
+    
+    [Serializable]
+    public class PlayerStatsResponse
+    {
+        public bool success;
+        public PlayerStatsData player_stats;
+    }
+    
+    [Serializable]
+    public class PlayerStatsData
+    {
+        public int id;
+        public int player_id;
+        public string username;
+        public int coins;
+        public int experience;
+        public int level;
+        public int experience_to_next_level;
+        public int experience_per_level;
+        public float progress_to_next_level_percent;
+    }
+    
+    [Serializable]
+    public class CoinsResponse
+    {
+        public bool success;
+        public int coins;
+        public int player_id;
+    }
+    
+    [Serializable]
+    public class ErrorResponse
+    {
+        public bool success;
+        public string message;
     }
 }
