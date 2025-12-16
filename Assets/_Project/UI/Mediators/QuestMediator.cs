@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using Zenject;
@@ -48,12 +49,20 @@ public class QuestMediator : IInitializable, IDisposable
     {
         _questWindow.OnWindowOpened += LoadQuests;
         _questWindow.OnBackClicked += HandleBackClicked;
+        
+        // Подписываемся на события квестов
+        _questService.OnQuestProgressChanged += HandleQuestProgressChanged;
+        _questService.OnQuestCompleted += HandleQuestCompleted;
     }
 
     public void Dispose()
     {
         _questWindow.OnWindowOpened -= LoadQuests;
         _questWindow.OnBackClicked -= HandleBackClicked;
+        
+        // Отписываемся от событий
+        _questService.OnQuestProgressChanged -= HandleQuestProgressChanged;
+        _questService.OnQuestCompleted -= HandleQuestCompleted;
     }
 
     private async void LoadQuests()
@@ -72,7 +81,7 @@ public class QuestMediator : IInitializable, IDisposable
         foreach (var tracker in questTrackers)
         {
             var view = _questItemFactory.Create();
-            view.SetData(tracker.QuestData);
+            view.SetData(tracker.QuestData, tracker.ProgressData);
             _spawnedItems.Add(view);
         }
     }
@@ -94,5 +103,30 @@ public class QuestMediator : IInitializable, IDisposable
     {
         _uiManager.Back();
         ClearQuests();
+    }
+    
+    private void HandleQuestProgressChanged(int questId, int progress)
+    {
+        // Обновляем UI элемента квеста
+        var view = _spawnedItems.FirstOrDefault(v => v.QuestId == questId);
+        if (view != null)
+        {
+            var progressData = _questService.GetQuestProgress(questId);
+            if (progressData != null)
+            {
+                view.UpdateProgress(progressData);
+            }
+        }
+    }
+    
+    private void HandleQuestCompleted(int questId)
+    {
+        Debug.Log($"[QuestMediator] Quest {questId} completed!");
+        // Обновляем UI для завершенного квеста
+        var view = _spawnedItems.FirstOrDefault(v => v.QuestId == questId);
+        if (view != null)
+        {
+            view.MarkAsCompleted();
+        }
     }
 }

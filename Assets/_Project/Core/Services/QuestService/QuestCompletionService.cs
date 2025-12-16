@@ -143,6 +143,13 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
             _activeQuests[quest.id] = tracker;
             LoadQuestProgress(quest.id);
             
+            // Проверяем, не завершен ли квест уже при загрузке (если был сохранен прогресс)
+            if (tracker.IsCompleted && !tracker.IsRewardClaimed)
+            {
+                // Квест уже завершен, но награда не получена - вызываем проверку
+                CheckQuestCompletion(quest.id);
+            }
+            
             Debug.Log($"[QuestService] ✓ Quest {quest.id} ({quest.title}): {condition.ConditionType}, Progress: {tracker.ProgressData.currentProgress}/{tracker.ProgressData.requiredCount}");
             
             return true;
