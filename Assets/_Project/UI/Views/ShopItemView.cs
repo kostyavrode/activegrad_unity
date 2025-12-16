@@ -34,9 +34,9 @@ public class ShopItemView : MonoBehaviour
         }
     }
 
-    public void SetImage(Image image)
+    public void SetImage(Sprite image)
     {
-        Image.sprite = image.sprite;
+        Image.sprite = image;
     }
     
     public class Factory : Zenject.PlaceholderFactory<ShopItemView> { }

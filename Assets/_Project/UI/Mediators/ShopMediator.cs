@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using UnityEngine;
 using Zenject;
@@ -10,15 +11,17 @@ public class ShopMediator : IInitializable, IDisposable
     private readonly UIManager _uiManager;
     private readonly APIService _apiService;
     private readonly ShopItemView.Factory _shopItemViewFactory;
+    private readonly IImageLoadService _imageLoadService;
     
     private List<ShopItemView> _shopItemViews = new List<ShopItemView>();
 
-    public ShopMediator(ShopWindow shopWindow, UIManager uiManager, APIService apiService, ShopItemView.Factory shopItemViewFactory)
+    public ShopMediator(ShopWindow shopWindow, UIManager uiManager, APIService apiService, ShopItemView.Factory shopItemViewFactory, IImageLoadService imageLoadService)
     {
         _shopWindow = shopWindow;
         _uiManager = uiManager;
         _apiService = apiService;
         _shopItemViewFactory = shopItemViewFactory;
+        _imageLoadService = imageLoadService;
     }
     
     public void Initialize()
@@ -56,12 +59,23 @@ public class ShopMediator : IInitializable, IDisposable
             
             sItem.BuyButton.onClick.AddListener( () => _apiService.BuyShopItem(tempID) );
             
-            Debug.Log(tempID);
-            
             _shopItemViews.Add(sItem);
             _shopItemViews[i].Init(response.Items[i].Name, response.Items[i].Description, response.Items[i].Price.ToString());
+            
+            _ = LoadAndApplyImageAsync(sItem, response.Items[i].ImageUrl);
         }
     }
+    
+    private async Task LoadAndApplyImageAsync(ShopItemView view, string imageUrl)
+    {
+        Sprite sprite = await _imageLoadService.LoadSpriteAsync(imageUrl);
+        
+        if (sprite == null || view == null)
+            return;
+
+        view.SetImage(sprite);
+    }
+
 
     private void DestroyShopItems()
     {

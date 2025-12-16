@@ -81,6 +81,48 @@ public class OtherInstaller : MonoInstaller
         
         Container.BindFactory<ShopItemView, ShopItemView.Factory>().FromComponentInNewPrefab(_shopItemPrefab).AsTransient();
         
+        // Регистрируем систему квестов
+        BindQuests();
+    }
+
+    private void BindQuests()
+    {
+        // Регистрируем главный сервис отслеживания квестов
+        Container.BindInterfacesAndSelfTo<QuestCompletionService>().AsSingle().NonLazy();
         
+        // Регистрируем фабрики для условий квестов
+        // Каждая фабрика будет создавать условие через Zenject с автоматической инжекцией зависимостей
+        
+        // Фабрика для условия "отметка в местах"
+        Container.BindFactory<SightMarkQuestCondition, SightMarkQuestCondition.Factory>()
+            .AsTransient();
+        
+        // После создания всех биндингов, регистрируем фабрики в QuestCompletionService
+        // Используем Start() для этого, так как сервис должен быть уже создан
+    }
+    
+    // Вызывается после создания всех биндингов, но до Initialize()
+    public override void Start()
+    {
+        base.Start();
+        
+        Debug.Log("[OtherInstaller] Registering quest condition factories...");
+        
+        // Получаем созданный сервис
+        var questService = Container.Resolve<QuestCompletionService>();
+        
+        // Регистрируем фабрики условий в сервисе
+        // Тип условия должен совпадать с тем, что приходит с сервера в quest.type
+        
+        // Фабрика для "mark_sights" - отметка в достопримечательностях
+        questService.RegisterConditionFactory("mark_sights", () =>
+        {
+            // Zenject автоматически инжектит APIService в конструктор SightMarkQuestCondition
+            return Container.Instantiate<SightMarkQuestCondition>();
+        });
+        
+        // В будущем можно добавить другие типы условий:
+        // questService.RegisterConditionFactory("steps", () => Container.Instantiate<StepsCondition>());
+        // questService.RegisterConditionFactory("collect_coins", () => Container.Instantiate<CollectCoinsCondition>());
     }
 }

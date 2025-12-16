@@ -17,7 +17,10 @@ public class Quest
     public int id;
     public string title;
     public string description;
-    public int count;
+    public int count; // требуемое количество
+    public string type; // тип условия: "visit_sights", "steps", "collect_coins" и т.д.
+    public string reward_type; // тип награды: "coins", "experience", "item"
+    public int reward_amount; // количество награды
 }
 
 public class QuestMediator : IInitializable, IDisposable
@@ -26,17 +29,19 @@ public class QuestMediator : IInitializable, IDisposable
     private readonly UIManager _uiManager;
     private readonly APIService _apiService;
     private readonly QuestItemView.Factory _questItemFactory;
+    private readonly QuestCompletionService _questService;
     
     private Quest[] _quests;
     private readonly List<QuestItemView> _spawnedItems = new();
     
 
-    public QuestMediator(UIManager uiManager, APIService apiService, QuestWindow questWindow, QuestItemView.Factory questItemFactory)
+    public QuestMediator(UIManager uiManager, APIService apiService, QuestWindow questWindow, QuestItemView.Factory questItemFactory, QuestCompletionService questService)
     {
         _uiManager = uiManager;
         _apiService = apiService;
         _questWindow = questWindow;
         _questItemFactory = questItemFactory;
+        _questService = questService;
     }
     
     public void Initialize()
@@ -53,20 +58,21 @@ public class QuestMediator : IInitializable, IDisposable
 
     private async void LoadQuests()
     {
-        var (success, message) = await _apiService.GetDailyQuests();
-        if (!success)
-        {
-            Debug.LogWarning($"Failed to load quests: {message}");
-            return;
-        }
+        // Загружаем квесты через сервис (он сам вызовет API и создаст трекеры)
+        _questService.LoadQuests();
+        
+        // Ждем немного, чтобы сервис успел загрузить квесты
+        await System.Threading.Tasks.Task.Delay(500);
+        
+        // Получаем только те квесты, для которых созданы трекеры (т.е. есть фабрики)
+        var questTrackers = _questService.GetAllQuests();
+        
+        Debug.Log($"[QuestMediator] Displaying {questTrackers.Count} quests (only with registered factories)");
 
-        var quests = PostProcessQuests(message);
-        Debug.Log($"Quests loaded: {quests.Length}");
-
-        foreach (var quest in quests)
+        foreach (var tracker in questTrackers)
         {
             var view = _questItemFactory.Create();
-            view.SetData(quest);
+            view.SetData(tracker.QuestData);
             _spawnedItems.Add(view);
         }
     }

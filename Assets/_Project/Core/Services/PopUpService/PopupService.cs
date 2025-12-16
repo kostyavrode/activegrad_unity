@@ -29,6 +29,10 @@ public class PopupService : IPopupService
 
     private void CreatePopup(string message, Color color)
     {
+        if (_uiCanvas == null)
+        {
+            _uiCanvas = GameObject.FindObjectOfType<Canvas>();
+        }
         var popup = _popupFactory.Create();
         popup.transform.SetParent(_uiCanvas.transform, false);
         popup.Setup(message, color);

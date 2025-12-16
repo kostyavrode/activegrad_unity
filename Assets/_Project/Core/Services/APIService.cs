@@ -259,6 +259,9 @@ public class APIService
         if (result.success)
         {
             Debug.Log("Set sight marked achieved successfully");
+            
+            // Вызываем событие для системы квестов
+            SightMarkedEvent.Invoke(sightID);
         }
 
         return result;
