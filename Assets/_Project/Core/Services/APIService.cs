@@ -211,6 +211,22 @@ public class APIService
         
         return result;
     }
+
+    public async Task<(bool success, string message)> BuyShopItem(int shopItemID)
+    {
+        if (!IsLoggedIn)
+            return (false, "Not logged in");
+
+        var url = $"{BaseUrl}shop/purchase/";
+
+        var payload = new BuyShopItemRequest
+        {
+            item_id = shopItemID
+        };
+
+        return await SendRequest(url, "POST", payload, requireAuth: true);
+    }
+
     
     public int[] ParseExternalIds(string json)
     {
@@ -301,8 +317,8 @@ public class APIService
 
         if (request.result is UnityWebRequest.Result.ConnectionError or UnityWebRequest.Result.ProtocolError)
         {
-            Debug.LogError($"[APIService] Error: {request.error}");
-            _popupService.ShowError($"[APIService] Error: {request.error}");
+            Debug.LogError($"[APIService] Error: {request.error + request.downloadHandler.text}");
+            _popupService.ShowError($"[APIService] Error: {request.error + request.downloadHandler.text}");
             tcs.TrySetResult((false, request.error));
         }
         else
@@ -320,6 +336,12 @@ public class APIService
         public string first_name;
         public string last_name;
         public string password;
+    }
+    
+    [Serializable]
+    public class BuyShopItemRequest
+    {
+        public int item_id;
     }
 
     [Serializable]

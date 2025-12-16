@@ -2,6 +2,7 @@ using Mapbox.Platform.Cache;
 using Mapbox.Unity.Map.Interfaces;
 using Mapbox.Unity.Map.Strategies;
 using Mapbox.Unity.Map.TileProviders;
+using Zenject;
 
 namespace Mapbox.Unity.Map
 {
@@ -37,12 +38,16 @@ namespace Mapbox.Unity.Map
 		[SerializeField] protected EditorPreviewOptions _previewOptions = new EditorPreviewOptions();
 		private List<UnwrappedTileId> tilesToProcess;
 
+		
+		[Inject] public GPSLocationProvider _locationService;
+		
+		
 		protected AbstractMapVisualizer _mapVisualizer;
 		protected float _unityTileSize = 1;
 		protected bool _worldHeightFixed = false;
 		protected MapboxAccess _fileSource;
 		protected int _initialZoom;
-		protected Vector2d _centerLatitudeLongitude;
+		public Vector2d _centerLatitudeLongitude;
 		protected Vector2d _centerMercator;
 		protected float _worldRelativeScale;
 		protected Vector3 _mapScaleFactor;
@@ -323,7 +328,9 @@ namespace Mapbox.Unity.Map
 		}
 
 		protected virtual void Update()
-		{
+		{ 
+			//_options.locationOptions.latitudeLongitude = String.Format(CultureInfo.InvariantCulture, "{0},{1}", _locationService.GetCoordinates().x, _locationService.GetCoordinates().y);
+			
 			if (Application.isEditor && !Application.isPlaying && IsEditorPreviewEnabled == false)
 			{
 				return;

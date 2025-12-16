@@ -13,6 +13,7 @@ public class OtherInstaller : MonoInstaller
     [SerializeField] private SightItemView SightItemPrefab;
     [SerializeField] private OtherPlayerProfileView _otherPlayerProfilePrefab;
     [SerializeField] private OtherPlayerSightsDetailsView _otherPlayerSightsDetailsViewPrefab;
+    [SerializeField] private ShopItemView _shopItemPrefab;
     [SerializeField] private AbstractMap _map;
     [SerializeField] private SpawnOnMap _spawnOnMap;
     [SerializeField] private Camera _mainCamera;
@@ -39,6 +40,8 @@ public class OtherInstaller : MonoInstaller
         Container.BindInterfacesTo<SightsMediator>().AsSingle();
 
         Container.BindInterfacesTo<PlayerSearchMediator>().AsSingle();
+        
+        Container.BindInterfacesTo<ShopMediator>().AsSingle();
 
         Container.BindFactory<QuestItemView, QuestItemView.Factory>()
             .FromComponentInNewPrefab(_questItemPrefab)
@@ -74,8 +77,10 @@ public class OtherInstaller : MonoInstaller
         
         Container.BindInterfacesAndSelfTo<PlayerInputService>().AsSingle().NonLazy();
         
-        Container.BindFactory<OtherPlayerSightsDetailsView, OtherPlayerSightsDetailsView.Factory>()
-            .FromComponentInNewPrefab(_otherPlayerSightsDetailsViewPrefab)
-            .AsTransient();
+        Container.BindFactory<OtherPlayerSightsDetailsView, OtherPlayerSightsDetailsView.Factory>().FromComponentInNewPrefab(_otherPlayerSightsDetailsViewPrefab).AsTransient();
+        
+        Container.BindFactory<ShopItemView, ShopItemView.Factory>().FromComponentInNewPrefab(_shopItemPrefab).AsTransient();
+        
+        
     }
 }

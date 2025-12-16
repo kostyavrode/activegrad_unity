@@ -41,8 +41,8 @@ public class QuestMediator : IInitializable, IDisposable
     
     public void Initialize()
     {
-        _questWindow.OnWindowOpened += () => LoadQuests();
-        _questWindow.OnBackClicked += () => HandleBackClicked();
+        _questWindow.OnWindowOpened += LoadQuests;
+        _questWindow.OnBackClicked += HandleBackClicked;
     }
 
     public void Dispose()

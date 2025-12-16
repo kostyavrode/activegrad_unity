@@ -93,7 +93,7 @@
                 {
                     _lastCoordinates = new Vector2(data.longitude, data.latitude);
                 }
-//                Debug.LogWarning("[GPS] Работает:."+_lastCoordinates);
+                Debug.LogWarning("[GPS] Работает:."+_lastCoordinates);
             }
             else if (Input.location.status == LocationServiceStatus.Stopped)
             {

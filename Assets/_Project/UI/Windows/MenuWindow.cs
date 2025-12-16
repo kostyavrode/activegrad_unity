@@ -11,12 +11,14 @@ public class MenuWindow : BaseWindow
     [SerializeField] private Button _questButton;
     [SerializeField] private Button _sightButton;
     [SerializeField] private Button _searchPlayerButton;
+    [SerializeField] private Button _shopButton;
     
     public event Action OnProfileClicked;
     public event Action OnSettingsClicked;
     public event Action OnQuestsClicked;
     public event Action OnSightClicked;
     public event Action OnSearchPlayerClicked;
+    public event Action OnShopClicked;
 
     protected override void OnShow()
     {
@@ -25,6 +27,7 @@ public class MenuWindow : BaseWindow
         _questButton.onClick.AddListener(() => OnQuestsClicked?.Invoke());
         _sightButton.onClick.AddListener(() => OnSightClicked?.Invoke());
         _searchPlayerButton.onClick.AddListener(() => OnSearchPlayerClicked?.Invoke());
+        _shopButton.onClick.AddListener(() => OnShopClicked?.Invoke());
     }
 
     protected override void OnHide()
@@ -34,5 +37,7 @@ public class MenuWindow : BaseWindow
         _questButton.onClick.RemoveAllListeners();
         _sightButton.onClick.RemoveAllListeners();
         _searchPlayerButton.onClick.RemoveAllListeners();
+        _settingsButton.onClick.RemoveAllListeners();
+        _shopButton.onClick.RemoveAllListeners();
     }
 }

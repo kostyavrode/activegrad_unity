@@ -1,15 +1,22 @@
 using System.Collections;
 using System.Threading.Tasks;
+using Mapbox.Unity.Map;
+using Mapbox.Utils;
 using UnityEngine;
 using UnityEngine.Networking;
+using Zenject;
 
-public class MapService
+public class MapService : ITickable
 {
     private readonly string _apiKey;
-
-    public MapService(string apiKey)
+    private readonly AbstractMap _map;
+    private readonly LocationService _locationService;
+    
+    public MapService(string apiKey, AbstractMap map, LocationService locationService)
     {
         _apiKey = apiKey;
+        _map = map;
+        _locationService = locationService;
     }
 
     public async Task<Texture2D> LoadMap(string longitude, string latitude, int zoom = 18, int size = 450)
@@ -33,5 +40,12 @@ public class MapService
                 return DownloadHandlerTexture.GetContent(www);
             }
         }
+    }
+
+    public void Tick()
+    {
+        var c = _locationService.GetCoordinates(); 
+        _map.UpdateMap(new Vector2d((double)c.x, (double)c.y));
+        Debug.Log(c);
     }
 }

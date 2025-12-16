@@ -1,3 +1,5 @@
+using Mapbox.Unity.Map;
+using Mapbox.Utils;
 using UnityEngine;
 using Zenject;
 
@@ -7,19 +9,25 @@ public class MapPresenter : MonoBehaviour
 
     private MapService _mapService;
     private LocationService _locationService;
+    private AbstractMap _map;
 
     private Vector2 _lastCoords;
     public bool _mapLoading;
 
     [Inject]
-    public void Construct(MapService mapService, LocationService locationService)
+    public void Construct(MapService mapService, LocationService locationService, AbstractMap map)
     {
         _mapService = mapService;
         _locationService = locationService;
+        _map = map;
     }
 
-    private async void FixedUpdate()
+    private void FixedUpdate()
     {
+        var c = _locationService.GetCoordinates(); 
+        _map.UpdateMap(new Vector2d((double)c.y, (double)c.x));
+        Debug.Log(c);
+        /*
 //        Debug.Log(_mapLoading+ " | "+_locationService);
         if (_mapLoading) return;
         
@@ -41,6 +49,7 @@ public class MapPresenter : MonoBehaviour
             }
 
             _mapLoading = false;
-        }
+        }*/
+        
     }
 }
