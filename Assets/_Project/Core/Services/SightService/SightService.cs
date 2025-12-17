@@ -22,7 +22,7 @@ public class SightService : ISightService
         string url = _client.BuildGeoSearchUrl(coordinates, radius);
         string json = await _client.GetAsync(url);
         
-        Debug.Log(json);
+//        Debug.Log(json);
 
         var result = new List<SightShortInfo>();
         

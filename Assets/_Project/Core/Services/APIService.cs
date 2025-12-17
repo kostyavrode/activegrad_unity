@@ -282,6 +282,7 @@ public class APIService
         
         if (!success)
         {
+            Debug.LogError(message);
             return (false, null);
         }
         

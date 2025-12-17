@@ -32,16 +32,10 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
     
     public void Initialize()
     {
-        RegisterConditionFactories();
         LoadQuestProgress();
         CheckDailyReset();
     }
     
-    private void RegisterConditionFactories()
-    {
-        // Регистрируем фабрики для каждого типа условия
-        // В реальной реализации это будет через Zenject
-    }
 
     public void RegisterConditionFactory(string conditionType, Func<IQuestCondition> factory)
     {
@@ -96,7 +90,6 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
             Debug.Log($"[QuestService] Loaded {quests.Length} quests | Created: {successCount} | Failed: {failedCount}");
             Debug.Log($"[QuestService] Active quest trackers: {_activeQuests.Count}");
             
-            // Выводим информацию о созданных трекерах
             foreach (var kvp in _activeQuests)
             {
                 var tracker = kvp.Value;
@@ -116,7 +109,6 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
     {
         string conditionType = GetConditionType(quest);
         
-        // Если тип не указан - это ошибка данных, пропускаем квест
         if (string.IsNullOrEmpty(conditionType))
         {
             Debug.LogError($"[QuestService] ❌ Quest {quest.id} ({quest.title}): Missing quest type. Cannot initialize tracker.");
@@ -143,10 +135,8 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
             _activeQuests[quest.id] = tracker;
             LoadQuestProgress(quest.id);
             
-            // Проверяем, не завершен ли квест уже при загрузке (если был сохранен прогресс)
             if (tracker.IsCompleted && !tracker.IsRewardClaimed)
             {
-                // Квест уже завершен, но награда не получена - вызываем проверку
                 CheckQuestCompletion(quest.id);
             }
             
@@ -163,17 +153,13 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
     
     private string GetConditionType(Quest quest)
     {
-        // Получаем тип из квеста
         string questType = quest.type;
         
-        // Если тип пустой или null - это ошибка данных, возвращаем null
         if (string.IsNullOrEmpty(questType))
         {
             return null;
         }
         
-        // Маппинг типов с сервера на типы условий
-        // Это позволяет обрабатывать разные варианты названий одного и того же типа
         switch (questType.ToLower())
         {
             case "visit_sights":
@@ -208,6 +194,8 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
         Debug.Log($"[QuestService] Sending completion to server for quest {questId}...");
         
         var (success, response) = await _apiService.CompleteQuest(questId);
+        
+//        Debug.Log(response.message);
         
         if (!success || response == null)
         {
