@@ -199,6 +199,32 @@ public class APIService
         
         return result;
     }
+
+    public async Task<(bool success, PromoCodesResponse response)> GetPromoCodes()
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+        
+        var url = $"{BaseUrl}shop/promo-codes/";
+        
+        var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
+        
+        if (!success)
+        {
+            return (false, null);
+        }
+        
+        try
+        {
+            var response = JsonConvert.DeserializeObject<PromoCodesResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse promo codes response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
     
     public async Task<(bool success, string message)> GetShopitemsList()
     {
@@ -617,5 +643,27 @@ public class APIService
     {
         public bool success;
         public string message;
+    }
+    
+    [Serializable]
+    public class PromoCodesResponse
+    {
+        public bool success;
+        public int player_id;
+        public PromoCodeData[] promo_codes;
+        public int total_count;
+    }
+    
+    [Serializable]
+    public class PromoCodeData
+    {
+        public int id;
+        public int quest_id;
+        public string quest_title;
+        public string quest_description;
+        public string quest_image_url;
+        public string promo_code;
+        public string date;
+        public string obtained_at;
     }
 }

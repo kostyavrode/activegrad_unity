@@ -12,6 +12,7 @@ public class MenuWindow : BaseWindow
     [SerializeField] private Button _sightButton;
     [SerializeField] private Button _searchPlayerButton;
     [SerializeField] private Button _shopButton;
+    [SerializeField] private Button _promoCodesButton;
     
     public event Action OnProfileClicked;
     public event Action OnSettingsClicked;
@@ -19,6 +20,7 @@ public class MenuWindow : BaseWindow
     public event Action OnSightClicked;
     public event Action OnSearchPlayerClicked;
     public event Action OnShopClicked;
+    public event Action OnPromoCodesClicked;
 
     protected override void OnShow()
     {
@@ -28,6 +30,7 @@ public class MenuWindow : BaseWindow
         _sightButton.onClick.AddListener(() => OnSightClicked?.Invoke());
         _searchPlayerButton.onClick.AddListener(() => OnSearchPlayerClicked?.Invoke());
         _shopButton.onClick.AddListener(() => OnShopClicked?.Invoke());
+        _promoCodesButton.onClick.AddListener(() => OnPromoCodesClicked?.Invoke());
     }
 
     protected override void OnHide()
@@ -39,5 +42,6 @@ public class MenuWindow : BaseWindow
         _searchPlayerButton.onClick.RemoveAllListeners();
         _settingsButton.onClick.RemoveAllListeners();
         _shopButton.onClick.RemoveAllListeners();
+        _promoCodesButton.onClick.RemoveAllListeners();
     }
 }

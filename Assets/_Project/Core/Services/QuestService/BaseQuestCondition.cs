@@ -34,6 +34,9 @@ public abstract class BaseQuestCondition : IQuestCondition
     
     protected void IncrementProgress(int amount = 1)
     {
-        UpdateProgress(CurrentProgress + amount);
+        if (!IsCompleted)
+        {
+            UpdateProgress(CurrentProgress + amount);
+        }
     }
 }

@@ -60,20 +60,16 @@ public class QuestMediator : IInitializable, IDisposable
         _questWindow.OnWindowOpened -= LoadQuests;
         _questWindow.OnBackClicked -= HandleBackClicked;
         
-        // Отписываемся от событий
         _questService.OnQuestProgressChanged -= HandleQuestProgressChanged;
         _questService.OnQuestCompleted -= HandleQuestCompleted;
     }
 
     private async void LoadQuests()
     {
-        // Загружаем квесты через сервис (он сам вызовет API и создаст трекеры)
         _questService.LoadQuests();
         
-        // Ждем немного, чтобы сервис успел загрузить квесты
         await System.Threading.Tasks.Task.Delay(500);
         
-        // Получаем только те квесты, для которых созданы трекеры (т.е. есть фабрики)
         var questTrackers = _questService.GetAllQuests();
         
         Debug.Log($"[QuestMediator] Displaying {questTrackers.Count} quests (only with registered factories)");

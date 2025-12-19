@@ -25,7 +25,11 @@ public class SightDetailsView : MonoBehaviour
 
     private void Awake()
     {
-        CheckInButton.onClick.AddListener(() => OnCheckInClicked(SightID));
+        CheckInButton.onClick.AddListener(() =>
+        {
+            OnCheckInClicked(SightID);
+            SetCheckInButtonState(false);
+        });
         CloseButton.onClick.AddListener(() => Destroy(gameObject));
         CheckInButton.interactable = false;
     }
@@ -36,9 +40,9 @@ public class SightDetailsView : MonoBehaviour
         CloseButton.onClick.RemoveAllListeners();
     }
 
-    public void SetCheckInButtonInteractable()
+    public void SetCheckInButtonState(bool state)
     {
-        CheckInButton.interactable = true;
+        CheckInButton.interactable = state;
     }
     
     public class Factory : PlaceholderFactory<SightDetailsView> { }

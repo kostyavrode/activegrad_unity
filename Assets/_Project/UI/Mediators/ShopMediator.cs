@@ -63,7 +63,10 @@ public class ShopMediator : IInitializable, IDisposable
             
             sItem.transform.SetParent(_shopWindow.ContentParent, false);
             
-            sItem.BuyButton.onClick.AddListener( () => _apiService.BuyShopItem(tempID) );
+            sItem.BuyButton.onClick.AddListener(() =>
+            {
+                _ = BuyItemAndRefreshBalance(tempID);
+            });
             
             _shopItemViews.Add(sItem);
             _shopItemViews[i].Init(response.Items[i].Name, response.Items[i].Description, response.Items[i].Price.ToString());
@@ -86,6 +89,23 @@ public class ShopMediator : IInitializable, IDisposable
         {
             Debug.LogWarning("[ShopMediator] Failed to load coins from server, using local data");
         }
+    }
+    
+    private async Task BuyItemAndRefreshBalance(int itemId)
+    {
+        var (success, message) = await _apiService.BuyShopItem(itemId);
+
+        if (!success)
+        {
+            Debug.LogWarning($"[ShopMediator] Buy failed: {message}");
+            return;
+        }
+
+        Debug.Log("[ShopMediator] Item bought successfully");
+        
+        
+        
+        await LoadPlayerStats();
     }
     
     private async Task LoadAndApplyImageAsync(ShopItemView view, string imageUrl)

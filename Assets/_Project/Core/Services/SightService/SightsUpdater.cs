@@ -52,7 +52,6 @@ public class SightsUpdater : IInitializable, IDisposable
 
     public void CreateSightDetailsPopup(int pageID, bool isOtherSights=false)
     {
-        Debug.Log(CachedSights[pageID].Title + CachedSights[pageID].Description);
         var popup = _sightDetailsViewFactory.Create();
         popup.transform.SetParent(GameObject.FindGameObjectWithTag("Canvas").transform, false);
         Sprite sprite;
@@ -74,7 +73,7 @@ public class SightsUpdater : IInitializable, IDisposable
 
         if (CachedNearestSights[pageID].Distance <= 600 && _userData.CheckSight(pageID))
         {
-            popup.SetCheckInButtonInteractable();
+            popup.SetCheckInButtonState(true);
             popup.OnCheckInClicked += HandleCheckInButtonClicked;
         }
     }
