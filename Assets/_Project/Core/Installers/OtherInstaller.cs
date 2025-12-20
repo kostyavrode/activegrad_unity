@@ -28,7 +28,11 @@ public class OtherInstaller : MonoInstaller
         
         Container.BindInterfacesAndSelfTo<MapService>().AsSingle().WithArguments("7955252a-2f7b-4c01-968f-19e1c095f7b5").NonLazy();
         
+        Container.BindInterfacesAndSelfTo<SmoothMapMovementService>().AsSingle().NonLazy();
+        
         Container.BindInterfacesAndSelfTo<CharacterService>().AsSingle().NonLazy();
+        
+        Debug.Log("[OtherInstaller] CharacterService registered as ITickable");
         
         Container.BindInterfacesTo<ProfileMediator>().AsSingle();
 
@@ -89,6 +93,10 @@ public class OtherInstaller : MonoInstaller
         Container.BindFactory<ShopItemView, ShopItemView.Factory>().FromComponentInNewPrefab(_shopItemPrefab).AsTransient();
         
         Container.BindFactory<PromoCodeView, PromoCodeView.Factory>().FromComponentInNewPrefab(_promoCodeViewPrefab).AsTransient();
+        
+#if UNITY_EDITOR
+        Container.BindInterfacesAndSelfTo<EditorGPSTestController>().FromNewComponentOnNewGameObject().AsSingle().NonLazy();
+#endif
         
         BindQuests();
     }

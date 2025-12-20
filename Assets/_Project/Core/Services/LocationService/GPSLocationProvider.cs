@@ -16,11 +16,15 @@
         private float _updateInterval = 5f;
         private float _timer = 0f;
         private bool _isRunning = false;
+#if UNITY_EDITOR
+        private bool _isTestMode = false;
+#endif
 
         [Inject]
         public GPSLocationProvider(CoroutineRunner coroutineRunner)
         {
             _coroutineRunner = coroutineRunner;
+            Debug.Log($"[GPSLocationProvider] Constructor called. Instance: {GetHashCode()}");
         }
 
         public void Initialize()
@@ -98,33 +102,61 @@
             else if (Input.location.status == LocationServiceStatus.Stopped)
             {
                 Debug.LogWarning("[GPS] Служба геолокации остановлена.");
+#if UNITY_EDITOR
+                if (!_isTestMode)
+                {
+                    _lastCoordinates = GetRandomCoords();
+                }
+#else
                 _lastCoordinates = GetRandomCoords();
+#endif
                 _isRunning = false;
             }
     #else
-            _timer += Time.deltaTime;
-            Debub.Log("Randon coordinates: " + _lastCoordinates);
-            if (_timer >= _updateInterval)
+            if (!Application.isEditor)
             {
-                _timer = 0f;
-                _lastCoordinates = GetRandomCoords();
+                _timer += Time.deltaTime;
+                if (_timer >= _updateInterval)
+                {
+                    _timer = 0f;
+                    _lastCoordinates = GetRandomCoords();
+                }
+            }
+            else
+            {
+                Debug.Log($"[GPSLocationProvider] Tick (Editor): _lastCoordinates=Lat={_lastCoordinates.y}, Lon={_lastCoordinates.x}");
             }
     #endif
         }
 
         public Vector2 GetCoordinates()
         {
+#if UNITY_EDITOR
             if (_lastCoordinates == Vector2.zero)
             {
-#if UNITY_EDITOR || UNITY_STANDALONE
-
-                _lastCoordinates = GetRandomCoords();
-                
-#endif
+                _lastCoordinates = startCoordinates;
             }
+#elif UNITY_STANDALONE
+            if (_lastCoordinates == Vector2.zero)
+            {
+                _lastCoordinates = GetRandomCoords();
+            }
+#endif
 
             return _lastCoordinates;
         }
+        
+#if UNITY_EDITOR
+        private static readonly Vector2 startCoordinates = new Vector2(30.394770f, 59.875774f);
+#endif
+        
+#if UNITY_EDITOR
+        public void SetTestCoordinates(Vector2 coords)
+        {
+            _lastCoordinates = coords;
+            _isTestMode = true;
+        }
+#endif
 
         
         private Vector2 GetRandomCoords()
@@ -135,3 +167,4 @@
             return new Vector2(30.394770f, 59.875774f);
         }
     }
+

@@ -16,5 +16,9 @@ public class LocationService : IDisposable
         Input.location.Stop();
     }
 
-    public Vector2 GetCoordinates() => _provider.GetCoordinates();
+    public Vector2 GetCoordinates()
+    {
+        var coords = _provider.GetCoordinates();
+        return coords;
+    }
 }

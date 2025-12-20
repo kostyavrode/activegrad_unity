@@ -16,6 +16,6 @@ public class SightFullInfo
     public int PageId;
     public string Title;
     public string Description;
-    public string ImageUrl;         // thumbnail
-    public string OriginalImageUrl; // full size
+    public string ImageUrl;
+    public string OriginalImageUrl;
 }

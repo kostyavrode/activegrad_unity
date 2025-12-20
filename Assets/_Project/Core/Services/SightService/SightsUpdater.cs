@@ -191,11 +191,10 @@ public class SightsUpdater : IInitializable, IDisposable
         List<int> pageIds = new List<int>();
         foreach (var sightInfo in shortInfos)
         {
-            // Формируем базовую строку
+
             string lat = sightInfo.Latitude.ToString();
             string lon = sightInfo.Longitude.ToString();
         
-            // Заменяем запятые на точки в каждом числе
             lat = lat.Replace(',', '.');
             lon = lon.Replace(',', '.');
         
