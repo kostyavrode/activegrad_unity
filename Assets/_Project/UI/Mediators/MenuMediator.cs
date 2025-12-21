@@ -22,6 +22,7 @@ public class MenuMediator : IInitializable, IDisposable
         _menuWindow.OnSearchPlayerClicked += HandleSearchPlayerClicked;
         _menuWindow.OnShopClicked += HandleShopClicked;
         _menuWindow.OnPromoCodesClicked += HandlePromoCodeClicked;
+        _menuWindow.OnFriendsClicked += HandleFriendButtonClicked;
     }
 
     public void Dispose()
@@ -33,6 +34,7 @@ public class MenuMediator : IInitializable, IDisposable
         _menuWindow.OnSearchPlayerClicked -= HandleSearchPlayerClicked;
         _menuWindow.OnShopClicked -= HandleShopClicked;
         _menuWindow.OnPromoCodesClicked -= HandlePromoCodeClicked;
+        _menuWindow.OnFriendsClicked -= HandleFriendButtonClicked;
     }
 
     private void HandleSettingsClicked()
@@ -68,5 +70,10 @@ public class MenuMediator : IInitializable, IDisposable
     private void HandlePromoCodeClicked()
     {
         _uiManager.Show<PromoCodesWindow>();
+    }
+
+    private void HandleFriendButtonClicked()
+    {
+        _uiManager.Show<FriendsWindow>();
     }
 }

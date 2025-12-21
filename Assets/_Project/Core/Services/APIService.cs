@@ -666,4 +666,235 @@ public class APIService
         public string date;
         public string obtained_at;
     }
+    
+    public async Task<(bool success, SendFriendRequestResponse response)> SendFriendRequest(int toUserId)
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+        
+        var url = $"{BaseUrl}friends/requests/send/";
+        var payload = new SendFriendRequestPayload { to_user_id = toUserId };
+        
+        var (success, message) = await SendRequest(url, "POST", payload, requireAuth: true);
+        
+        if (!success)
+        {
+            return (false, null);
+        }
+        
+        try
+        {
+            var response = JsonConvert.DeserializeObject<SendFriendRequestResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse send friend request response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+    
+    public async Task<(bool success, AcceptFriendRequestResponse response)> AcceptFriendRequest(int requestId)
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+        
+        var url = $"{BaseUrl}friends/requests/{requestId}/accept/";
+        
+        var (success, message) = await SendRequest(url, "POST", null, requireAuth: true);
+        
+        if (!success)
+        {
+            return (false, null);
+        }
+        
+        try
+        {
+            var response = JsonConvert.DeserializeObject<AcceptFriendRequestResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse accept friend request response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+    
+    public async Task<(bool success, string message)> RejectFriendRequest(int requestId)
+    {
+        if (!IsLoggedIn)
+            return (false, "Not logged in");
+        
+        var url = $"{BaseUrl}friends/requests/{requestId}/reject/";
+        
+        var (success, message) = await SendRequest(url, "POST", null, requireAuth: true);
+        
+        return (success, message);
+    }
+    
+    public async Task<(bool success, FriendsListResponse response)> GetFriends()
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+        
+        var url = $"{BaseUrl}friends/";
+        
+        var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
+        
+        if (!success)
+        {
+            return (false, null);
+        }
+        
+        try
+        {
+            var response = JsonConvert.DeserializeObject<FriendsListResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse friends list response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+    
+    public async Task<(bool success, PendingFriendRequestsResponse response)> GetPendingFriendRequests()
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+        
+        var url = $"{BaseUrl}friends/requests/pending/";
+        
+        var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
+        
+        if (!success)
+        {
+            return (false, null);
+        }
+        
+        try
+        {
+            var response = JsonConvert.DeserializeObject<PendingFriendRequestsResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse pending friend requests response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+    
+    public async Task<(bool success, SentFriendRequestsResponse response)> GetSentFriendRequests()
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+        
+        var url = $"{BaseUrl}friends/requests/sent/";
+        
+        var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
+        
+        if (!success)
+        {
+            return (false, null);
+        }
+        
+        try
+        {
+            var response = JsonConvert.DeserializeObject<SentFriendRequestsResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse sent friend requests response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+    
+    public async Task<(bool success, string message)> RemoveFriend(int friendId)
+    {
+        if (!IsLoggedIn)
+            return (false, "Not logged in");
+        
+        var url = $"{BaseUrl}friends/{friendId}/remove/";
+        
+        var (success, message) = await SendRequest(url, "DELETE", null, requireAuth: true);
+        
+        return (success, message);
+    }
+    
+    [Serializable]
+    public class SendFriendRequestPayload
+    {
+        public int to_user_id;
+    }
+    
+    [Serializable]
+    public class SendFriendRequestResponse
+    {
+        public bool success;
+        public string message;
+        public FriendRequestData friend_request;
+    }
+    
+    [Serializable]
+    public class AcceptFriendRequestResponse
+    {
+        public bool success;
+        public string message;
+        public FriendshipData friendship;
+    }
+    
+    [Serializable]
+    public class FriendsListResponse
+    {
+        public bool success;
+        public FriendData[] friends;
+        public int total_count;
+    }
+    
+    [Serializable]
+    public class PendingFriendRequestsResponse
+    {
+        public bool success;
+        public FriendRequestData[] pending_requests;
+        public int total_count;
+    }
+    
+    [Serializable]
+    public class SentFriendRequestsResponse
+    {
+        public bool success;
+        public FriendRequestData[] sent_requests;
+        public int total_count;
+    }
+    
+    [Serializable]
+    public class FriendData
+    {
+        public int id;
+        public string username;
+        public string first_name;
+        public string last_name;
+        public int level;
+        public string gender;
+    }
+    
+    [Serializable]
+    public class FriendRequestData
+    {
+        public int id;
+        public FriendData from_user;
+        public FriendData to_user;
+        public string status;
+        public string created_at;
+        public string updated_at;
+    }
+    
+    [Serializable]
+    public class FriendshipData
+    {
+        public int id;
+        public FriendData friend;
+        public string created_at;
+    }
 }

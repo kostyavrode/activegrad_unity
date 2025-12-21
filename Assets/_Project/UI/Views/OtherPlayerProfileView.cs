@@ -12,6 +12,7 @@ public class OtherPlayerProfileView : MonoBehaviour
     [SerializeField] private TMP_Text _registrationDateText;
     [SerializeField] private TMP_Text _levelText;
     [SerializeField] private TMP_Text _sightsText;
+    [SerializeField] private TMP_Text _idText;
 
     [SerializeField] private Button _backButton;
     [SerializeField] private Button _sightsButton;
@@ -42,6 +43,11 @@ public class OtherPlayerProfileView : MonoBehaviour
         _lastNameText.text = userData[4];
         _registrationDateText.text = userData[5];
         _sightsText.text = userData[1];
+        
+        if (_idText != null)
+        {
+            _idText.text = userData.Length > 6 ? userData[6] : "";
+        }
         
         _sightsID = sightIDs;
     }

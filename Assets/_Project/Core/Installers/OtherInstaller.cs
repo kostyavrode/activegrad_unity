@@ -15,6 +15,8 @@ public class OtherInstaller : MonoInstaller
     [SerializeField] private OtherPlayerSightsDetailsView _otherPlayerSightsDetailsViewPrefab;
     [SerializeField] private ShopItemView _shopItemPrefab;
     [SerializeField] private PromoCodeView _promoCodeViewPrefab;
+    [SerializeField] private FriendView _friendViewPrefab;
+    [SerializeField] private FriendRequestView _friendRequestViewPrefab;
     [SerializeField] private AbstractMap _map;
     [SerializeField] private SpawnOnMap _spawnOnMap;
     [SerializeField] private Camera _mainCamera;
@@ -49,6 +51,8 @@ public class OtherInstaller : MonoInstaller
         Container.BindInterfacesTo<ShopMediator>().AsSingle();
         
         Container.BindInterfacesTo<PromoCodesMediator>().AsSingle();
+        
+        Container.BindInterfacesTo<FriendsMediator>().AsSingle();
 
         Container.BindFactory<QuestItemView, QuestItemView.Factory>()
             .FromComponentInNewPrefab(_questItemPrefab)
@@ -93,6 +97,10 @@ public class OtherInstaller : MonoInstaller
         Container.BindFactory<ShopItemView, ShopItemView.Factory>().FromComponentInNewPrefab(_shopItemPrefab).AsTransient();
         
         Container.BindFactory<PromoCodeView, PromoCodeView.Factory>().FromComponentInNewPrefab(_promoCodeViewPrefab).AsTransient();
+        
+        Container.BindFactory<FriendView, FriendView.Factory>().FromComponentInNewPrefab(_friendViewPrefab).AsTransient();
+        
+        Container.BindFactory<FriendRequestView, FriendRequestView.Factory>().FromComponentInNewPrefab(_friendRequestViewPrefab).AsTransient();
         
 #if UNITY_EDITOR
         Container.BindInterfacesAndSelfTo<EditorGPSTestController>().FromNewComponentOnNewGameObject().AsSingle().NonLazy();

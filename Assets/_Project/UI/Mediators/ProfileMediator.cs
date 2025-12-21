@@ -29,13 +29,14 @@ public class ProfileMediator : IInitializable, IDisposable
 
     private void LoadInfo()
     {
-        string[] info = new string[6];
+        string[] info = new string[7];
         info[0] = _userDataService.Username;
         info[1] = _userDataService.FirstName;
         info[2] = _userDataService.LastName;
         info[3] = _userDataService.Level.ToString();
         info[4] = _userDataService.Experience.ToString();
         info[5] = _userDataService.DateOfStart;
+        info[6] = _userDataService.ID.ToString();
         
         _profileWindow.SetInfo(info);
         Debug.Log("Profile Loaded");

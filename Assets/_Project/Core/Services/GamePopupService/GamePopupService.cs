@@ -43,6 +43,7 @@ public class GamePopupService
         infoForView.Add(response.playerData.FirstName);
         infoForView.Add(response.playerData.LastName);
         infoForView.Add(response.playerData.RegistrationDate.ToString());
+        infoForView.Add(response.playerData.Id.ToString());
         
         string[] finalInfoForView = infoForView.ToArray();
         int[] t = response.playerData.Landmarks.ExternalIds.ToArray();

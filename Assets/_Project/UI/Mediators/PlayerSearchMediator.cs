@@ -7,21 +7,20 @@ public class PlayerSearchMediator : IInitializable, IDisposable
     private readonly APIService _apiService;
     private readonly UIManager _uiManager;
     private readonly PlayerSearchWindow _playerSearchWindow;
-    //private readonly PopupService _popupService;
-    private readonly GamePopupService _gamePopupService;
+    private readonly IPopupService _popupService;
     
-    public PlayerSearchMediator(APIService apiService, UIManager uiManager, PlayerSearchWindow playerSearchWindow/*, PopupService popupService*/, GamePopupService gamePopupService)
+    public PlayerSearchMediator(APIService apiService, UIManager uiManager, PlayerSearchWindow playerSearchWindow, IPopupService popupService)
     {
         _apiService = apiService;
         _uiManager = uiManager;
         _playerSearchWindow = playerSearchWindow;
-        //_popupService = popupService;
-        _gamePopupService = gamePopupService;
+        _popupService = popupService;
     }
+    
     public void Initialize()
     {
         _playerSearchWindow.OnBackClicked += HandleBackClicked;
-        _playerSearchWindow.OnSearchClicked +=HandleSearchClicked;
+        _playerSearchWindow.OnSearchClicked += HandleSearchClicked;
     }
 
     public void Dispose()
@@ -38,13 +37,21 @@ public class PlayerSearchMediator : IInitializable, IDisposable
         
         if (!success)
         {
-            //_popupService.ShowError($"Failed to load quests: {message}");
+            _popupService.ShowError(message);
             Debug.LogError(message);
             return;
         }
 
-        _gamePopupService.CreateOtherPlayerProfilePopup(message);
-        Debug.Log($"Loaded Player: {message}");
+        var (requestSuccess, requestResponse) = await _apiService.SendFriendRequest(playerID);
+        
+        if (requestSuccess && requestResponse != null)
+        {
+            _popupService.ShowSuccess("Friend request sent successfully");
+        }
+        else
+        {
+            _popupService.ShowError("Failed to send friend request");
+        }
     }
     
     private void HandleBackClicked()

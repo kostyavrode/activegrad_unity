@@ -12,6 +12,7 @@ public class ProfileWindow : BaseWindow
     [SerializeField] private TMP_Text _registrationDateText;
     [SerializeField] private TMP_Text _levelText;
     [SerializeField] private TMP_Text _expText;
+    [SerializeField] private TMP_Text _idText;
 
     [SerializeField] private Button _backButton;
     
@@ -37,5 +38,10 @@ public class ProfileWindow : BaseWindow
         _levelText.text = userData[3];
         _expText.text = userData[4];
         _registrationDateText.text = userData[5].Substring(0, 10);
+        
+        if (_idText != null)
+        {
+            _idText.text = userData.Length > 6 ? userData[6] : "";
+        }
     }
 }
