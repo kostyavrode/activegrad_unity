@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,6 +21,7 @@ public class APIService
 
     private string _accessToken;
     private string _refreshToken;
+    private ErrorResponse _lastErrorResponse;
 
     public bool IsLoggedIn => !string.IsNullOrEmpty(_accessToken);
 
@@ -291,6 +293,70 @@ public class APIService
 
         return result;
     }
+
+    /// <summary>
+    /// Получить информацию о захвате достопримечательности.
+    /// </summary>
+    public async Task<(bool success, LandmarkCaptureInfoResponse response)> GetLandmarkCaptureInfo(int externalId)
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}landmarks/{externalId}/capture/";
+
+        var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
+
+        if (!success)
+        {
+            return (false, null);
+        }
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<LandmarkCaptureInfoResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse landmark capture info response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+
+    /// <summary>
+    /// Захват достопримечательности (новая серверная логика).
+    /// </summary>
+    public async Task<(bool success, LandmarkCaptureCreateResponse response)> CaptureLandmark(int externalId)
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}landmarks/capture/";
+
+        var payload = new LandmarkCaptureRequest
+        {
+            external_id = externalId.ToString()
+        };
+
+        var (success, message) = await SendRequest(url, "POST", payload, requireAuth: true);
+
+        if (!success)
+        {
+            // Ошибка уже показана внутри SendRequest через _popupService (если это 400/другая ошибка).
+            return (false, null);
+        }
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<LandmarkCaptureCreateResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse landmark capture response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
     
     public async Task<(bool success, QuestCompleteResponse response)> CompleteQuest(int questId)
     {
@@ -443,11 +509,21 @@ public class APIService
                 try
                 {
                     var errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(errorText);
-                    if (errorResponse != null && !string.IsNullOrEmpty(errorResponse.message))
+                    if (errorResponse != null)
                     {
-                        Debug.LogWarning($"[APIService] Server error (400): {errorResponse.message}");
-                        tcs.TrySetResult((false, errorResponse.message));
-                        yield break;
+                        _lastErrorResponse = errorResponse; // Сохраняем последний ответ об ошибке
+                        if (!string.IsNullOrEmpty(errorResponse.message))
+                        {
+                            Debug.LogWarning($"[APIService] Server error (400): {errorResponse.message}");
+                            tcs.TrySetResult((false, errorResponse.message));
+                            yield break;
+                        }
+                        else if (!string.IsNullOrEmpty(errorResponse.error))
+                        {
+                            Debug.LogWarning($"[APIService] Server error (400): {errorResponse.error}");
+                            tcs.TrySetResult((false, errorResponse.error));
+                            yield break;
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -538,6 +614,12 @@ public class APIService
     {
         public int player_id;
         public string[] external_ids;
+    }
+    
+    [Serializable]
+    private class LandmarkCaptureRequest
+    {
+        public string external_id;
     }
     
     [Serializable]
@@ -643,6 +725,8 @@ public class APIService
     {
         public bool success;
         public string message;
+        public string error;
+        public Dictionary<string, string[]> errors;
     }
     
     [Serializable]
@@ -897,4 +981,296 @@ public class APIService
         public FriendData friend;
         public string created_at;
     }
+    
+    // ----- Landmark capture responses -----
+    [Serializable]
+    public class LandmarkCaptureInfoResponse
+    {
+        public bool success;
+        public bool captured;
+        public bool can_capture_now;
+        public LandmarkCaptureUser captured_by;
+        public string captured_at;
+        public LandmarkCaptureClan clan;
+    }
+
+    [Serializable]
+    public class LandmarkCaptureCreateResponse
+    {
+        public bool success;
+        public string message;
+        public LandmarkCaptureRecord capture;
+    }
+
+    [Serializable]
+    public class LandmarkCaptureRecord
+    {
+        public int id;
+        public string external_id;
+        public LandmarkCaptureUser captured_by;
+        public string captured_at;
+        public LandmarkCaptureClan clan;
+    }
+
+    [Serializable]
+    public class LandmarkCaptureUser
+    {
+        public int id;
+        public string username;
+    }
+
+    [Serializable]
+    public class LandmarkCaptureClan
+    {
+        public int id;
+        public string name;
+    }
+    
+    // ----- Clan system methods -----
+    
+    /// <summary>
+    /// Создать клан.
+    /// </summary>
+    public async Task<(bool success, CreateClanResponse response)> CreateClan(string name, string description = "")
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        _lastErrorResponse = null; // Сбрасываем предыдущую ошибку
+
+        var url = $"{BaseUrl}clans/create/";
+        var payload = new CreateClanRequest
+        {
+            name = name,
+            description = description
+        };
+
+        var (success, message) = await SendRequest(url, "POST", payload, requireAuth: true);
+
+        if (!success)
+        {
+            return (false, null);
+        }
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<CreateClanResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse create clan response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+
+    /// <summary>
+    /// Получить последний ответ об ошибке (для обработки ошибок валидации).
+    /// </summary>
+    public ErrorResponse GetLastErrorResponse()
+    {
+        return _lastErrorResponse;
+    }
+
+    /// <summary>
+    /// Вступить в клан.
+    /// </summary>
+    public async Task<(bool success, JoinClanResponse response)> JoinClan(int clanId)
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}clans/join/";
+        var payload = new JoinClanRequest
+        {
+            clan_id = clanId
+        };
+
+        var (success, message) = await SendRequest(url, "POST", payload, requireAuth: true);
+
+        if (!success)
+        {
+            return (false, null);
+        }
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<JoinClanResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse join clan response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+
+    /// <summary>
+    /// Покинуть клан.
+    /// </summary>
+    public async Task<(bool success, string message)> LeaveClan()
+    {
+        if (!IsLoggedIn)
+            return (false, "Not logged in");
+
+        var url = $"{BaseUrl}clans/leave/";
+
+        var (success, message) = await SendRequest(url, "POST", null, requireAuth: true);
+
+        return (success, message);
+    }
+
+    /// <summary>
+    /// Поиск кланов.
+    /// </summary>
+    public async Task<(bool success, SearchClansResponse response)> SearchClans(string query)
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}clans/search/?query={UnityWebRequest.EscapeURL(query)}";
+
+        var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
+
+        if (!success)
+        {
+            return (false, null);
+        }
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<SearchClansResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse search clans response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+
+    /// <summary>
+    /// Получить топ-10 кланов.
+    /// </summary>
+    public async Task<(bool success, TopClansResponse response)> GetTopClans()
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}clans/top/";
+
+        var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
+
+        if (!success)
+        {
+            return (false, null);
+        }
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<TopClansResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse top clans response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+
+    /// <summary>
+    /// Получить информацию о текущем клане игрока.
+    /// </summary>
+    public async Task<(bool success, ClanData clan)> GetMyClan()
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        // Получаем информацию о текущем пользователе через SearchPlayer
+        var (success, message) = await SearchPlayer(_userData.ID);
+        
+        if (!success)
+        {
+            return (false, null);
+        }
+
+        try
+        {
+            // Парсим ответ и извлекаем информацию о клане
+            var response = JsonConvert.DeserializeObject<RootResponse>(message);
+            if (response?.playerData?.clan != null)
+            {
+                return (true, response.playerData.clan);
+            }
+            return (true, null); // Пользователь не в клане
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse my clan response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+    
+    // ----- Clan request/response models -----
+    
+    [Serializable]
+    private class CreateClanRequest
+    {
+        public string name;
+        public string description;
+    }
+
+    [Serializable]
+    public class CreateClanResponse
+    {
+        public bool success;
+        public string message;
+        public ClanData clan;
+    }
+
+    [Serializable]
+    private class JoinClanRequest
+    {
+        public int clan_id;
+    }
+
+    [Serializable]
+    public class JoinClanResponse
+    {
+        public bool success;
+        public string message;
+        public ClanData clan;
+    }
+
+    [Serializable]
+    public class SearchClansResponse
+    {
+        public bool success;
+        public ClanData[] clans;
+        public int total_count;
+        public string query;
+    }
+
+    [Serializable]
+    public class TopClansResponse
+    {
+        public bool success;
+        public ClanData[] top_clans;
+        public int total_count;
+    }
+}
+
+// ----- Clan system models (outside APIService for global access) -----
+
+[Serializable]
+public class ClanData
+{
+    public int id;
+    public string name;
+    public string description;
+    public string created_at;
+    public int created_by_id;
+    public string created_by_username;
+    public int member_count;
+    public int captured_landmarks_count;
 }

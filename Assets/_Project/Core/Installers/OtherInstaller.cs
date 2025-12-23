@@ -17,6 +17,8 @@ public class OtherInstaller : MonoInstaller
     [SerializeField] private PromoCodeView _promoCodeViewPrefab;
     [SerializeField] private FriendView _friendViewPrefab;
     [SerializeField] private FriendRequestView _friendRequestViewPrefab;
+    [SerializeField] private ClanView _clanViewPrefab;
+    [SerializeField] private CreateClanView _createClanViewPrefab;
     [SerializeField] private AbstractMap _map;
     [SerializeField] private SpawnOnMap _spawnOnMap;
     [SerializeField] private Camera _mainCamera;
@@ -53,6 +55,8 @@ public class OtherInstaller : MonoInstaller
         Container.BindInterfacesTo<PromoCodesMediator>().AsSingle();
         
         Container.BindInterfacesTo<FriendsMediator>().AsSingle();
+
+        Container.BindInterfacesTo<ClansMediator>().AsSingle();
 
         Container.BindFactory<QuestItemView, QuestItemView.Factory>()
             .FromComponentInNewPrefab(_questItemPrefab)
@@ -101,6 +105,10 @@ public class OtherInstaller : MonoInstaller
         Container.BindFactory<FriendView, FriendView.Factory>().FromComponentInNewPrefab(_friendViewPrefab).AsTransient();
         
         Container.BindFactory<FriendRequestView, FriendRequestView.Factory>().FromComponentInNewPrefab(_friendRequestViewPrefab).AsTransient();
+        
+        Container.BindFactory<ClanView, ClanView.Factory>().FromComponentInNewPrefab(_clanViewPrefab).AsTransient();
+        
+        Container.BindFactory<CreateClanView, CreateClanView.Factory>().FromComponentInNewPrefab(_createClanViewPrefab).AsTransient();
         
 #if UNITY_EDITOR
         Container.BindInterfacesAndSelfTo<EditorGPSTestController>().FromNewComponentOnNewGameObject().AsSingle().NonLazy();

@@ -50,7 +50,7 @@ public class SightsUpdater : IInitializable, IDisposable
         _isRunning = false;
     }
 
-    public void CreateSightDetailsPopup(int pageID, bool isOtherSights=false)
+    public async void CreateSightDetailsPopup(int pageID, bool isOtherSights=false)
     {
         var popup = _sightDetailsViewFactory.Create();
         popup.transform.SetParent(GameObject.FindGameObjectWithTag("Canvas").transform, false);
@@ -64,17 +64,44 @@ public class SightsUpdater : IInitializable, IDisposable
             _popupService.ShowError(e.Message);
             sprite = Resources.Load<Sprite>("no_image");
         }
-
-        //TEST
-        //_apiService.SetSightMarked(pageID);
         
         popup.Init(sprite, CachedSights[pageID].Title, CachedSights[pageID].Description,
             CachedSights[pageID].PageId);
+
+        popup.OnCaptureClicked += HandleCaptureButtonClicked;
+
+        await LoadAndDisplayCaptureInfo(popup, pageID);
 
         if (CachedNearestSights[pageID].Distance <= 600 && _userData.CheckSight(pageID))
         {
             popup.SetCheckInButtonState(true);
             popup.OnCheckInClicked += HandleCheckInButtonClicked;
+        }
+    }
+
+    private async Task LoadAndDisplayCaptureInfo(SightDetailsView popup, int pageID)
+    {
+        var (success, response) = await _apiService.GetLandmarkCaptureInfo(pageID);
+        
+        if (success && response != null)
+        {
+            string capturedBy = response.captured_by != null ? response.captured_by.username : "";
+            string clanName = response.clan != null ? response.clan.name : "";
+            
+            popup.SetCaptureInfo(response.captured, capturedBy, response.captured_at, clanName);
+            if (CachedNearestSights[pageID].Distance <= 600)
+            {
+                popup.SetCaptureButtonState(response.can_capture_now);
+            }
+            else
+            {
+                popup.SetCaptureButtonState(false);
+            }
+        }
+        else
+        {
+            popup.SetCaptureInfo(false, "", "", "");
+            popup.SetCaptureButtonState(true);
         }
     }
 
@@ -242,9 +269,50 @@ public class SightsUpdater : IInitializable, IDisposable
         return coords;
     }
 
-    private void HandleCheckInButtonClicked(int pageId)
+    private async void HandleCheckInButtonClicked(int pageId)
     {
-        _apiService.SetSightMarked(pageId);
+        // Старый функционал "отметиться" (для квестов и статистики)
+        await _apiService.SetSightMarked(pageId);
+    }
+
+    private async void HandleCaptureButtonClicked(int pageId)
+    {
+        // Захват достопримечательности (новая серверная логика)
+        var (captureSuccess, captureResponse) = await _apiService.CaptureLandmark(pageId);
+
+        if (captureSuccess && captureResponse != null)
+        {
+            var message = !string.IsNullOrEmpty(captureResponse.message)
+                ? captureResponse.message
+                : "Достопримечательность захвачена!";
+            _popupService.ShowSuccess(message);
+
+            // Обновляем информацию о захвате в попапе
+            await RefreshCaptureInfoInPopup(pageId);
+        }
+        // Если захват не удался, сообщение об ошибке уже показано внутри APIService (SendRequest)
+    }
+
+    private async Task RefreshCaptureInfoInPopup(int pageId)
+    {
+        // Находим открытый попап для этой достопримечательности
+        var popups = GameObject.FindObjectsOfType<SightDetailsView>();
+        SightDetailsView targetPopup = null;
+        
+        foreach (var popup in popups)
+        {
+            if (popup.SightID == pageId)
+            {
+                targetPopup = popup;
+                break;
+            }
+        }
+
+        if (targetPopup != null)
+        {
+            // Загружаем обновленную информацию о захвате
+            await LoadAndDisplayCaptureInfo(targetPopup, pageId);
+        }
     }
     
 

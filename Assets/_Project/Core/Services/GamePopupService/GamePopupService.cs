@@ -184,6 +184,7 @@ public class PlayerData
     [JsonProperty("registration_date")] public string RegistrationDate; 
     [JsonProperty("gender")] public string Gender;
     [JsonProperty("landmarks")] public Landmarks Landmarks;
+    [JsonProperty("clan")] public ClanData clan;
 }
 
 [Serializable]
