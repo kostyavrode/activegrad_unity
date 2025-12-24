@@ -5,11 +5,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Mapbox.Json;
+using Newtonsoft.Json;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.Serialization;
 using Zenject;
+using JsonConvert = Newtonsoft.Json.JsonConvert;
 
 public class APIService
 {
@@ -1178,40 +1180,52 @@ public class APIService
         }
     }
 
-    /// <summary>
-    /// Получить информацию о текущем клане игрока.
-    /// </summary>
     public async Task<(bool success, ClanData clan)> GetMyClan()
     {
         if (!IsLoggedIn)
             return (false, null);
 
-        // Получаем информацию о текущем пользователе через SearchPlayer
         var (success, message) = await SearchPlayer(_userData.ID);
         
         if (!success)
         {
+            Debug.LogWarning($"[APIService] GetMyClan: SearchPlayer failed. Message: {message}");
             return (false, null);
         }
 
         try
         {
-            // Парсим ответ и извлекаем информацию о клане
-            var response = JsonConvert.DeserializeObject<RootResponse>(message);
-            if (response?.playerData?.clan != null)
+            Debug.Log($"[APIService] GetMyClan: Raw response: {message}");
+            var response = Newtonsoft.Json.JsonConvert.DeserializeObject<RootResponse>(message);
+            
+            if (response == null)
             {
-                return (true, response.playerData.clan);
+                Debug.LogError("[APIService] GetMyClan: Deserialized response is null");
+                return (false, null);
             }
-            return (true, null); // Пользователь не в клане
+            
+            Debug.Log($"[APIService] GetMyClan: Response success={response.Success}, playerData={(response.playerData != null ? "not null" : "null")}");
+            
+            if (response.playerData != null)
+            {
+                Debug.Log($"[APIService] GetMyClan: Clan={(response.playerData.clan != null ? $"id={response.playerData.clan.id}, name={response.playerData.clan.name}" : "null")}");
+                
+                if (response.playerData.clan != null)
+                {
+                    return (true, response.playerData.clan);
+                }
+            }
+            
+            Debug.Log("[APIService] GetMyClan: No clan found in response");
+            return (true, null);
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[APIService] Failed to parse my clan response: {ex.Message}\nResponse: {message}");
+            Debug.LogError($"[APIService] Failed to parse my clan response: {ex.Message}\nStack trace: {ex.StackTrace}\nResponse: {message}");
             return (false, null);
         }
     }
     
-    // ----- Clan request/response models -----
     
     [Serializable]
     private class CreateClanRequest
