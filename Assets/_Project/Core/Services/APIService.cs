@@ -984,7 +984,6 @@ public class APIService
         public string created_at;
     }
     
-    // ----- Landmark capture responses -----
     [Serializable]
     public class LandmarkCaptureInfoResponse
     {
@@ -1028,17 +1027,12 @@ public class APIService
         public string name;
     }
     
-    // ----- Clan system methods -----
-    
-    /// <summary>
-    /// Создать клан.
-    /// </summary>
     public async Task<(bool success, CreateClanResponse response)> CreateClan(string name, string description = "")
     {
         if (!IsLoggedIn)
             return (false, null);
 
-        _lastErrorResponse = null; // Сбрасываем предыдущую ошибку
+        _lastErrorResponse = null;
 
         var url = $"{BaseUrl}clans/create/";
         var payload = new CreateClanRequest
@@ -1065,18 +1059,12 @@ public class APIService
             return (false, null);
         }
     }
-
-    /// <summary>
-    /// Получить последний ответ об ошибке (для обработки ошибок валидации).
-    /// </summary>
+    
     public ErrorResponse GetLastErrorResponse()
     {
         return _lastErrorResponse;
     }
-
-    /// <summary>
-    /// Вступить в клан.
-    /// </summary>
+    
     public async Task<(bool success, JoinClanResponse response)> JoinClan(int clanId)
     {
         if (!IsLoggedIn)
@@ -1092,6 +1080,7 @@ public class APIService
 
         if (!success)
         {
+            Debug.LogError("[APIService] Failed to join clan response: " + message);
             return (false, null);
         }
 
@@ -1106,10 +1095,7 @@ public class APIService
             return (false, null);
         }
     }
-
-    /// <summary>
-    /// Покинуть клан.
-    /// </summary>
+    
     public async Task<(bool success, string message)> LeaveClan()
     {
         if (!IsLoggedIn)
@@ -1121,10 +1107,7 @@ public class APIService
 
         return (success, message);
     }
-
-    /// <summary>
-    /// Поиск кланов.
-    /// </summary>
+    
     public async Task<(bool success, SearchClansResponse response)> SearchClans(string query)
     {
         if (!IsLoggedIn)
@@ -1150,10 +1133,7 @@ public class APIService
             return (false, null);
         }
     }
-
-    /// <summary>
-    /// Получить топ-10 кланов.
-    /// </summary>
+    
     public async Task<(bool success, TopClansResponse response)> GetTopClans()
     {
         if (!IsLoggedIn)
@@ -1274,7 +1254,6 @@ public class APIService
     }
 }
 
-// ----- Clan system models (outside APIService for global access) -----
 
 [Serializable]
 public class ClanData

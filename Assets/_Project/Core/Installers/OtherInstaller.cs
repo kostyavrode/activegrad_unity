@@ -19,6 +19,8 @@ public class OtherInstaller : MonoInstaller
     [SerializeField] private FriendRequestView _friendRequestViewPrefab;
     [SerializeField] private ClanView _clanViewPrefab;
     [SerializeField] private CreateClanView _createClanViewPrefab;
+    [SerializeField] private GameEventView _gameEventViewPrefab;
+    [SerializeField] private GameObject _gameEventMarkerPrefab;
     [SerializeField] private AbstractMap _map;
     [SerializeField] private SpawnOnMap _spawnOnMap;
     [SerializeField] private Camera _mainCamera;
@@ -71,6 +73,15 @@ public class OtherInstaller : MonoInstaller
         Container.Bind<ISightService>().To<SightService>().AsSingle().NonLazy();
         
         Container.BindInterfacesAndSelfTo<SightsUpdater>().AsSingle().NonLazy();
+        
+        Container.BindInterfacesAndSelfTo<MiniGamesService>().AsSingle();
+        
+        Container.Bind<GameObject>().WithId("GameEventMarker").FromInstance(_gameEventMarkerPrefab).AsSingle();
+        Container.BindInterfacesAndSelfTo<GameEventService>().AsSingle().NonLazy();
+        
+        Container.BindFactory<GameEventView, GameEventView.Factory>()
+            .FromComponentInNewPrefab(_gameEventViewPrefab)
+            .AsTransient();
         
         Container.BindFactory<SightItemView, SightItemFactory>()
             .FromComponentInNewPrefab(SightItemPrefab)

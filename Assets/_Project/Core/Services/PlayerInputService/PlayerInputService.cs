@@ -8,14 +8,16 @@ public class PlayerInputService : ITickable, IDisposable
     private readonly Camera _mainCamera;
     private readonly SightsUpdater _sightsUpdater;
     private readonly UIManager _uiManager;
+    private readonly GameEventService _gameEventService;
     private bool _isEnabled = true;
 
     [Inject]
-    public PlayerInputService(Camera mainCamera, SightsUpdater sightsUpdater, UIManager uiManager)
+    public PlayerInputService(Camera mainCamera, SightsUpdater sightsUpdater, UIManager uiManager, GameEventService gameEventService)
     {
         _mainCamera = mainCamera;
         _sightsUpdater = sightsUpdater;
         _uiManager = uiManager;
+        _gameEventService = gameEventService;
     }
     
     public void Tick()
@@ -43,6 +45,10 @@ public class PlayerInputService : ITickable, IDisposable
         if (obj.TryGetComponent(out SightObject sightObject))
         {   
             _sightsUpdater.CreateSightDetailsPopup(sightObject.GetSightInfo());
+        }
+        else if (obj.TryGetComponent(out GameEventObject gameEventObject))
+        {
+            _gameEventService.HandleEventClicked(gameEventObject.GetEventId());
         }
     }
     

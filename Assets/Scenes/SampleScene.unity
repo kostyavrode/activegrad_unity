@@ -14848,6 +14848,8 @@ MonoBehaviour:
   _friendRequestViewPrefab: {fileID: 9219715758923298530, guid: f133220b758c302468c77a817dc3e407, type: 3}
   _clanViewPrefab: {fileID: 5339712689931873672, guid: 880f1198ce2ba5e4c969a1e743f22bc8, type: 3}
   _createClanViewPrefab: {fileID: 7045852968939150995, guid: e613370d57583d941a9c5056e2ce9f11, type: 3}
+  _gameEventViewPrefab: {fileID: 7369638128805676047, guid: 21d1c905c5f012a4284454cbcc7220f7, type: 3}
+  _gameEventMarkerPrefab: {fileID: 8174337391774317492, guid: 6a0853b2617b28a4b9f08608ffd877b6, type: 3}
   _map: {fileID: 1613871291}
   _spawnOnMap: {fileID: 402055880}
   _mainCamera: {fileID: 330585545}
