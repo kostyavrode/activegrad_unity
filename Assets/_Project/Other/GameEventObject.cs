@@ -15,3 +15,5 @@ public class GameEventObject : MonoBehaviour
     public GameEventType GetEventType() => _eventType;
 }
 
+
+

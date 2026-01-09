@@ -72,3 +72,5 @@ public class GameEventView : MonoBehaviour
     public class Factory : PlaceholderFactory<GameEventView> { }
 }
 
+
+
