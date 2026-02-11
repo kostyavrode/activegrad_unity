@@ -215,8 +215,12 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
         if (levelUp)
         {
             var levelUpInfo = response.level_up_notification;
-            _popupService.ShowSuccess($"🎉 {message}\nУровень повышен до {levelUpInfo.new_level}!");
-            Debug.Log($"[QuestService] Level up! New level: {levelUpInfo.new_level}, Levels gained: {levelUpInfo.levels_gained}");
+            int pointsGained = levelUpInfo.stat_upgrade_points_gained;
+            string levelMsg = pointsGained > 0 
+                ? $"Уровень повышен до {levelUpInfo.new_level}! +{pointsGained} очков прокачки"
+                : $"Уровень повышен до {levelUpInfo.new_level}!";
+            _popupService.ShowSuccess($"🎉 {message}\n{levelMsg}");
+            Debug.Log($"[QuestService] Level up! New level: {levelUpInfo.new_level}, Stat points gained: {pointsGained}");
         }
         else
         {
@@ -236,12 +240,25 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
     
     private void UpdatePlayerStats(APIService.PlayerStats stats)
     {
-        // Обновляем данные пользователя через UserDataService
-        // Это нужно для синхронизации с сервером
-        Debug.Log($"[QuestService] Player stats updated: Coins={stats.coins}, Experience={stats.experience}, Level={stats.level}");
-        
-        // Обновляем статистику через UserDataService, если есть такой метод
-        // _userDataService.UpdateStats(stats.coins, stats.experience, stats.level);
+        _userDataService.SetProfile(
+            _userDataService.Data.gender,
+            _userDataService.Data.boots,
+            _userDataService.Data.pants,
+            _userDataService.Data.tshirt,
+            _userDataService.Data.cap,
+            stats.coins,
+            stats.level,
+            stats.experience,
+            _userDataService.Steps,
+            _userDataService.FirstName,
+            _userDataService.LastName,
+            _userDataService.DateOfStart,
+            _userDataService.ID,
+            stats.strength > 0 ? stats.strength : 1,
+            stats.intelligence > 0 ? stats.intelligence : 1,
+            stats.agility > 0 ? stats.agility : 1,
+            stats.stat_upgrade_points
+        );
     }
 
     public QuestProgressData GetQuestProgress(int questId)

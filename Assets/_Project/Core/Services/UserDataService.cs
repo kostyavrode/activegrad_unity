@@ -25,6 +25,10 @@ public class UserData
     public int experience;
     public int dailySteps;
     public int coins;
+    public int strength = 1;
+    public int intelligence = 1;
+    public int agility = 1;
+    public int stat_upgrade_points;
 
     public string lastStepsDate;
     public int[] sights;
@@ -52,15 +56,15 @@ public class UserDataService
     public int Coins => _data.coins;
     public int Level => _data.level;
     public int Experience => _data.experience;
+    public int Strength => _data.strength;
+    public int Intelligence => _data.intelligence;
+    public int Agility => _data.agility;
+    public int StatUpgradePoints => _data.stat_upgrade_points;
 
-    /// <summary>
-    /// Уровень профессии в диапазоне 0..1.
-    /// Влияет на вероятность остановки бонусного ползунка ближе к центру.
-    /// TODO: реализовать когда будут данные прокачки профессии.
-    /// </summary>
     public float GetProfessionLevel()
     {
-        return 0.5f;
+        float total = _data.strength + _data.intelligence + _data.agility - 3f;
+        return Mathf.Clamp01(total / 27f);
     }
 
     public int Steps => _data.dailySteps;
@@ -113,6 +117,11 @@ public class UserDataService
 
     public void SetProfile(string gender, int boots, int pants, int tshirt, int cap, int coins, int level, int exp, int steps, string firstName, string lastName, string dateOfStart, int id)
     {
+        SetProfile(gender, boots, pants, tshirt, cap, coins, level, exp, steps, firstName, lastName, dateOfStart, id, 1, 1, 1, 0);
+    }
+
+    public void SetProfile(string gender, int boots, int pants, int tshirt, int cap, int coins, int level, int exp, int steps, string firstName, string lastName, string dateOfStart, int id, int strength, int intelligence, int agility, int statUpgradePoints)
+    {
         _data.gender = gender;
         _data.boots = boots;
         _data.pants = pants;
@@ -126,6 +135,26 @@ public class UserDataService
         _data.firstName = firstName;
         _data.dateOfStart = dateOfStart;
         _data.id = id;
+        _data.strength = strength > 0 ? strength : 1;
+        _data.intelligence = intelligence > 0 ? intelligence : 1;
+        _data.agility = agility > 0 ? agility : 1;
+        _data.stat_upgrade_points = statUpgradePoints;
+        Save();
+    }
+
+    public void UpdateNames(string firstName, string lastName)
+    {
+        if (!string.IsNullOrEmpty(firstName)) _data.firstName = firstName;
+        if (!string.IsNullOrEmpty(lastName)) _data.lastName = lastName;
+        Save();
+    }
+
+    public void SetStats(int strength, int intelligence, int agility, int statUpgradePoints)
+    {
+        _data.strength = strength > 0 ? strength : 1;
+        _data.intelligence = intelligence > 0 ? intelligence : 1;
+        _data.agility = agility > 0 ? agility : 1;
+        _data.stat_upgrade_points = statUpgradePoints;
         Save();
     }
 

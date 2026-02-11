@@ -63,7 +63,7 @@ public class APIService
         {
             try
             {
-                var loginResponse = JsonUtility.FromJson<LoginResponse>(response);
+                var loginResponse = JsonConvert.DeserializeObject<LoginResponseDto>(response);
                 _accessToken = loginResponse.access;
                 _refreshToken = loginResponse.refresh;
                 
@@ -73,22 +73,34 @@ public class APIService
 
                 if (loginResponse.user != null)
                 {
-                    Debug.Log(loginResponse.user);
+                    var u = loginResponse.user;
+                    int exp = u.experience > 0 ? u.experience : u.exp;
+                    int steps = u.daily_steps > 0 ? u.daily_steps : u.steps;
+                    string firstName = u.first_name ?? "";
+                    string lastName = u.last_name ?? "";
                     _userData.SetProfile(
-                        gender: loginResponse.user.gender,
-                        boots: loginResponse.user.boots,
-                        pants: loginResponse.user.pants,
-                        tshirt: loginResponse.user.tshirt,
-                        cap: loginResponse.user.cap,
-                        coins: loginResponse.user.coins,
-                        level: loginResponse.user.level,
-                        exp: loginResponse.user.exp,
-                        steps: loginResponse.user.steps,
-                        firstName: loginResponse.user.first_name,
-                        lastName: loginResponse.user.last_name,
-                        dateOfStart: loginResponse.user.registration_date,
-                        id: loginResponse.user.id
+                        gender: u.gender ?? "",
+                        boots: u.boots,
+                        pants: u.pants,
+                        tshirt: u.tshirt,
+                        cap: u.cap,
+                        coins: u.coins,
+                        level: u.level,
+                        exp: exp,
+                        steps: steps,
+                        firstName: firstName,
+                        lastName: lastName,
+                        dateOfStart: u.registration_date ?? "",
+                        id: u.player_id > 0 ? u.player_id : u.id,
+                        strength: u.strength > 0 ? u.strength : 1,
+                        intelligence: u.intelligence > 0 ? u.intelligence : 1,
+                        agility: u.agility > 0 ? u.agility : 1,
+                        statUpgradePoints: u.stat_upgrade_points
                     );
+                    if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName))
+                    {
+                        TryFetchProfileNames(u.player_id > 0 ? u.player_id : u.id);
+                    }
                 }
 
                 return !string.IsNullOrEmpty(_accessToken);
@@ -113,6 +125,32 @@ public class APIService
             return false;
 
         return await Login(_userData.Username, _userData.Password);
+    }
+
+    private async void TryFetchProfileNames(int playerId)
+    {
+        await FetchProfileNamesAsync(playerId);
+    }
+
+    public async Task<bool> FetchProfileNamesAsync(int playerId)
+    {
+        var (success, message) = await SearchPlayer(playerId);
+        if (!success || string.IsNullOrEmpty(message)) return false;
+        try
+        {
+            var response = JsonConvert.DeserializeObject<RootResponse>(message);
+            if (response?.playerData != null &&
+                (!string.IsNullOrEmpty(response.playerData.FirstName) || !string.IsNullOrEmpty(response.playerData.LastName)))
+            {
+                _userData.UpdateNames(response.playerData.FirstName, response.playerData.LastName);
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[APIService] Failed to parse profile for names: {ex.Message}");
+        }
+        return false;
     }
 
     private async Task<bool> RefreshToken()
@@ -404,7 +442,7 @@ public class APIService
         if (!IsLoggedIn)
             return (false, null);
 
-        var url = $"{BaseUrl}me/stats/";
+        var url = $"{BaseUrl}player/stats/";
         
         var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
         
@@ -425,6 +463,31 @@ public class APIService
         }
     }
     
+    public async Task<(bool success, UpgradeStatResponse response)> UpgradeStat(string statType)
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}player/upgrade-stat/";
+        var payload = new UpgradeStatRequest { stat_type = statType };
+
+        var (success, message) = await SendRequest(url, "POST", payload, requireAuth: true);
+
+        if (!success)
+            return (false, null);
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<UpgradeStatResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse upgrade stat response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+
     public async Task<(bool success, CoinsResponse response)> GetPlayerCoins()
     {
         if (!IsLoggedIn)
@@ -592,6 +655,38 @@ public class APIService
         public UserResponse user;
     }
 
+    private class LoginResponseDto
+    {
+        [Newtonsoft.Json.JsonProperty("access")] public string access;
+        [Newtonsoft.Json.JsonProperty("refresh")] public string refresh;
+        [Newtonsoft.Json.JsonProperty("user")] public LoginUserDto user;
+    }
+
+    private class LoginUserDto
+    {
+        [Newtonsoft.Json.JsonProperty("id")] public int id;
+        [Newtonsoft.Json.JsonProperty("player_id")] public int player_id;
+        [Newtonsoft.Json.JsonProperty("username")] public string username;
+        [Newtonsoft.Json.JsonProperty("first_name")] public string first_name;
+        [Newtonsoft.Json.JsonProperty("last_name")] public string last_name;
+        [Newtonsoft.Json.JsonProperty("registration_date")] public string registration_date;
+        [Newtonsoft.Json.JsonProperty("gender")] public string gender;
+        [Newtonsoft.Json.JsonProperty("coins")] public int coins;
+        [Newtonsoft.Json.JsonProperty("boots")] public int boots;
+        [Newtonsoft.Json.JsonProperty("pants")] public int pants;
+        [Newtonsoft.Json.JsonProperty("tshirt")] public int tshirt;
+        [Newtonsoft.Json.JsonProperty("cap")] public int cap;
+        [Newtonsoft.Json.JsonProperty("level")] public int level;
+        [Newtonsoft.Json.JsonProperty("experience")] public int experience;
+        [Newtonsoft.Json.JsonProperty("exp")] public int exp;
+        [Newtonsoft.Json.JsonProperty("daily_steps")] public int daily_steps;
+        [Newtonsoft.Json.JsonProperty("steps")] public int steps;
+        [Newtonsoft.Json.JsonProperty("strength")] public int strength;
+        [Newtonsoft.Json.JsonProperty("intelligence")] public int intelligence;
+        [Newtonsoft.Json.JsonProperty("agility")] public int agility;
+        [Newtonsoft.Json.JsonProperty("stat_upgrade_points")] public int stat_upgrade_points;
+    }
+
     [Serializable]
     private class UserResponse
     {
@@ -676,6 +771,10 @@ public class APIService
         public int experience;
         public int level;
         public int experience_to_next_level;
+        public int strength;
+        public int intelligence;
+        public int agility;
+        public int stat_upgrade_points;
         public LevelUpInfo level_up;
     }
     
@@ -691,6 +790,7 @@ public class APIService
     {
         public int new_level;
         public int levels_gained;
+        public int stat_upgrade_points_gained;
     }
     
     [Serializable]
@@ -712,6 +812,10 @@ public class APIService
         public int experience_to_next_level;
         public int experience_per_level;
         public float progress_to_next_level_percent;
+        public int strength;
+        public int intelligence;
+        public int agility;
+        public int stat_upgrade_points;
     }
     
     [Serializable]
@@ -722,6 +826,32 @@ public class APIService
         public int player_id;
     }
     
+    [Serializable]
+    public class UpgradeStatRequest
+    {
+        public string stat_type;
+    }
+
+    [Serializable]
+    public class UpgradeStatResponse
+    {
+        public bool success;
+        public string message;
+        public string stat_upgraded;
+        public int new_value;
+        public int stat_upgrade_points_remaining;
+        public UpgradeStatPlayerStats player_stats;
+    }
+
+    [Serializable]
+    public class UpgradeStatPlayerStats
+    {
+        public int strength;
+        public int intelligence;
+        public int agility;
+        public int stat_upgrade_points;
+    }
+
     [Serializable]
     public class ErrorResponse
     {

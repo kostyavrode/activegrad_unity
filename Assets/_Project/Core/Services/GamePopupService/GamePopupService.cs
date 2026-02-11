@@ -38,16 +38,15 @@ public class GamePopupService
         List<string> infoForView = new List<string>();
         
         infoForView.Add(response.playerData.Username);
-        infoForView.Add(response.playerData.Landmarks.TotalCount.ToString());
-        infoForView.Add("1");
+        infoForView.Add(response.playerData.Landmarks?.TotalCount.ToString() ?? "0");
+        infoForView.Add(response.playerData.Level.ToString());
         infoForView.Add(response.playerData.FirstName);
         infoForView.Add(response.playerData.LastName);
         infoForView.Add(response.playerData.RegistrationDate.ToString());
         infoForView.Add(response.playerData.Id.ToString());
         
         string[] finalInfoForView = infoForView.ToArray();
-        int[] t = response.playerData.Landmarks.ExternalIds.ToArray();
-        Debug.Log(t[0]);
+        int[] t = response.playerData.Landmarks?.ExternalIds?.ToArray() ?? Array.Empty<int>();
 
         popup.SetInfo(finalInfoForView, t);
 
@@ -183,6 +182,10 @@ public class PlayerData
     [JsonProperty("last_name")] public string LastName;
     [JsonProperty("registration_date")] public string RegistrationDate; 
     [JsonProperty("gender")] public string Gender;
+    [JsonProperty("level")] public int Level;
+    [JsonProperty("strength")] public int Strength;
+    [JsonProperty("intelligence")] public int Intelligence;
+    [JsonProperty("agility")] public int Agility;
     [JsonProperty("landmarks")] public Landmarks Landmarks;
     [JsonProperty("clan")] public ClanData clan;
 }
