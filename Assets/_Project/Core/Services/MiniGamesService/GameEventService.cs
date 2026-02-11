@@ -169,9 +169,11 @@ public class GameEventService : IInitializable, IDisposable, ITickable
 
     private GameEventType GetRandomEventType()
     {
-        var types = Enum.GetValues(typeof(GameEventType));
-        return (GameEventType)types.GetValue(0);
-        //return (GameEventType)types.GetValue(UnityEngine.Random.Range(0, types.Length));
+        // Всегда возвращаем Jump как игру по умолчанию
+        return GameEventType.Jump;
+        // Для случайного выбора раскомментируйте следующую строку:
+        // var types = Enum.GetValues(typeof(GameEventType));
+        // return (GameEventType)types.GetValue(UnityEngine.Random.Range(0, types.Length));
     }
 
     private void SpawnEventObject(GameEventData eventData, Vector2d coordinates)
@@ -229,6 +231,7 @@ public class GameEventService : IInitializable, IDisposable, ITickable
 
     public void HandleEventClicked(string eventId)
     {
+        Debug.Log ("HandleEventClicked: " + eventId);
         if (!_activeEvents.ContainsKey(eventId))
             return;
         
@@ -238,6 +241,19 @@ public class GameEventService : IInitializable, IDisposable, ITickable
 
     private void OpenGameEventView(GameEventData eventData)
     {
+
+        var canvas = GameObject.FindGameObjectWithTag("Canvas");
+        if (canvas == null)
+        {
+            Debug.LogError("[GameEventService] Canvas с тегом 'Canvas' не найден!");
+            return;
+        }
+        else if (canvas.transform.childCount > 1)
+        {
+            Debug.LogError("[GameEventService] Уже открыто другое окно" + canvas.GetComponentsInChildren<RectTransform>().Length);
+            return;
+        }
+        
         IGameEvent game = _miniGamesService.CreateGameInstance(eventData.EventType);
         
         if (game == null)
@@ -247,12 +263,6 @@ public class GameEventService : IInitializable, IDisposable, ITickable
         }
         
         var view = _gameEventViewFactory.Create();
-        var canvas = GameObject.FindGameObjectWithTag("Canvas");
-        if (canvas == null)
-        {
-            Debug.LogError("[GameEventService] Canvas с тегом 'Canvas' не найден!");
-            return;
-        }
         
         view.transform.SetParent(canvas.transform, false);
         

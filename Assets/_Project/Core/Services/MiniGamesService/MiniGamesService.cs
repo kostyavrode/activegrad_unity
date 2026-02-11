@@ -15,6 +15,10 @@ public class MiniGamesService
     {
         switch (gameType)
         {
+            case GameEventType.TrainPath:
+                return _container.Instantiate<TrainPathGameEvent>();
+            case GameEventType.Jump:
+                return _container.Instantiate<JumpGameEvent>();
             case GameEventType.FlappyBird:
                 return _container.Instantiate<FlappyBirdGameEvent>();
             case GameEventType.Quiz:

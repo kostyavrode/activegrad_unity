@@ -52,8 +52,14 @@ public class SightsUpdater : IInitializable, IDisposable
 
     public async void CreateSightDetailsPopup(int pageID, bool isOtherSights=false)
     {
+        Transform canvasTransform = GameObject.FindGameObjectWithTag("Canvas").transform;
+        if (canvasTransform.childCount > 1)
+        {
+            Debug.LogError("[SightsUpdater] Canvas child count is more than 1]");
+            return;
+        }
         var popup = _sightDetailsViewFactory.Create();
-        popup.transform.SetParent(GameObject.FindGameObjectWithTag("Canvas").transform, false);
+        popup.transform.SetParent(canvasTransform, false);
         Sprite sprite;
         try
         {
