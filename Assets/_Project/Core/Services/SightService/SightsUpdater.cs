@@ -25,7 +25,7 @@ public class SightsUpdater : IInitializable, IDisposable
     private readonly UserDataService _userData;
 
     private bool _isRunning;
-    private readonly float _interval = 5f;
+    private readonly float _interval = 10f;
 
     public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory, IPopupService popupService, SpawnOnMap spawnOnMap, 
         APIService apiService, UserDataService userDataService)
@@ -129,20 +129,22 @@ public class SightsUpdater : IInitializable, IDisposable
         }
     }
 
-    private async Task<SightFullInfo> LoadSafeSight(int pageId)
+    private async Task<List<SightFullInfo>> LoadSightDetailsBatchSafe(List<int> pageIds)
     {
         int retry = 3;
-
         while (retry-- > 0)
         {
             try
             {
-                return await _sightService.LoadSightDetailsAsync(pageId);
+                return await _sightService.LoadSightDetailsBatchAsync(pageIds);
             }
-            catch { await Task.Delay(500); }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[SightsUpdater] Batch load failed, retry in 1s: {e.Message}");
+                await Task.Delay(1000);
+            }
         }
-
-        return null;
+        return new List<SightFullInfo>();
     }
 
     private async Task UpdateSights()
@@ -153,24 +155,28 @@ public class SightsUpdater : IInitializable, IDisposable
 
         var spawnData = nearestList.ToArray();
         
-         PushToSpawnOnMap(spawnData);
+        PushToSpawnOnMap(spawnData);
          
         CachedNearestSights = nearestList
             .Where(s => s != null)
             .ToDictionary(s => s.PageId, s => s);
         
-        var tasks = CachedNearestSights.Keys
-            .Select(pageId => LoadSafeSight(pageId))
+        CachedSights ??= new Dictionary<int, SightFullInfo>();
+        
+        var pageIdsToLoad = CachedNearestSights.Keys
+            .Where(pageId => !CachedSights.ContainsKey(pageId))
             .ToList();
-
-        var results = await Task.WhenAll(tasks);
         
-        CachedSights = results
-            .Where(r => r != null)
-            .ToDictionary(r => r.PageId, r => r);
+        if (pageIdsToLoad.Count > 0)
+        {
+            var newSights = await LoadSightDetailsBatchSafe(pageIdsToLoad);
+            foreach (var sight in newSights)
+            {
+                if (sight != null)
+                    CachedSights[sight.PageId] = sight;
+            }
+        }
         
-        
-
         await LoadAllImages();
         //await _apiService.GetSightsList(1);
         var (s, message) = await _apiService.GetSightsList(_userData.ID);

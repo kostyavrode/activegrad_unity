@@ -61,16 +61,62 @@ public class SightService : ISightService
 
     public async Task<SightFullInfo> LoadSightDetailsAsync(int pageId)
     {
-        
         string url = _client.BuildExtractUrl(pageId);
         string json = await _client.GetAsync(url);
+        if (string.IsNullOrEmpty(json))
+            return null;
 
+        return ParseSightFromJson(pageId, json);
+    }
+
+    public async Task<List<SightFullInfo>> LoadSightDetailsBatchAsync(List<int> pageIds)
+    {
+        if (pageIds == null || pageIds.Count == 0)
+            return new List<SightFullInfo>();
+
+        string url = _client.BuildExtractBatchUrl(pageIds);
+        string json = await _client.GetAsync(url);
+        if (string.IsNullOrEmpty(json))
+            return new List<SightFullInfo>();
+
+        var result = new List<SightFullInfo>();
+        try
+        {
+            var root = JObject.Parse(json);
+            var pages = (JObject)root["query"]["pages"];
+            foreach (var kv in pages)
+            {
+                int pageId = kv.Value["pageid"].Value<int>();
+                var page = (JObject)kv.Value;
+                string description = page["extract"]?.Value<string>() ?? "";
+                string thumbUrl = page["thumbnail"]?["source"]?.Value<string>();
+                string originalUrl = page["original"]?["source"]?.Value<string>();
+
+                result.Add(new SightFullInfo
+                {
+                    PageId = pageId,
+                    Title = page["title"]?.Value<string>() ?? "",
+                    Description = description,
+                    ImageUrl = thumbUrl,
+                    OriginalImageUrl = originalUrl ?? thumbUrl
+                });
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("[SightService] Parse batch failed: " + e.Message);
+        }
+
+        return result;
+    }
+
+    private SightFullInfo ParseSightFromJson(int pageId, string json)
+    {
         JObject root = JObject.Parse(json);
         JObject pages = (JObject)root["query"]["pages"];
         JObject page = (JObject)pages.First.First;
 
         string description = page["extract"]?.Value<string>() ?? "";
-
         string thumbUrl = page["thumbnail"]?["source"]?.Value<string>();
         string originalUrl = page["original"]?["source"]?.Value<string>();
 
@@ -80,7 +126,7 @@ public class SightService : ISightService
             Title = page["title"].Value<string>(),
             Description = description,
             ImageUrl = thumbUrl,
-            OriginalImageUrl = originalUrl ?? thumbUrl // fallback
+            OriginalImageUrl = originalUrl ?? thumbUrl
         };
     }
 

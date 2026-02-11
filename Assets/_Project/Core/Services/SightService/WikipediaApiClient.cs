@@ -40,4 +40,10 @@ public class WikipediaApiClient
 
     public string BuildExtractUrl(int pageId) =>
         $"{Base}?action=query&prop=extracts|pageimages&exintro=1&explaintext=1&pageids={pageId}&pithumbsize=500&format=json";
+
+    public string BuildExtractBatchUrl(System.Collections.Generic.IEnumerable<int> pageIds)
+    {
+        var ids = string.Join("|", pageIds);
+        return $"{Base}?action=query&prop=extracts|pageimages&exintro=1&explaintext=1&pageids={ids}&pithumbsize=500&format=json";
+    }
 }
