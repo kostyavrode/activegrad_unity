@@ -52,6 +52,17 @@ public class UserDataService
     public int Coins => _data.coins;
     public int Level => _data.level;
     public int Experience => _data.experience;
+
+    /// <summary>
+    /// Уровень профессии в диапазоне 0..1.
+    /// Влияет на вероятность остановки бонусного ползунка ближе к центру.
+    /// TODO: реализовать когда будут данные прокачки профессии.
+    /// </summary>
+    public float GetProfessionLevel()
+    {
+        return 0.5f;
+    }
+
     public int Steps => _data.dailySteps;
     
     public int[] Sights => _data.sights;

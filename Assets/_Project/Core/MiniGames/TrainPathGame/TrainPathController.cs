@@ -4,11 +4,13 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using ActiveGrad.MiniGames;
 
 public class TrainPathController : MonoBehaviour
 {
     private TrainPathGameEvent _gameEvent;
     private TrainPathUI _ui;
+    private UserDataService _userDataService;
     
     private TrainMapGenerator _mapGenerator;
     private List<Station> _stations = new List<Station>();
@@ -21,14 +23,16 @@ public class TrainPathController : MonoBehaviour
     private Station _currentStation;
     private bool _isMoving = false;
     private float _gameTime = 0f;
+    private int _finalScore = 0;
     private float _optimalTime = 0f;
     private bool _gameStarted = false;
     private bool _gameEnded = false;
 
-    public void Initialize(TrainPathGameEvent gameEvent, TrainPathUI ui)
+    public void Initialize(TrainPathGameEvent gameEvent, TrainPathUI ui, UserDataService userDataService)
     {
         _gameEvent = gameEvent;
         _ui = ui;
+        _userDataService = userDataService;
         
         if (_ui == null)
         {
@@ -82,7 +86,7 @@ public class TrainPathController : MonoBehaviour
     {
         if (_gameEvent != null)
         {
-            _gameEvent.OnGameEnded(_gameTime, _optimalTime, IsOptimalPath());
+            _gameEvent.OnGameEndedWithFinalScore(_finalScore > 0 ? _finalScore : CalculateScore());
         }
     }
 
@@ -284,10 +288,31 @@ public class TrainPathController : MonoBehaviour
         _isMoving = false;
         
         bool isOptimal = IsOptimalPath();
-        int score = CalculateScore();
+        int baseScore = CalculateScore();
         
-        _ui.SetResult(_gameTime, _optimalTime, isOptimal, score);
+        _ui.SetResult(_gameTime, _optimalTime, isOptimal, baseScore);
         _ui.ShowScreen(TrainPathScreen.End);
+        
+        var bonusSlider = _ui.BonusSliderComponent;
+        if (bonusSlider != null)
+        {
+            bonusSlider.Run(
+                () => _userDataService != null ? _userDataService.GetProfessionLevel() : 0.5f,
+                baseScore,
+                OnBonusSliderComplete);
+        }
+        else
+        {
+            _finalScore = baseScore;
+            if (_ui.EndScreenButtonsContainer != null)
+                _ui.EndScreenButtonsContainer.SetActive(true);
+        }
+    }
+
+    private void OnBonusSliderComplete(int finalScore, float bonus)
+    {
+        _finalScore = finalScore;
+        _ui.SetResult(_gameTime, _optimalTime, IsOptimalPath(), finalScore);
     }
 
     private bool IsOptimalPath()

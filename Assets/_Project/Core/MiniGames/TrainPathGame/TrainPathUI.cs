@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using ActiveGrad.MiniGames;
 
 public enum TrainPathScreen
 {
@@ -30,6 +31,12 @@ public class TrainPathUI : MonoBehaviour
     [SerializeField] private TMP_Text _playerTimeText;
     [SerializeField] private TMP_Text _optimalTimeText;
     [SerializeField] private TMP_Text _scoreText;
+    [SerializeField] private RectTransform _bonusSliderTrack;
+    [SerializeField] private RectTransform _bonusSliderIndicator;
+    [SerializeField] private TMP_Text _bonusLeftLabel;
+    [SerializeField] private TMP_Text _bonusRightLabel;
+    [SerializeField] private GameObject _endScreenButtonsContainer;
+    [SerializeField] private BonusSliderComponent _bonusSliderComponent;
     [SerializeField] private Button _restartButton;
     [SerializeField] private Button _finishButton;
     
@@ -48,6 +55,12 @@ public class TrainPathUI : MonoBehaviour
     public TMP_Text PlayerTimeText => _playerTimeText;
     public TMP_Text OptimalTimeText => _optimalTimeText;
     public TMP_Text ScoreText => _scoreText;
+    public RectTransform BonusSliderTrack => _bonusSliderTrack;
+    public RectTransform BonusSliderIndicator => _bonusSliderIndicator;
+    public TMP_Text BonusLeftLabel => _bonusLeftLabel;
+    public TMP_Text BonusRightLabel => _bonusRightLabel;
+    public GameObject EndScreenButtonsContainer => _endScreenButtonsContainer;
+    public BonusSliderComponent BonusSliderComponent => _bonusSliderComponent;
     public Button RestartButton => _restartButton;
     public Button FinishButton => _finishButton;
     public Image Background => _background;
@@ -65,6 +78,12 @@ public class TrainPathUI : MonoBehaviour
     public void SetPlayerTimeText(TMP_Text text) => _playerTimeText = text;
     public void SetOptimalTimeText(TMP_Text text) => _optimalTimeText = text;
     public void SetScoreText(TMP_Text text) => _scoreText = text;
+    public void SetBonusSliderTrack(RectTransform rt) => _bonusSliderTrack = rt;
+    public void SetBonusSliderIndicator(RectTransform rt) => _bonusSliderIndicator = rt;
+    public void SetBonusLeftLabel(TMP_Text text) => _bonusLeftLabel = text;
+    public void SetBonusRightLabel(TMP_Text text) => _bonusRightLabel = text;
+    public void SetEndScreenButtonsContainer(GameObject go) => _endScreenButtonsContainer = go;
+    public void SetBonusSliderComponent(BonusSliderComponent c) => _bonusSliderComponent = c;
     public void SetRestartButton(Button button) => _restartButton = button;
     public void SetFinishButton(Button button) => _finishButton = button;
     public void SetBackground(Image image) => _background = image;

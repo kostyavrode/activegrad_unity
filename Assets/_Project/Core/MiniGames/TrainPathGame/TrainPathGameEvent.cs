@@ -1,11 +1,15 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Zenject;
+using ActiveGrad.MiniGames;
 
 public class TrainPathGameEvent : BaseGameEvent
 {
     private GameObject _gameRoot;
     private TrainPathController _controller;
+
+    [Inject] private UserDataService _userDataService;
 
     protected override void OnStartGame()
     {
@@ -54,7 +58,7 @@ public class TrainPathGameEvent : BaseGameEvent
         ui.SetEndScreen(endScreen);
         
         // Инициализируем контроллер
-        _controller.Initialize(this, ui);
+        _controller.Initialize(this, ui, _userDataService);
     }
 
     private GameObject CreateBackground(Transform parent)
@@ -226,21 +230,102 @@ public class TrainPathGameEvent : BaseGameEvent
         if (ui != null)
             ui.SetScoreText(scoreText);
         
-        // Restart Button
-        GameObject restartBtn = CreateButton("RestartButton", screen.transform,
-            new Vector2(0.5f, 0.5f), new Vector2(-100, -120), new Vector2(150, 50),
+        // Bonus Slider
+        GameObject bonusSliderContainer = new GameObject("BonusSliderContainer");
+        bonusSliderContainer.transform.SetParent(screen.transform, false);
+        
+        RectTransform bonusContainerRect = bonusSliderContainer.AddComponent<RectTransform>();
+        bonusContainerRect.anchorMin = new Vector2(0.5f, 0.5f);
+        bonusContainerRect.anchorMax = new Vector2(0.5f, 0.5f);
+        bonusContainerRect.sizeDelta = new Vector2(450, 60);
+        bonusContainerRect.anchoredPosition = new Vector2(0, -140);
+        
+        GameObject trackObj = new GameObject("BonusSliderTrack");
+        trackObj.transform.SetParent(bonusSliderContainer.transform, false);
+        Image trackImg = trackObj.AddComponent<Image>();
+        trackImg.color = new Color(0.3f, 0.3f, 0.3f);
+        RectTransform trackRect = trackObj.GetComponent<RectTransform>();
+        trackRect.anchorMin = new Vector2(0.5f, 0.5f);
+        trackRect.anchorMax = new Vector2(0.5f, 0.5f);
+        trackRect.sizeDelta = new Vector2(400, 30);
+        trackRect.anchoredPosition = Vector2.zero;
+        
+        GameObject leftLabelObj = new GameObject("BonusLeftLabel");
+        leftLabelObj.transform.SetParent(bonusSliderContainer.transform, false);
+        TMP_Text leftLabel = leftLabelObj.AddComponent<TextMeshProUGUI>();
+        leftLabel.text = "Уровень профессии";
+        leftLabel.fontSize = 12;
+        leftLabel.color = Color.white;
+        leftLabel.alignment = TextAlignmentOptions.Left;
+        RectTransform leftRect = leftLabelObj.GetComponent<RectTransform>();
+        leftRect.anchorMin = new Vector2(0, 0.5f);
+        leftRect.anchorMax = new Vector2(0, 0.5f);
+        leftRect.sizeDelta = new Vector2(180, 20);
+        leftRect.anchoredPosition = new Vector2(-210, -20);
+        
+        GameObject rightLabelObj = new GameObject("BonusRightLabel");
+        rightLabelObj.transform.SetParent(bonusSliderContainer.transform, false);
+        TMP_Text rightLabel = rightLabelObj.AddComponent<TextMeshProUGUI>();
+        rightLabel.text = "% выполнения задания";
+        rightLabel.fontSize = 12;
+        rightLabel.color = Color.white;
+        rightLabel.alignment = TextAlignmentOptions.Right;
+        RectTransform rightRect = rightLabelObj.GetComponent<RectTransform>();
+        rightRect.anchorMin = new Vector2(1, 0.5f);
+        rightRect.anchorMax = new Vector2(1, 0.5f);
+        rightRect.sizeDelta = new Vector2(180, 20);
+        rightRect.anchoredPosition = new Vector2(210, -20);
+        
+        GameObject indicatorObj = new GameObject("BonusSliderIndicator");
+        indicatorObj.transform.SetParent(trackObj.transform, false);
+        Image indicatorImg = indicatorObj.AddComponent<Image>();
+        indicatorImg.color = Color.yellow;
+        RectTransform indicatorRect = indicatorObj.GetComponent<RectTransform>();
+        indicatorRect.anchorMin = new Vector2(0.5f, 0.5f);
+        indicatorRect.anchorMax = new Vector2(0.5f, 0.5f);
+        indicatorRect.sizeDelta = new Vector2(10, 36);
+        indicatorRect.anchoredPosition = Vector2.zero;
+        
+        BonusSliderComponent bonusSlider = bonusSliderContainer.AddComponent<BonusSliderComponent>();
+        bonusSlider.Setup(trackRect, indicatorRect, leftLabel, rightLabel, null);
+        
+        // Buttons Container (скрывается до остановки ползунка)
+        GameObject buttonsContainer = new GameObject("EndScreenButtonsContainer");
+        buttonsContainer.transform.SetParent(screen.transform, false);
+        
+        RectTransform buttonsRect = buttonsContainer.AddComponent<RectTransform>();
+        buttonsRect.anchorMin = new Vector2(0.5f, 0.5f);
+        buttonsRect.anchorMax = new Vector2(0.5f, 0.5f);
+        buttonsRect.sizeDelta = new Vector2(320, 60);
+        buttonsRect.anchoredPosition = new Vector2(0, -120);
+        
+        GameObject restartBtn = CreateButton("RestartButton", buttonsContainer.transform,
+            new Vector2(0.5f, 0.5f), new Vector2(-80, 0), new Vector2(150, 50),
             new Color(0.2f, 0.5f, 0.8f), "Заново");
         
         if (ui != null)
             ui.SetRestartButton(restartBtn.GetComponent<Button>());
         
-        // Finish Button
-        GameObject finishBtn = CreateButton("FinishButton", screen.transform,
-            new Vector2(0.5f, 0.5f), new Vector2(100, -120), new Vector2(150, 50),
+        GameObject finishBtn = CreateButton("FinishButton", buttonsContainer.transform,
+            new Vector2(0.5f, 0.5f), new Vector2(80, 0), new Vector2(150, 50),
             new Color(0.2f, 0.8f, 0.2f), "Завершить");
         
         if (ui != null)
             ui.SetFinishButton(finishBtn.GetComponent<Button>());
+        
+        buttonsContainer.SetActive(false);
+        
+        bonusSlider.Setup(trackRect, indicatorRect, leftLabel, rightLabel, buttonsContainer);
+        
+        if (ui != null)
+        {
+            ui.SetBonusSliderTrack(trackRect);
+            ui.SetBonusSliderIndicator(indicatorRect);
+            ui.SetBonusLeftLabel(leftLabel);
+            ui.SetBonusRightLabel(rightLabel);
+            ui.SetEndScreenButtonsContainer(buttonsContainer);
+            ui.SetBonusSliderComponent(bonusSlider);
+        }
         
         return screen;
     }
@@ -313,6 +398,11 @@ public class TrainPathGameEvent : BaseGameEvent
     {
         int score = CalculateScore(playerTime, optimalTime, isOptimal);
         FinishGame(true, score);
+    }
+
+    public void OnGameEndedWithFinalScore(int finalScore)
+    {
+        FinishGame(true, finalScore);
     }
 
     private int CalculateScore(float playerTime, float optimalTime, bool isOptimal)

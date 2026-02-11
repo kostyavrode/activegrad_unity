@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using ActiveGrad.MiniGames;
 
 public class JumpController : MonoBehaviour
 {
     private JumpGameEvent _gameEvent;
     private JumpUI _ui;
+    private UserDataService _userDataService;
     
     private const int TOTAL_JUMPS = 3;
     private int _currentJump = 0;
@@ -42,10 +44,11 @@ public class JumpController : MonoBehaviour
     // Zone visual elements
     private List<GameObject> _zoneVisuals = new List<GameObject>();
 
-    public void Initialize(JumpGameEvent gameEvent, JumpUI ui)
+    public void Initialize(JumpGameEvent gameEvent, JumpUI ui, UserDataService userDataService)
     {
         _gameEvent = gameEvent;
         _ui = ui;
+        _userDataService = userDataService;
         
         if (_ui == null)
         {
@@ -352,6 +355,8 @@ public class JumpController : MonoBehaviour
         }
     }
 
+    private int _finalScore;
+
     private void EndGame()
     {
         _isGameActive = false;
@@ -360,13 +365,34 @@ public class JumpController : MonoBehaviour
         
         _ui.SetTotalScore(_totalScore);
         _ui.ShowScreen(JumpScreen.End);
+        
+        var bonusSlider = _ui.BonusSliderComponent;
+        if (bonusSlider != null)
+        {
+            bonusSlider.Run(
+                () => _userDataService != null ? _userDataService.GetProfessionLevel() : 0.5f,
+                _totalScore,
+                OnBonusSliderComplete);
+        }
+        else
+        {
+            _finalScore = _totalScore;
+            if (_ui.EndScreenButtonsContainer != null)
+                _ui.EndScreenButtonsContainer.SetActive(true);
+        }
+    }
+
+    private void OnBonusSliderComplete(int finalScore, float bonus)
+    {
+        _finalScore = finalScore;
+        _ui.SetTotalScore(finalScore);
     }
 
     private void FinishGame()
     {
         if (_gameEvent != null)
         {
-            _gameEvent.OnGameEnded(_totalScore);
+            _gameEvent.OnGameEnded(_finalScore > 0 ? _finalScore : _totalScore);
         }
     }
 

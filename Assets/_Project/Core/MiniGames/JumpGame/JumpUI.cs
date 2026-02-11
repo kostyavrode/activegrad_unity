@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using ActiveGrad.MiniGames;
 
 public enum JumpScreen
 {
@@ -31,6 +32,8 @@ public class JumpUI : MonoBehaviour
     [Header("End Screen")]
     [SerializeField] private TMP_Text _resultText;
     [SerializeField] private TMP_Text _totalScoreText;
+    [SerializeField] private BonusSliderComponent _bonusSliderComponent;
+    [SerializeField] private GameObject _endScreenButtonsContainer;
     [SerializeField] private Button _finishButton;
     
     [Header("Background")]
@@ -49,6 +52,8 @@ public class JumpUI : MonoBehaviour
     public TMP_Text InstructionText => _instructionText;
     public TMP_Text ResultText => _resultText;
     public TMP_Text TotalScoreText => _totalScoreText;
+    public BonusSliderComponent BonusSliderComponent => _bonusSliderComponent;
+    public GameObject EndScreenButtonsContainer => _endScreenButtonsContainer;
     public Button FinishButton => _finishButton;
     public Image Background => _background;
 
@@ -66,6 +71,8 @@ public class JumpUI : MonoBehaviour
     public void SetInstructionText(TMP_Text text) => _instructionText = text;
     public void SetResultText(TMP_Text text) => _resultText = text;
     public void SetTotalScoreText(TMP_Text text) => _totalScoreText = text;
+    public void SetBonusSliderComponent(BonusSliderComponent c) => _bonusSliderComponent = c;
+    public void SetEndScreenButtonsContainer(GameObject go) => _endScreenButtonsContainer = go;
     public void SetFinishButton(Button button) => _finishButton = button;
     public void SetBackground(Image image) => _background = image;
 
