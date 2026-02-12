@@ -15,6 +15,7 @@ public class SightsUpdater : IInitializable, IDisposable
     public Dictionary<int, Sprite> ImageCache { get; private set; } = new Dictionary<int, Sprite>();
     
     public event Action<int, Sprite> OnImageLoaded;
+    public event Action OnSightsUpdated;
 
     private readonly ISightService _sightService;
     private readonly LocationService _locationService;
@@ -25,7 +26,12 @@ public class SightsUpdater : IInitializable, IDisposable
     private readonly UserDataService _userData;
 
     private bool _isRunning;
-    private readonly float _interval = 10f;
+    private const float MinUpdateIntervalSec = 15f;
+    private const float MinDistanceDegrees = 0.0005f;
+    private const float PollIntervalSec = 3f;
+    private Vector2 _lastUpdateCoords;
+    private float _lastUpdateTime;
+    private bool _lastUpdateCoordsInitialized;
 
     public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory, IPopupService popupService, SpawnOnMap spawnOnMap, 
         APIService apiService, UserDataService userDataService)
@@ -78,7 +84,8 @@ public class SightsUpdater : IInitializable, IDisposable
 
         await LoadAndDisplayCaptureInfo(popup, pageID);
 
-        if (CachedNearestSights[pageID].Distance <= 600 && _userData.CheckSight(pageID))
+        float distToSight = GetDistanceToSight(pageID);
+        if (distToSight <= 600 && _userData.CheckSight(pageID))
         {
             popup.SetCheckInButtonState(true);
             popup.OnCheckInClicked += HandleCheckInButtonClicked;
@@ -95,7 +102,8 @@ public class SightsUpdater : IInitializable, IDisposable
             string clanName = response.clan != null ? response.clan.name : "";
             
             popup.SetCaptureInfo(response.captured, capturedBy, response.captured_at, clanName);
-            if (CachedNearestSights[pageID].Distance <= 600)
+            float distToSight = GetDistanceToSight(pageID);
+            if (distToSight <= 600)
             {
                 popup.SetCaptureButtonState(response.can_capture_now);
             }
@@ -115,17 +123,23 @@ public class SightsUpdater : IInitializable, IDisposable
     {
         while (_isRunning)
         {
-            /*try
+            Vector2 coords = _locationService.GetCoordinates();
+            if (coords != Vector2.zero)
             {
-                await UpdateSights();
+                float timeSinceUpdate = _lastUpdateCoordsInitialized ? Time.realtimeSinceStartup - _lastUpdateTime : float.MaxValue;
+                float distDegrees = _lastUpdateCoordsInitialized ? Vector2.Distance(coords, _lastUpdateCoords) : float.MaxValue;
+                bool timeOk = timeSinceUpdate >= MinUpdateIntervalSec;
+                bool distanceOk = distDegrees >= MinDistanceDegrees;
+
+                if (timeOk && distanceOk)
+                {
+                    await UpdateSights();
+                    _lastUpdateCoords = _locationService.GetCoordinates();
+                    _lastUpdateTime = Time.realtimeSinceStartup;
+                    _lastUpdateCoordsInitialized = true;
+                }
             }
-            catch (Exception e)
-            {
-                Debug.LogError("UpdateSights FAILED: " + e.Message);
-            }*/
-            
-            await UpdateSights();
-            await Task.Delay((int)(_interval * 1000));
+            await Task.Delay((int)(PollIntervalSec * 1000));
         }
     }
 
@@ -178,10 +192,9 @@ public class SightsUpdater : IInitializable, IDisposable
         }
         
         await LoadAllImages();
-        //await _apiService.GetSightsList(1);
         var (s, message) = await _apiService.GetSightsList(_userData.ID);
         _userData.SetSights(_apiService.ParseExternalIds(message));
-        //_userData.SetSights(message.ToArray());
+        OnSightsUpdated?.Invoke();
     }
 
 
@@ -189,6 +202,7 @@ public class SightsUpdater : IInitializable, IDisposable
 
     private async Task LoadAllImages()
     {
+        const int delayBetweenLoadsMs = 1200;
         foreach (var pair in CachedSights)
         {
             int pageId = pair.Key;
@@ -200,6 +214,9 @@ public class SightsUpdater : IInitializable, IDisposable
             if (ImageCache.ContainsKey(pageId))
                 continue;
 
+            await Task.Delay(delayBetweenLoadsMs);
+            if (!_isRunning) break;
+
             var url = FixUrl(sight.OriginalImageUrl);
             var sprite = await LoadSpriteAsync(url);
 
@@ -209,6 +226,25 @@ public class SightsUpdater : IInitializable, IDisposable
                 OnImageLoaded?.Invoke(pageId, sprite);
             }
         }
+    }
+
+    private float GetDistanceToSight(int pageId)
+    {
+        if (CachedNearestSights == null || !CachedNearestSights.TryGetValue(pageId, out var sight))
+            return float.MaxValue;
+        Vector2 myCoords = _locationService.GetCoordinates();
+        return GeoDistanceMeters((float)sight.Latitude, (float)sight.Longitude, myCoords.y, myCoords.x);
+    }
+
+    private static float GeoDistanceMeters(float lat1, float lon1, float lat2, float lon2)
+    {
+        const float R = 6371000f;
+        float dLat = (lat2 - lat1) * Mathf.Deg2Rad;
+        float dLon = (lon2 - lon1) * Mathf.Deg2Rad;
+        float a = Mathf.Sin(dLat / 2) * Mathf.Sin(dLat / 2) +
+                  Mathf.Cos(lat1 * Mathf.Deg2Rad) * Mathf.Cos(lat2 * Mathf.Deg2Rad) * Mathf.Sin(dLon / 2) * Mathf.Sin(dLon / 2);
+        float c = 2 * Mathf.Atan2(Mathf.Sqrt(a), Mathf.Sqrt(1 - a));
+        return R * c;
     }
 
     private string FixUrl(string url)
@@ -283,8 +319,11 @@ public class SightsUpdater : IInitializable, IDisposable
 
     private async void HandleCheckInButtonClicked(int pageId)
     {
-        // Старый функционал "отметиться" (для квестов и статистики)
-        await _apiService.SetSightMarked(pageId);
+        var (success, _) = await _apiService.SetSightMarked(pageId);
+        if (success)
+        {
+            _userData.AddSightToMarked(pageId);
+        }
     }
 
     private async void HandleCaptureButtonClicked(int pageId)

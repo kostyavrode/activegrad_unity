@@ -35,13 +35,20 @@ public class SightsMediator : IInitializable, IDisposable
         _sightsWindow.OnBackClicked += () => _uiManager.Back();
         
         _sightsUpdater.OnImageLoaded += HandleImageLoaded;
+        _sightsUpdater.OnSightsUpdated += HandleSightsUpdated;
     }
 
     public void Dispose()
     {
         _sightsWindow.OnWindowOpened -= LoadSights;
-        
         _sightsUpdater.OnImageLoaded -= HandleImageLoaded;
+        _sightsUpdater.OnSightsUpdated -= HandleSightsUpdated;
+    }
+
+    private void HandleSightsUpdated()
+    {
+        if (_sightsWindow.gameObject.activeInHierarchy)
+            LoadSights();
     }
 
     private void LoadSights()

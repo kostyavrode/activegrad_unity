@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
@@ -179,6 +180,22 @@ public class UserDataService
     public void SetSights(int[] sights)
     {
         _data.sights = sights;
+        Save();
+    }
+
+    public void AddSightToMarked(int sightId)
+    {
+        if (_data.sights == null)
+        {
+            _data.sights = new[] { sightId };
+        }
+        else
+        {
+            foreach (var id in _data.sights)
+                if (id == sightId) return;
+            var list = new List<int>(_data.sights) { sightId };
+            _data.sights = list.ToArray();
+        }
         Save();
     }
     
