@@ -87,6 +87,20 @@ public class JumpGameEvent : BaseGameEvent
         rect.anchorMax = Vector2.one;
         rect.sizeDelta = Vector2.zero;
         
+        // Навык (Ловкость)
+        GameObject skillObj = CreateText("SkillText", screen.transform,
+            new Vector2(0.5f, 0.75f), Vector2.zero, new Vector2(250, 30),
+            "Ловкость: 1", 20, TextAlignmentOptions.Center);
+        if (ui != null)
+            ui.SetSkillText(skillObj.GetComponent<TMP_Text>());
+        
+        // Кнопка закрытия
+        GameObject closeBtn = CreateButton("CloseButton", screen.transform,
+            new Vector2(1, 1), new Vector2(-60, -30), new Vector2(100, 40),
+            new Color(0.6f, 0.2f, 0.2f), "Закрыть");
+        if (ui != null)
+            ui.SetCloseButton(closeBtn.GetComponent<Button>());
+        
         // Кнопка "Начать игру"
         GameObject buttonObj = new GameObject("StartButton");
         buttonObj.transform.SetParent(screen.transform, false);
@@ -441,5 +455,10 @@ public class JumpGameEvent : BaseGameEvent
     public void OnGameEnded(int totalScore)
     {
         FinishGame(true, totalScore);
+    }
+
+    public void CloseGame()
+    {
+        FinishGame(false, 0);
     }
 }

@@ -274,7 +274,10 @@ public class GameEventService : IInitializable, IDisposable, ITickable
     {
         result.EventId = eventId;
         OnGameCompleted?.Invoke(eventId, result);
-        RemoveEvent(eventId);
+        if (result.IsSuccess)
+        {
+            RemoveEvent(eventId);
+        }
     }
 
     private void RemoveEvent(string eventId)

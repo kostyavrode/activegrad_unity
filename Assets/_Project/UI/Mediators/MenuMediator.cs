@@ -24,6 +24,7 @@ public class MenuMediator : IInitializable, IDisposable
         _menuWindow.OnPromoCodesClicked += HandlePromoCodeClicked;
         _menuWindow.OnFriendsClicked += HandleFriendButtonClicked;
         _menuWindow.OnClansClicked += HandleClansClicked;
+        _menuWindow.OnInventoryClicked += HandleInventoryClicked;
     }
 
     public void Dispose()
@@ -37,6 +38,7 @@ public class MenuMediator : IInitializable, IDisposable
         _menuWindow.OnPromoCodesClicked -= HandlePromoCodeClicked;
         _menuWindow.OnFriendsClicked -= HandleFriendButtonClicked;
         _menuWindow.OnClansClicked -= HandleClansClicked;
+        _menuWindow.OnInventoryClicked -= HandleInventoryClicked;
     }
 
     private void HandleSettingsClicked()
@@ -82,5 +84,13 @@ public class MenuMediator : IInitializable, IDisposable
     private void HandleClansClicked()
     {
         _uiManager.Show<ClansWindow>();
+    }
+
+    private void HandleInventoryClicked()
+    {
+        if (_uiManager.HasWindow<InventoryWindow>())
+            _uiManager.Show<InventoryWindow>();
+        else
+            Debug.LogWarning("[MenuMediator] InventoryWindow not registered in scene. Add it to UIInstaller sceneWindows.");
     }
 }

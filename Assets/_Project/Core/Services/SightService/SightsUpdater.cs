@@ -24,6 +24,7 @@ public class SightsUpdater : IInitializable, IDisposable
     private readonly SpawnOnMap _spawnOnMap;
     private readonly APIService _apiService;
     private readonly UserDataService _userData;
+    private readonly IInventoryService _inventoryService;
 
     private bool _isRunning;
     private const float MinUpdateIntervalSec = 15f;
@@ -34,7 +35,7 @@ public class SightsUpdater : IInitializable, IDisposable
     private bool _lastUpdateCoordsInitialized;
 
     public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory, IPopupService popupService, SpawnOnMap spawnOnMap, 
-        APIService apiService, UserDataService userDataService)
+        APIService apiService, UserDataService userDataService, IInventoryService inventoryService)
     {
         _sightService = sightService;
         _locationService = locationService;
@@ -43,6 +44,7 @@ public class SightsUpdater : IInitializable, IDisposable
         _spawnOnMap = spawnOnMap;
         _apiService = apiService;
         _userData = userDataService;
+        _inventoryService = inventoryService;
     }
 
     public void Initialize()
@@ -84,6 +86,8 @@ public class SightsUpdater : IInitializable, IDisposable
 
         await LoadAndDisplayCaptureInfo(popup, pageID);
 
+        _ = RefreshCaptureInfoLoop(popup, pageID);
+
         float distToSight = GetDistanceToSight(pageID);
         if (distToSight <= 600 && _userData.CheckSight(pageID))
         {
@@ -92,16 +96,34 @@ public class SightsUpdater : IInitializable, IDisposable
         }
     }
 
-    private async Task LoadAndDisplayCaptureInfo(SightDetailsView popup, int pageID)
+    private async Task LoadAndDisplayCaptureInfo(SightDetailsView popup, int pageID, APIService.LandmarkCaptureRecord freshCapture = null)
     {
         var (success, response) = await _apiService.GetLandmarkCaptureInfo(pageID);
-        
+
         if (success && response != null)
         {
-            string capturedBy = response.captured_by != null ? response.captured_by.username : "";
-            string clanName = response.clan != null ? response.clan.name : "";
-            
-            popup.SetCaptureInfo(response.captured, capturedBy, response.captured_at, clanName);
+            string capturedBy, capturedAt, clanName;
+            if (freshCapture != null)
+            {
+                capturedBy = freshCapture.captured_by != null ? freshCapture.captured_by.username : "";
+                capturedAt = freshCapture.captured_at ?? "";
+                clanName = freshCapture.clan != null ? freshCapture.clan.name : "";
+            }
+            else
+            {
+                capturedBy = response.captured_by != null ? response.captured_by.username : "";
+                capturedAt = response.captured_at ?? "";
+                clanName = response.clan != null ? response.clan.name : "";
+            }
+
+            int? shieldLevel = response.defender_shield_level.HasValue && response.defender_shield_level.Value > 0 ? response.defender_shield_level : (int?)null;
+            bool hasCooldown = (response.time_until_next_capture_minutes ?? 0) > 0 || (response.time_until_next_capture_seconds ?? 0) > 0;
+            int? timeMin = hasCooldown ? response.time_until_next_capture_minutes : (int?)null;
+            int? timeSec = hasCooldown ? response.time_until_next_capture_seconds : (int?)null;
+
+            popup.SetCaptureInfo(response.captured, capturedBy, capturedAt, clanName,
+                shieldLevel, timeMin, timeSec, response.block_reason);
+
             float distToSight = GetDistanceToSight(pageID);
             if (distToSight <= 600)
             {
@@ -112,10 +134,22 @@ public class SightsUpdater : IInitializable, IDisposable
                 popup.SetCaptureButtonState(false);
             }
         }
-        else
+        else if (freshCapture == null)
         {
             popup.SetCaptureInfo(false, "", "", "");
             popup.SetCaptureButtonState(true);
+        }
+    }
+
+    private const float CaptureInfoRefreshIntervalSec = 10f;
+
+    private async Task RefreshCaptureInfoLoop(SightDetailsView popup, int pageId)
+    {
+        while (popup != null && popup.gameObject != null)
+        {
+            await Task.Delay((int)(CaptureInfoRefreshIntervalSec * 1000));
+            if (popup == null || !popup.gameObject) break;
+            await LoadAndDisplayCaptureInfo(popup, pageId);
         }
     }
 
@@ -319,11 +353,31 @@ public class SightsUpdater : IInitializable, IDisposable
 
     private async void HandleCheckInButtonClicked(int pageId)
     {
-        var (success, _) = await _apiService.SetSightMarked(pageId);
+        var (success, response) = await _apiService.SetSightMarked(pageId);
         if (success)
         {
             _userData.AddSightToMarked(pageId);
+
+            if (response?.resources_gained != null)
+            {
+                await RefreshInventoryAndShowReward(response.resources_gained);
+            }
         }
+    }
+
+    private async Task RefreshInventoryAndShowReward(APIService.ResourcesGained resourcesGained)
+    {
+        var (invSuccess, invResponse) = await _apiService.GetInventory();
+        if (invSuccess && invResponse?.resources != null)
+            _inventoryService.SetResources(invResponse.resources);
+
+        var parts = new List<string>();
+        if (resourcesGained.metal > 0) parts.Add($"+{resourcesGained.metal} металл");
+        if (resourcesGained.wood > 0) parts.Add($"+{resourcesGained.wood} дерево");
+        if (resourcesGained.blueprints > 0) parts.Add($"+{resourcesGained.blueprints} чертежи");
+
+        if (parts.Count > 0)
+            _popupService.ShowSuccess("Вы получили: " + string.Join(", ", parts));
     }
 
     private async void HandleCaptureButtonClicked(int pageId)
@@ -338,18 +392,16 @@ public class SightsUpdater : IInitializable, IDisposable
                 : "Достопримечательность захвачена!";
             _popupService.ShowSuccess(message);
 
-            // Обновляем информацию о захвате в попапе
-            await RefreshCaptureInfoInPopup(pageId);
+            await RefreshCaptureInfoInPopup(pageId, captureResponse.capture);
         }
         // Если захват не удался, сообщение об ошибке уже показано внутри APIService (SendRequest)
     }
 
-    private async Task RefreshCaptureInfoInPopup(int pageId)
+    private async Task RefreshCaptureInfoInPopup(int pageId, APIService.LandmarkCaptureRecord captureFromResponse = null)
     {
-        // Находим открытый попап для этой достопримечательности
         var popups = GameObject.FindObjectsOfType<SightDetailsView>();
         SightDetailsView targetPopup = null;
-        
+
         foreach (var popup in popups)
         {
             if (popup.SightID == pageId)
@@ -361,8 +413,15 @@ public class SightsUpdater : IInitializable, IDisposable
 
         if (targetPopup != null)
         {
-            // Загружаем обновленную информацию о захвате
-            await LoadAndDisplayCaptureInfo(targetPopup, pageId);
+            if (captureFromResponse != null)
+            {
+                string capturedBy = captureFromResponse.captured_by != null ? captureFromResponse.captured_by.username : "";
+                string clanName = captureFromResponse.clan != null ? captureFromResponse.clan.name : "";
+                targetPopup.SetCaptureInfo(true, capturedBy, captureFromResponse.captured_at, clanName);
+                targetPopup.SetCaptureButtonState(false);
+            }
+
+            await LoadAndDisplayCaptureInfo(targetPopup, pageId, captureFromResponse);
         }
     }
     

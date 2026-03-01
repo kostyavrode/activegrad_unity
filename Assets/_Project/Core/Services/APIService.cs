@@ -309,10 +309,13 @@ public class APIService
             .ToArray();
     }
 
-    public async Task<(bool success, string message)> SetSightMarked(int sightID)
+    /// <summary>
+    /// Отметиться на достопримечательности. За новую отметку выдаются ресурсы (metal, wood, blueprints).
+    /// </summary>
+    public async Task<(bool success, SaveLandmarksResponse response)> SetSightMarked(int sightID)
     {
         if (!IsLoggedIn)
-            return (false, "Not logged in");
+            return (false, null);
 
         var url = $"{BaseUrl}landmarks/save/";
 
@@ -322,16 +325,158 @@ public class APIService
             external_ids = new[] { sightID.ToString() }
         };
 
-        var result = await SendRequest(url, "POST", payload, requireAuth: true);
+        var (success, message) = await SendRequest(url, "POST", payload, requireAuth: true);
 
-        if (result.success)
+        if (!success)
+            return (false, null);
+
+        try
         {
-            Debug.Log("Set sight marked achieved successfully");
-            
-            SightMarkedEvent.Invoke(sightID);
+            var response = JsonConvert.DeserializeObject<SaveLandmarksResponse>(message);
+            if (response != null)
+            {
+                SightMarkedEvent.Invoke(sightID);
+                return (true, response);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse landmarks/save response: {ex.Message}\nResponse: {message}");
         }
 
-        return result;
+        return (false, null);
+    }
+
+    /// <summary>
+    /// Получить инвентарь игрока (ресурсы + предметы). Универсальный формат: массивы.
+    /// </summary>
+    public async Task<(bool success, InventoryResponse response)> GetInventory()
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}inventory/";
+        var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
+
+        if (!success)
+            return (false, null);
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<InventoryResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse inventory response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+
+    /// <summary>
+    /// Получить рецепты крафта. Универсальный формат: массив рецептов.
+    /// </summary>
+    public async Task<(bool success, InventoryRecipesResponse response)> GetInventoryRecipes()
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}inventory/recipes/";
+        var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
+
+        if (!success)
+            return (false, null);
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<InventoryRecipesResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse recipes response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+
+    /// <summary>
+    /// Скрафтить предмет по ID. Универсальный метод.
+    /// </summary>
+    public async Task<(bool success, InventoryCraftResponse response)> CraftItem(string itemId)
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}inventory/craft/{itemId}/";
+        var (success, message) = await SendRequest(url, "POST", new EmptyRequest(), requireAuth: true);
+
+        if (!success)
+            return (false, null);
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<InventoryCraftResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse craft response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+
+    /// <summary>
+    /// Улучшить меч. Ресурсы влияют на вероятность успеха.
+    /// </summary>
+    public async Task<(bool success, InventoryUpgradeResponse response)> UpgradeSword(int metal, int wood, int blueprints)
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}inventory/upgrade/sword/";
+        var payload = new InventoryUpgradeRequest { metal = metal, wood = wood, blueprints = blueprints };
+        var (success, message) = await SendRequest(url, "POST", payload, requireAuth: true);
+
+        if (!success)
+            return (false, null);
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<InventoryUpgradeResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse upgrade sword response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+
+    /// <summary>
+    /// Улучшить щит.
+    /// </summary>
+    public async Task<(bool success, InventoryUpgradeResponse response)> UpgradeShield(int metal, int wood, int blueprints)
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}inventory/upgrade/shield/";
+        var payload = new InventoryUpgradeRequest { metal = metal, wood = wood, blueprints = blueprints };
+        var (success, message) = await SendRequest(url, "POST", payload, requireAuth: true);
+
+        if (!success)
+            return (false, null);
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<InventoryUpgradeResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse upgrade shield response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
     }
 
     /// <summary>
@@ -577,16 +722,14 @@ public class APIService
                     if (errorResponse != null)
                     {
                         _lastErrorResponse = errorResponse; // Сохраняем последний ответ об ошибке
-                        if (!string.IsNullOrEmpty(errorResponse.message))
+                        var errorTextToShow = !string.IsNullOrEmpty(errorResponse.message)
+                            ? errorResponse.message
+                            : errorResponse.error ?? "";
+                        if (!string.IsNullOrEmpty(errorTextToShow))
                         {
-                            Debug.LogWarning($"[APIService] Server error (400): {errorResponse.message}");
-                            tcs.TrySetResult((false, errorResponse.message));
-                            yield break;
-                        }
-                        else if (!string.IsNullOrEmpty(errorResponse.error))
-                        {
-                            Debug.LogWarning($"[APIService] Server error (400): {errorResponse.error}");
-                            tcs.TrySetResult((false, errorResponse.error));
+                            Debug.LogWarning($"[APIService] Server error (400): {errorTextToShow}");
+                            _popupService.ShowError(errorTextToShow);
+                            tcs.TrySetResult((false, errorTextToShow));
                             yield break;
                         }
                     }
@@ -712,6 +855,28 @@ public class APIService
         public int player_id;
         public string[] external_ids;
     }
+
+    [Serializable]
+    public class SaveLandmarksResponse
+    {
+        public bool success;
+        public string message;
+        public int player_id;
+        public string[] saved_external_ids;
+        public int total_saved;
+        public ResourcesGained resources_gained;
+    }
+
+    [Serializable]
+    public class ResourcesGained
+    {
+        public int metal;
+        public int wood;
+        public int blueprints;
+    }
+
+    [Serializable]
+    private class EmptyRequest { }
     
     [Serializable]
     private class LandmarkCaptureRequest
@@ -1115,6 +1280,91 @@ public class APIService
     }
     
     [Serializable]
+    public class InventoryUpgradeRequest
+    {
+        public int metal;
+        public int wood;
+        public int blueprints;
+    }
+
+    [Serializable]
+    public class InventoryResponse
+    {
+        public bool success;
+        public InventoryResourceData[] resources;
+        public InventoryItemData[] items;
+        public InventoryData inventory;
+    }
+
+    [Serializable]
+    public class InventoryResourceData
+    {
+        public string id;
+        public int amount;
+        public string display_name;
+    }
+
+    [Serializable]
+    public class InventoryItemData
+    {
+        public string id;
+        public string display_name;
+        public bool has_item;
+        public int? sharpness;
+        public int? durability;
+    }
+
+    [Serializable]
+    public class InventoryData
+    {
+        public InventoryResourceData[] resources;
+        public InventoryItemData[] items;
+    }
+
+    [Serializable]
+    public class InventoryRecipesResponse
+    {
+        public bool success;
+        public InventoryRecipeData[] recipes;
+    }
+
+    [Serializable]
+    public class InventoryRecipeData
+    {
+        public string id;
+        public string display_name;
+        public InventoryRequirementData[] requirements;
+    }
+
+    [Serializable]
+    public class InventoryRequirementData
+    {
+        public string resource_id;
+        public int amount;
+        public string display_name;
+    }
+
+    [Serializable]
+    public class InventoryCraftResponse
+    {
+        public bool success;
+        public string message;
+        public InventoryData inventory;
+    }
+
+    [Serializable]
+    public class InventoryUpgradeResponse
+    {
+        public bool success;
+        public bool upgraded;
+        public float probability;
+        public float roll;
+        public int sword_sharpness;   // для меча
+        public int? shield_durability; // для щита
+        public InventoryData inventory;
+    }
+
+    [Serializable]
     public class LandmarkCaptureInfoResponse
     {
         public bool success;
@@ -1123,6 +1373,10 @@ public class APIService
         public LandmarkCaptureUser captured_by;
         public string captured_at;
         public LandmarkCaptureClan clan;
+        public int? defender_shield_level;
+        public int? time_until_next_capture_minutes;
+        public int? time_until_next_capture_seconds;
+        public string block_reason;
     }
 
     [Serializable]

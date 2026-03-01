@@ -74,21 +74,47 @@ public class SightDetailsView : MonoBehaviour
             CaptureButton.interactable = canCapture;
     }
 
-    public void SetCaptureInfo(bool captured, string capturedByUsername, string capturedAt, string clanName)
+    public void SetCaptureInfo(bool captured, string capturedByUsername, string capturedAt, string clanName,
+        int? defenderShieldLevel = null, int? timeUntilMinutes = null, int? timeUntilSeconds = null, string blockReason = null)
     {
         if (CaptureInfoText == null)
             return;
+
+        var lines = new System.Collections.Generic.List<string>();
 
         if (captured)
         {
             string clanInfo = !string.IsNullOrEmpty(clanName) ? $" ({clanName})" : "";
             string date = !string.IsNullOrEmpty(capturedAt) ? ParseDate(capturedAt) : "";
-            CaptureInfoText.text = $"Захвачено: {capturedByUsername}{clanInfo}\nДата: {date}";
+            lines.Add($"Захвачено: {capturedByUsername}{clanInfo}");
+            lines.Add($"Дата: {date}");
         }
         else
         {
-            CaptureInfoText.text = "Достопримечательность еще не захвачена";
+            lines.Add("Достопримечательность еще не захвачена");
         }
+
+        if (defenderShieldLevel.HasValue)
+            lines.Add($"Уровень щита: {defenderShieldLevel.Value}");
+
+        if (timeUntilMinutes.HasValue || timeUntilSeconds.HasValue)
+        {
+            int min = timeUntilMinutes ?? 0;
+            int sec = timeUntilSeconds ?? 0;
+            lines.Add($"Захват возможен через: {min} мин {sec} сек");
+        }
+
+        if (!string.IsNullOrEmpty(blockReason))
+        {
+            string reasonText = blockReason switch
+            {
+                "invulnerability" => "неуязвимость",
+                _ => blockReason
+            };
+            lines.Add($"Причина блокировки: {reasonText}");
+        }
+
+        CaptureInfoText.text = string.Join("\n", lines);
     }
 
     private string ParseDate(string dateString)

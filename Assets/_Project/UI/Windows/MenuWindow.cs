@@ -15,6 +15,7 @@ public class MenuWindow : BaseWindow
     [SerializeField] private Button _promoCodesButton;
     [SerializeField] private Button _friendsButton;
     [SerializeField] private Button _clansButton;
+    [SerializeField] private Button _inventoryButton;
     
     public event Action OnProfileClicked;
     public event Action OnSettingsClicked;
@@ -25,6 +26,7 @@ public class MenuWindow : BaseWindow
     public event Action OnPromoCodesClicked;
     public event Action OnFriendsClicked;
     public event Action OnClansClicked;
+    public event Action OnInventoryClicked;
 
     protected override void OnShow()
     {
@@ -37,6 +39,7 @@ public class MenuWindow : BaseWindow
         _promoCodesButton.onClick.AddListener(() => OnPromoCodesClicked?.Invoke());
         _friendsButton.onClick.AddListener(() => OnFriendsClicked?.Invoke());
         _clansButton.onClick.AddListener(() => OnClansClicked?.Invoke());
+        if (_inventoryButton != null) _inventoryButton.onClick.AddListener(() => OnInventoryClicked?.Invoke());
     }
 
     protected override void OnHide()
@@ -51,5 +54,6 @@ public class MenuWindow : BaseWindow
         _promoCodesButton.onClick.RemoveAllListeners();
         _friendsButton.onClick.RemoveAllListeners();
         _clansButton.onClick.RemoveAllListeners();
+        if (_inventoryButton != null) _inventoryButton.onClick.RemoveAllListeners();
     }
 }

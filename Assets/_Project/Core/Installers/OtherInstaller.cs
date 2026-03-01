@@ -20,6 +20,9 @@ public class OtherInstaller : MonoInstaller
     [SerializeField] private ClanView _clanViewPrefab;
     [SerializeField] private CreateClanView _createClanViewPrefab;
     [SerializeField] private GameEventView _gameEventViewPrefab;
+    [SerializeField] private ResourceItemView _resourceItemPrefab;
+    [SerializeField] private InventoryItemView _inventoryItemPrefab;
+    [SerializeField] private CraftRecipeView _craftRecipePrefab;
     [SerializeField] private GameObject _gameEventMarkerPrefab;
     [SerializeField] private AbstractMap _map;
     [SerializeField] private SpawnOnMap _spawnOnMap;
@@ -59,6 +62,9 @@ public class OtherInstaller : MonoInstaller
         Container.BindInterfacesTo<FriendsMediator>().AsSingle();
 
         Container.BindInterfacesTo<ClansMediator>().AsSingle();
+
+        Container.Bind<IInventoryService>().To<InventoryService>().AsSingle();
+        Container.BindInterfacesTo<InventoryMediator>().AsSingle();
 
         Container.BindFactory<QuestItemView, QuestItemView.Factory>()
             .FromComponentInNewPrefab(_questItemPrefab)
@@ -110,6 +116,16 @@ public class OtherInstaller : MonoInstaller
         Container.BindFactory<OtherPlayerSightsDetailsView, OtherPlayerSightsDetailsView.Factory>().FromComponentInNewPrefab(_otherPlayerSightsDetailsViewPrefab).AsTransient();
         
         Container.BindFactory<ShopItemView, ShopItemView.Factory>().FromComponentInNewPrefab(_shopItemPrefab).AsTransient();
+
+        Container.BindFactory<ResourceItemView, ResourceItemView.Factory>()
+            .FromComponentInNewPrefab(_resourceItemPrefab)
+            .AsTransient();
+        Container.BindFactory<InventoryItemView, InventoryItemView.Factory>()
+            .FromComponentInNewPrefab(_inventoryItemPrefab)
+            .AsTransient();
+        Container.BindFactory<CraftRecipeView, CraftRecipeView.Factory>()
+            .FromComponentInNewPrefab(_craftRecipePrefab)
+            .AsTransient();
         
         Container.BindFactory<PromoCodeView, PromoCodeView.Factory>().FromComponentInNewPrefab(_promoCodeViewPrefab).AsTransient();
         

@@ -52,11 +52,17 @@ public class TrainPathController : MonoBehaviour
         if (_ui.StartButton != null)
             _ui.StartButton.onClick.AddListener(StartGame);
         
+        if (_ui.CloseButton != null)
+            _ui.CloseButton.onClick.AddListener(() => _gameEvent?.CloseGame());
+        
         if (_ui.RestartButton != null)
             _ui.RestartButton.onClick.AddListener(RestartGame);
         
         if (_ui.FinishButton != null)
             _ui.FinishButton.onClick.AddListener(FinishGame);
+        
+        int intelligence = _userDataService != null ? _userDataService.Intelligence : 1;
+        _ui.SetSkillInfo("Интеллект", intelligence);
     }
 
     private void ShowStartScreen()
@@ -296,8 +302,12 @@ public class TrainPathController : MonoBehaviour
         var bonusSlider = _ui.BonusSliderComponent;
         if (bonusSlider != null)
         {
+            int intelligence = _userDataService != null ? _userDataService.Intelligence : 1;
+            float intelligenceLevel = Mathf.Clamp01((intelligence - 1) / 9f);
+            if (bonusSlider.LeftLabel != null)
+                bonusSlider.LeftLabel.text = "Интеллект";
             bonusSlider.Run(
-                () => _userDataService != null ? _userDataService.GetProfessionLevel() : 0.5f,
+                () => intelligenceLevel,
                 baseScore,
                 OnBonusSliderComplete);
         }
@@ -344,6 +354,8 @@ public class TrainPathController : MonoBehaviour
         {
             if (_ui.StartButton != null)
                 _ui.StartButton.onClick.RemoveAllListeners();
+            if (_ui.CloseButton != null)
+                _ui.CloseButton.onClick.RemoveAllListeners();
             if (_ui.RestartButton != null)
                 _ui.RestartButton.onClick.RemoveAllListeners();
             if (_ui.FinishButton != null)

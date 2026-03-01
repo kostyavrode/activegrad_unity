@@ -19,6 +19,8 @@ public class TrainPathUI : MonoBehaviour
     
     [Header("Start Screen")]
     [SerializeField] private Button _startButton;
+    [SerializeField] private TMP_Text _skillText;
+    [SerializeField] private Button _closeButton;
     
     [Header("Game Screen")]
     [SerializeField] private RectTransform _mapContainer;
@@ -47,6 +49,8 @@ public class TrainPathUI : MonoBehaviour
     public GameObject GameScreen => _gameScreen;
     public GameObject EndScreen => _endScreen;
     public Button StartButton => _startButton;
+    public TMP_Text SkillText => _skillText;
+    public Button CloseButton => _closeButton;
     public RectTransform MapContainer => _mapContainer;
     public RectTransform Train => _train;
     public TMP_Text TimeText => _timeText;
@@ -70,6 +74,8 @@ public class TrainPathUI : MonoBehaviour
     public void SetGameScreen(GameObject screen) => _gameScreen = screen;
     public void SetEndScreen(GameObject screen) => _endScreen = screen;
     public void SetStartButton(Button button) => _startButton = button;
+    public void SetSkillText(TMP_Text text) => _skillText = text;
+    public void SetCloseButton(Button button) => _closeButton = button;
     public void SetMapContainer(RectTransform container) => _mapContainer = container;
     public void SetTrain(RectTransform train) => _train = train;
     public void SetTimeText(TMP_Text text) => _timeText = text;
@@ -135,5 +141,11 @@ public class TrainPathUI : MonoBehaviour
         
         if (_scoreText != null)
             _scoreText.text = $"Очки: {score}";
+    }
+
+    public void SetSkillInfo(string skillName, int value)
+    {
+        if (_skillText != null)
+            _skillText.text = $"{skillName}: {value}";
     }
 }

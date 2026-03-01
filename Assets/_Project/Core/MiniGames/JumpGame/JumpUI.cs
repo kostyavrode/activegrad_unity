@@ -19,6 +19,8 @@ public class JumpUI : MonoBehaviour
     
     [Header("Start Screen")]
     [SerializeField] private Button _startButton;
+    [SerializeField] private TMP_Text _skillText;
+    [SerializeField] private Button _closeButton;
     
     [Header("Game Screen")]
     [SerializeField] private RectTransform _player;
@@ -43,6 +45,8 @@ public class JumpUI : MonoBehaviour
     public GameObject GameScreen => _gameScreen;
     public GameObject EndScreen => _endScreen;
     public Button StartButton => _startButton;
+    public TMP_Text SkillText => _skillText;
+    public Button CloseButton => _closeButton;
     public RectTransform Player => _player;
     public RectTransform SliderBackground => _sliderBackground;
     public RectTransform ZonesContainer => _zonesContainer;
@@ -62,6 +66,8 @@ public class JumpUI : MonoBehaviour
     public void SetGameScreen(GameObject screen) => _gameScreen = screen;
     public void SetEndScreen(GameObject screen) => _endScreen = screen;
     public void SetStartButton(Button button) => _startButton = button;
+    public void SetSkillText(TMP_Text text) => _skillText = text;
+    public void SetCloseButton(Button button) => _closeButton = button;
     public void SetPlayer(RectTransform player) => _player = player;
     public void SetSliderBackground(RectTransform bg) => _sliderBackground = bg;
     public void SetZonesContainer(RectTransform container) => _zonesContainer = container;
@@ -120,5 +126,11 @@ public class JumpUI : MonoBehaviour
     {
         if (_instructionText != null)
             _instructionText.text = text;
+    }
+
+    public void SetSkillInfo(string skillName, int value)
+    {
+        if (_skillText != null)
+            _skillText.text = $"{skillName}: {value}";
     }
 }

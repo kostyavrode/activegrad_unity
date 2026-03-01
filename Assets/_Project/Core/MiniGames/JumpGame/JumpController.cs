@@ -65,8 +65,14 @@ public class JumpController : MonoBehaviour
         if (_ui.StartButton != null)
             _ui.StartButton.onClick.AddListener(StartGame);
         
+        if (_ui.CloseButton != null)
+            _ui.CloseButton.onClick.AddListener(() => _gameEvent?.CloseGame());
+        
         if (_ui.FinishButton != null)
             _ui.FinishButton.onClick.AddListener(FinishGame);
+        
+        int agility = _userDataService != null ? _userDataService.Agility : 1;
+        _ui.SetSkillInfo("Ловкость", agility);
         
         if (_ui.Player != null)
         {
@@ -369,8 +375,12 @@ public class JumpController : MonoBehaviour
         var bonusSlider = _ui.BonusSliderComponent;
         if (bonusSlider != null)
         {
+            int agility = _userDataService != null ? _userDataService.Agility : 1;
+            float agilityLevel = Mathf.Clamp01((agility - 1) / 9f);
+            if (bonusSlider.LeftLabel != null)
+                bonusSlider.LeftLabel.text = "Ловкость";
             bonusSlider.Run(
-                () => _userDataService != null ? _userDataService.GetProfessionLevel() : 0.5f,
+                () => agilityLevel,
                 _totalScore,
                 OnBonusSliderComplete);
         }
@@ -402,6 +412,8 @@ public class JumpController : MonoBehaviour
         {
             if (_ui.StartButton != null)
                 _ui.StartButton.onClick.RemoveAllListeners();
+            if (_ui.CloseButton != null)
+                _ui.CloseButton.onClick.RemoveAllListeners();
             if (_ui.FinishButton != null)
                 _ui.FinishButton.onClick.RemoveAllListeners();
         }
