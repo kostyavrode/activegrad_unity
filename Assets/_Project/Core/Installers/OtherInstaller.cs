@@ -48,6 +48,7 @@ public class OtherInstaller : MonoInstaller
         Container.BindInterfacesTo<QuestMediator>().AsSingle();
         
         Container.BindInterfacesTo<MenuMediator>().AsSingle();
+        Container.BindInterfacesTo<SelectMediator>().AsSingle();
         
         Container.BindInterfacesTo<SettingsMediator>().AsSingle();
         
@@ -141,7 +142,20 @@ public class OtherInstaller : MonoInstaller
         Container.BindInterfacesAndSelfTo<EditorGPSTestController>().FromNewComponentOnNewGameObject().AsSingle().NonLazy();
 #endif
         
+        BindStepsService();
         BindQuests();
+    }
+
+    private void BindStepsService()
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        Container.Bind<IPlatformStepsProvider>().To<HealthConnectStepsProvider>().AsSingle();
+#elif UNITY_IOS && !UNITY_EDITOR
+        Container.Bind<IPlatformStepsProvider>().To<HealthKitStepsProvider>().AsSingle();
+#else
+        Container.Bind<IPlatformStepsProvider>().To<PlatformStepsProviderStub>().AsSingle();
+#endif
+        Container.BindInterfacesAndSelfTo<StepsService>().AsSingle().NonLazy();
     }
 
     private void BindQuests()

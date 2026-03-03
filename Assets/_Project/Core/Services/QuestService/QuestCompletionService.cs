@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
 using Zenject;
 
@@ -9,6 +10,7 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
     private readonly APIService _apiService;
     private readonly UserDataService _userDataService;
     private readonly IPopupService _popupService;
+    private readonly IStepsService _stepsService;
     private readonly Dictionary<string, Func<IQuestCondition>> _conditionFactories;
     private readonly Dictionary<int, QuestProgressTracker> _activeQuests = new Dictionary<int, QuestProgressTracker>();
     
@@ -21,12 +23,13 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
     public QuestCompletionService(
         APIService apiService,
         UserDataService userDataService,
-        IPopupService popupService)
+        IPopupService popupService,
+        IStepsService stepsService)
     {
         _apiService = apiService;
         _userDataService = userDataService;
         _popupService = popupService;
-
+        _stepsService = stepsService;
         _conditionFactories = new Dictionary<string, Func<IQuestCondition>>();
     }
     
@@ -43,9 +46,8 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
         Debug.Log($"[QuestService] Registered condition factory for type: '{conditionType}' (Total: {_conditionFactories.Count})");
     }
     
-    public async void LoadQuests()
+    public async Task LoadQuestsAsync()
     {
-        // Защита от множественных одновременных вызовов
         if (_isLoadingQuests)
         {
             Debug.LogWarning("[QuestService] LoadQuests already in progress, skipping...");
@@ -58,11 +60,11 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
         try
         {
             var (success, response) = await _apiService.GetDailyQuests();
-        if (!success)
-        {
-            Debug.LogError($"[QuestService] Failed to load quests: {response}");
-            return;
-        }
+            if (!success)
+            {
+                Debug.LogError($"[QuestService] Failed to load quests: {response}");
+                return;
+            }
         
         var quests = ParseQuests(response);
         _lastQuestLoadDate = DateTime.Now.ToString("yyyy-MM-dd");
@@ -128,12 +130,23 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
             
             tracker.Condition.OnProgressChanged += (questId, progress) =>
             {
+                SaveQuestProgress();
                 OnQuestProgressChanged?.Invoke(questId, progress);
                 CheckQuestCompletion(questId);
             };
             
             _activeQuests[quest.id] = tracker;
             LoadQuestProgress(quest.id);
+            
+            if (condition.ConditionType == "steps" && _stepsService != null)
+            {
+                int steps = _stepsService.StepsToday;
+                int progress = Mathf.Min(steps, tracker.ProgressData.requiredCount);
+                tracker.ProgressData.currentProgress = progress;
+                tracker.ProgressData.isCompleted = progress >= tracker.ProgressData.requiredCount;
+                condition.Initialize(quest.id, tracker.ProgressData.requiredCount, progress);
+                OnQuestProgressChanged?.Invoke(quest.id, progress);
+            }
             
             if (tracker.IsCompleted && !tracker.IsRewardClaimed)
             {
@@ -167,11 +180,10 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
             case "sight_mark":
             case "visit_places":
                 return "mark_sights"; // Все эти типы маппятся на mark_sights
-            
-            // В будущем можно добавить другие типы:
-            // case "steps":
-            // case "walk":
-            //     return "steps";
+
+            case "steps":
+            case "walk":
+                return "steps";
             
             default:
                 // Если тип неизвестен, возвращаем как есть (может быть зарегистрирован отдельно)
@@ -190,10 +202,19 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
         Debug.Log($"[QuestService] Quest {questId} completed locally! Waiting for server sync...");
         
         await System.Threading.Tasks.Task.Delay(1000);
+
+        int stepsToSend = 0;
+        if (tracker.Condition.ConditionType == "steps")
+        {
+            stepsToSend = _stepsService?.StepsToday ?? 0;
+            var (stepsOk, stepsMsg) = await _apiService.UpdateDailySteps(stepsToSend);
+            if (!stepsOk)
+                Debug.LogWarning($"[QuestService] Failed to sync steps: {stepsMsg}");
+        }
         
         Debug.Log($"[QuestService] Sending completion to server for quest {questId}...");
         
-        var (success, response) = await _apiService.CompleteQuest(questId);
+        var (success, response) = await _apiService.CompleteQuest(questId, stepsToSend);
         
 //        Debug.Log(response.message);
         
@@ -284,7 +305,7 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
         {
             Debug.Log("[QuestService] Daily reset - clearing quests and loading new ones");
             ClearQuests();
-            LoadQuests();
+            _ = LoadQuestsAsync();
         }
     }
 

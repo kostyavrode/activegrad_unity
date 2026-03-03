@@ -543,7 +543,16 @@ public class APIService
         }
     }
     
-    public async Task<(bool success, QuestCompleteResponse response)> CompleteQuest(int questId)
+    public async Task<(bool success, string message)> UpdateDailySteps(int steps)
+    {
+        if (!IsLoggedIn) return (false, "Not logged in");
+        var url = $"{BaseUrl}player/daily-steps/";
+        var payload = new DailyStepsRequest { daily_steps = steps };
+        var (ok, msg) = await SendRequest(url, "POST", payload, requireAuth: true, suppressErrorPopup: true);
+        return (ok, ok ? "" : msg);
+    }
+
+    public async Task<(bool success, QuestCompleteResponse response)> CompleteQuest(int questId, int steps = 0)
     {
         if (!IsLoggedIn)
             return (false, null);
@@ -552,7 +561,8 @@ public class APIService
         
         var payload = new QuestCompleteRequest
         {
-            player_id = _userData.ID
+            player_id = _userData.ID,
+            steps = steps
         };
         
         var (success, message) = await SendRequest(url, "POST", payload, requireAuth: true);
@@ -659,12 +669,12 @@ public class APIService
         }
     }
 
-    private async Task<(bool success, string response)> SendRequest(string url, string method, object payload, bool requireAuth)
+    private async Task<(bool success, string response)> SendRequest(string url, string method, object payload, bool requireAuth, bool suppressErrorPopup = false)
     {
-        var json = JsonUtility.ToJson(payload);
+        var json = payload != null ? JsonUtility.ToJson(payload) : "{}";
         var tcs = new TaskCompletionSource<(bool, string)>();
 
-        _coroutineRunner.StartCoroutine(SendCoroutine(url, method, json, requireAuth, tcs, retry: true));
+        _coroutineRunner.StartCoroutine(SendCoroutine(url, method, json, requireAuth, tcs, retry: true, suppressErrorPopup));
 
         return await tcs.Task;
     }
@@ -675,7 +685,8 @@ public class APIService
         string json,
         bool requireAuth,
         TaskCompletionSource<(bool, string)> tcs,
-        bool retry
+        bool retry,
+        bool suppressErrorPopup = false
     )
     {
         using var request = new UnityWebRequest(url, method);
@@ -700,7 +711,7 @@ public class APIService
 
             if (refreshTask.Result)
             {
-                _coroutineRunner.StartCoroutine(SendCoroutine(url, method, json, requireAuth, tcs, retry: false));
+                _coroutineRunner.StartCoroutine(SendCoroutine(url, method, json, requireAuth, tcs, retry: false, suppressErrorPopup));
                 yield break;
             }
             else
@@ -741,7 +752,8 @@ public class APIService
             }
             
             Debug.LogError($"[APIService] Error: {request.error}\nResponse: {errorText}");
-            _popupService.ShowError($"[APIService] Error: {request.error}");
+            if (!suppressErrorPopup)
+                _popupService.ShowError($"[APIService] Error: {request.error}");
             tcs.TrySetResult((false, request.error));
         }
         else
@@ -906,9 +918,13 @@ public class APIService
     }
     
     [Serializable]
+    private class DailyStepsRequest { public int daily_steps; }
+
+    [Serializable]
     public class QuestCompleteRequest
     {
         public int player_id;
+        public int steps;
     }
     
     [Serializable]

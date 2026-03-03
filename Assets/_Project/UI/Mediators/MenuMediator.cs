@@ -19,12 +19,7 @@ public class MenuMediator : IInitializable, IDisposable
         _menuWindow.OnProfileClicked += HandleProfileClicked;
         _menuWindow.OnSettingsClicked += HandleSettingsClicked;
         _menuWindow.OnSightClicked += HandleSightsClicked;
-        _menuWindow.OnSearchPlayerClicked += HandleSearchPlayerClicked;
-        _menuWindow.OnShopClicked += HandleShopClicked;
-        _menuWindow.OnPromoCodesClicked += HandlePromoCodeClicked;
-        _menuWindow.OnFriendsClicked += HandleFriendButtonClicked;
-        _menuWindow.OnClansClicked += HandleClansClicked;
-        _menuWindow.OnInventoryClicked += HandleInventoryClicked;
+        _menuWindow.OnSelectClicked += HandleSelectClicked;
     }
 
     public void Dispose()
@@ -33,12 +28,12 @@ public class MenuMediator : IInitializable, IDisposable
         _menuWindow.OnProfileClicked -= HandleProfileClicked;
         _menuWindow.OnSettingsClicked -= HandleSettingsClicked;
         _menuWindow.OnSightClicked -= HandleSightsClicked;
-        _menuWindow.OnSearchPlayerClicked -= HandleSearchPlayerClicked;
-        _menuWindow.OnShopClicked -= HandleShopClicked;
-        _menuWindow.OnPromoCodesClicked -= HandlePromoCodeClicked;
-        _menuWindow.OnFriendsClicked -= HandleFriendButtonClicked;
-        _menuWindow.OnClansClicked -= HandleClansClicked;
-        _menuWindow.OnInventoryClicked -= HandleInventoryClicked;
+        _menuWindow.OnSelectClicked -= HandleSelectClicked;
+    }
+
+    private void HandleSelectClicked()
+    {
+        _uiManager.Show<SelectWindow>();
     }
 
     private void HandleSettingsClicked()
@@ -59,38 +54,5 @@ public class MenuMediator : IInitializable, IDisposable
     private void HandleSightsClicked()
     {
         _uiManager.Show<SightsWindow>();
-    }
-
-    private void HandleSearchPlayerClicked()
-    {
-        _uiManager.Show<PlayerSearchWindow>();
-    }
-
-    private void HandleShopClicked()
-    {
-        _uiManager.Show<ShopWindow>();
-    }
-
-    private void HandlePromoCodeClicked()
-    {
-        _uiManager.Show<PromoCodesWindow>();
-    }
-
-    private void HandleFriendButtonClicked()
-    {
-        _uiManager.Show<FriendsWindow>();
-    }
-
-    private void HandleClansClicked()
-    {
-        _uiManager.Show<ClansWindow>();
-    }
-
-    private void HandleInventoryClicked()
-    {
-        if (_uiManager.HasWindow<InventoryWindow>())
-            _uiManager.Show<InventoryWindow>();
-        else
-            Debug.LogWarning("[MenuMediator] InventoryWindow not registered in scene. Add it to UIInstaller sceneWindows.");
     }
 }

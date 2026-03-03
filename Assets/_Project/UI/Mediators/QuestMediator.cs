@@ -66,9 +66,7 @@ public class QuestMediator : IInitializable, IDisposable
 
     private async void LoadQuests()
     {
-        _questService.LoadQuests();
-        
-        await System.Threading.Tasks.Task.Delay(500);
+        await _questService.LoadQuestsAsync();
         
         var questTrackers = _questService.GetAllQuests();
         
