@@ -27,9 +27,12 @@ public class SightsUpdater : IInitializable, IDisposable
     private readonly IInventoryService _inventoryService;
 
     private bool _isRunning;
+    private bool _isLoadingImages;
     private const float MinUpdateIntervalSec = 15f;
     private const float MinDistanceDegrees = 0.0005f;
     private const float PollIntervalSec = 3f;
+    private const int DetailsBatchSize = 5;
+    private const int DetailsBatchDelayMs = 2000;
     private Vector2 _lastUpdateCoords;
     private float _lastUpdateTime;
     private bool _lastUpdateCoordsInitialized;
@@ -180,6 +183,7 @@ public class SightsUpdater : IInitializable, IDisposable
     private async Task<List<SightFullInfo>> LoadSightDetailsBatchSafe(List<int> pageIds)
     {
         int retry = 3;
+        int retryDelayMs = 2000;
         while (retry-- > 0)
         {
             try
@@ -188,11 +192,39 @@ public class SightsUpdater : IInitializable, IDisposable
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[SightsUpdater] Batch load failed, retry in 1s: {e.Message}");
-                await Task.Delay(1000);
+                Debug.LogWarning($"[SightsUpdater] Batch load failed, retry in {retryDelayMs / 1000}s: {e.Message}");
+                await Task.Delay(retryDelayMs);
+                retryDelayMs *= 2;
             }
         }
-        return new List<SightFullInfo>();
+        return null;
+    }
+
+    private async Task LoadSightDetailsBatchedAsync(List<int> pageIds)
+    {
+        for (int i = 0; i < pageIds.Count; i += DetailsBatchSize)
+        {
+            if (!_isRunning) break;
+
+            var chunk = pageIds.Skip(i).Take(DetailsBatchSize).ToList();
+            var results = await LoadSightDetailsBatchSafe(chunk);
+
+            if (results == null)
+            {
+                Debug.LogWarning("[SightsUpdater] Chunk failed after retries, stopping batch loading for this cycle");
+                break;
+            }
+
+            foreach (var sight in results)
+            {
+                if (sight != null)
+                    CachedSights[sight.PageId] = sight;
+            }
+
+            bool isLastChunk = i + DetailsBatchSize >= pageIds.Count;
+            if (!isLastChunk)
+                await Task.Delay(DetailsBatchDelayMs);
+        }
     }
 
     private async Task UpdateSights()
@@ -217,12 +249,7 @@ public class SightsUpdater : IInitializable, IDisposable
         
         if (pageIdsToLoad.Count > 0)
         {
-            var newSights = await LoadSightDetailsBatchSafe(pageIdsToLoad);
-            foreach (var sight in newSights)
-            {
-                if (sight != null)
-                    CachedSights[sight.PageId] = sight;
-            }
+            await LoadSightDetailsBatchedAsync(pageIdsToLoad);
         }
         
         await LoadAllImages();
@@ -236,29 +263,45 @@ public class SightsUpdater : IInitializable, IDisposable
 
     private async Task LoadAllImages()
     {
-        const int delayBetweenLoadsMs = 1200;
-        foreach (var pair in CachedSights)
+        if (_isLoadingImages) return;
+        _isLoadingImages = true;
+
+        const int imageBatchSize = 3;
+        const int imageBatchDelayMs = 1500;
+
+        try
         {
-            int pageId = pair.Key;
-            var sight = pair.Value;
+            var toLoad = CachedSights.Values
+                .Where(s => !string.IsNullOrEmpty(s.OriginalImageUrl) && !ImageCache.ContainsKey(s.PageId))
+                .ToList();
 
-            if (string.IsNullOrEmpty(sight.OriginalImageUrl))
-                continue;
-
-            if (ImageCache.ContainsKey(pageId))
-                continue;
-
-            await Task.Delay(delayBetweenLoadsMs);
-            if (!_isRunning) break;
-
-            var url = FixUrl(sight.OriginalImageUrl);
-            var sprite = await LoadSpriteAsync(url);
-
-            if (sprite != null)
+            for (int i = 0; i < toLoad.Count; i += imageBatchSize)
             {
-                ImageCache[pageId] = sprite;
-                OnImageLoaded?.Invoke(pageId, sprite);
+                if (!_isRunning) break;
+
+                var batch = toLoad.Skip(i).Take(imageBatchSize).ToList();
+
+                var tasks = batch.Select(async sight =>
+                {
+                    var url = FixUrl(sight.OriginalImageUrl);
+                    var sprite = await LoadSpriteAsync(url);
+                    if (sprite != null)
+                    {
+                        ImageCache[sight.PageId] = sprite;
+                        OnImageLoaded?.Invoke(sight.PageId, sprite);
+                    }
+                });
+
+                await Task.WhenAll(tasks);
+
+                bool isLastBatch = i + imageBatchSize >= toLoad.Count;
+                if (!isLastBatch)
+                    await Task.Delay(imageBatchDelayMs);
             }
+        }
+        finally
+        {
+            _isLoadingImages = false;
         }
     }
 
@@ -322,20 +365,36 @@ public class SightsUpdater : IInitializable, IDisposable
 
     private async Task<Sprite> LoadSpriteAsync(string url)
     {
-        using (var req = UnityWebRequestTexture.GetTexture(url))
+        int retryDelayMs = 10000;
+        for (int attempt = 0; attempt < 3; attempt++)
         {
-            var op = req.SendWebRequest();
-            while (!op.isDone) await Task.Yield();
-
-            if (req.result != UnityWebRequest.Result.Success)
+            using (var req = UnityWebRequestTexture.GetTexture(url))
             {
-                Debug.LogError("Image load failed: " + req.error);
-                return null;
-            }
+                var op = req.SendWebRequest();
+                while (!op.isDone) await Task.Yield();
 
-            var tex = DownloadHandlerTexture.GetContent(req);
-            return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(.5f, .5f));
+                if (req.result == UnityWebRequest.Result.Success)
+                {
+                    var tex = DownloadHandlerTexture.GetContent(req);
+                    return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(.5f, .5f));
+                }
+
+                if (req.responseCode == 429)
+                {
+                    Debug.LogWarning($"[SightsUpdater] Image rate limited (429), waiting {retryDelayMs / 1000}s before retry");
+                    await Task.Delay(retryDelayMs);
+                    retryDelayMs *= 2;
+                }
+                else
+                {
+                    Debug.LogError("Image load failed: " + req.error);
+                    return null;
+                }
+            }
         }
+
+        Debug.LogError($"[SightsUpdater] Image load failed after retries: {url}");
+        return null;
     }
     
     private async Task<Vector2> WaitForValidCoordinates()

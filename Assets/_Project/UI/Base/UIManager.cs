@@ -99,6 +99,11 @@ public class UIManager : IInitializable, IDisposable
         return _windows.ContainsKey(typeof(T));
     }
 
+    public bool IsActiveWindow<T>() where T : IWindow
+    {
+        return _openWindows.Count > 0 && _openWindows.Peek() is T;
+    }
+
     public void Dispose()
     {
         _openWindows.Clear();

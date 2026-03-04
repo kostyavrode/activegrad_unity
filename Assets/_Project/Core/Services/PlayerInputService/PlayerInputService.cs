@@ -23,6 +23,7 @@ public class PlayerInputService : ITickable, IDisposable
     public void Tick()
     {
         if (!_isEnabled) return;
+        if (!_uiManager.IsActiveWindow<MenuWindow>()) return;
         
         if (Input.GetMouseButtonDown(0))
         {

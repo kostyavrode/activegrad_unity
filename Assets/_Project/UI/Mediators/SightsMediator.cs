@@ -92,6 +92,7 @@ public class SightsMediator : IInitializable, IDisposable
     {
         foreach (var item in _sightItemViews)
         {
+            if (item == null) continue;
             if (item.PageId == pageId)
             {
                 item.SetImage(sprite);

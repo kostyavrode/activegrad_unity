@@ -1,6 +1,7 @@
+using System;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
-using System.Threading.Tasks;
 
 public class WikipediaApiClient
 {
@@ -18,6 +19,9 @@ public class WikipediaApiClient
 
         if (request.result != UnityWebRequest.Result.Success)
         {
+            if (request.responseCode == 429)
+                throw new Exception($"[WikipediaApi] Rate limited (429): {request.error}");
+
             Debug.LogError("[WikipediaApi] Error: " + request.error);
             return null;
         }

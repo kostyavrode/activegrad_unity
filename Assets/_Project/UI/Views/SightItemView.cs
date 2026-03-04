@@ -27,6 +27,7 @@ public class SightItemView : MonoBehaviour
 
     public void SetImage(Sprite sprite)
     {
+        if (this == null || Image == null) return;
         Image.sprite = sprite;
     }
 }
