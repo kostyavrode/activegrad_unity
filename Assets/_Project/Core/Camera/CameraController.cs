@@ -10,6 +10,11 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
     [SerializeField] private float maxDistance = 10f;
     [SerializeField] private float distance = 5f;
     [SerializeField] private float height = 2f;
+    [SerializeField] private float minTilt = -20f;
+    [SerializeField] private float maxTilt = 60f;
+    [SerializeField] private float tiltSpeed = 80f;
+    [SerializeField] private bool followPlayer = true;
+    [SerializeField] private float followSmoothSpeed = 5f;
     
     [SerializeField] private float horizontalThreshold = 30f;
     [SerializeField] private float verticalThreshold = 120f;
@@ -20,6 +25,7 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
     private SightsUpdater _sightsUpdater;
     private Transform _target;
     private float _currentAngle;
+    private float _currentTilt;
 
     [Inject]
     public void Construct(CharacterService characterService, SightsUpdater sightsUpdater)
@@ -31,6 +37,7 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
     public void Initialize()
     {
         _currentAngle = 0f;
+        _currentTilt = Mathf.Clamp(_currentTilt, minTilt, maxTilt);
     }
 
     public void Tick()
@@ -50,10 +57,18 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
 //        HandleTouchInput();
 //#endif
 
-        Vector3 offset = Quaternion.Euler(0, _currentAngle, 0) * new Vector3(0, 0, -distance);
+        Vector3 offset = Quaternion.Euler(_currentTilt, _currentAngle, 0) * new Vector3(0, 0, -distance);
         Vector3 targetPos = _target.position + Vector3.up * height;
+        Vector3 desiredPosition = targetPos + offset;
 
-        cameraTransform.position = targetPos + offset;
+        if (followPlayer)
+        {
+            cameraTransform.position = Vector3.Lerp(cameraTransform.position, desiredPosition, followSmoothSpeed * Time.deltaTime);
+        }
+        else
+        {
+            cameraTransform.position = desiredPosition;
+        }
         cameraTransform.LookAt(targetPos);
     }
 
@@ -70,17 +85,23 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
                 float deltaX = Input.GetAxis("Mouse X");
                 float deltaY = Input.GetAxis("Mouse Y");
 
-                if (Mathf.Abs(deltaX) > Mathf.Abs(deltaY))
+                if (Mathf.Abs(deltaX) >= horizontalThreshold * 0.01f)
                 {
-                    if (Mathf.Abs(deltaX) < horizontalThreshold * 0.01f) return;
                     _currentAngle += deltaX * rotationSpeed * Time.deltaTime;
                 }
-                else
+
+                if (Mathf.Abs(deltaY) >= verticalThreshold * 0.01f)
                 {
-                    if (Mathf.Abs(deltaY) < verticalThreshold * 0.01f) return;
-                    distance -= deltaY * zoomSpeed * 50f;
-                    distance = Mathf.Clamp(distance, minDistance, maxDistance);
+                    _currentTilt -= deltaY * tiltSpeed * Time.deltaTime;
+                    _currentTilt = Mathf.Clamp(_currentTilt, minTilt, maxTilt);
                 }
+            }
+
+            float scroll = Input.GetAxis("Mouse ScrollWheel");
+            if (Mathf.Abs(scroll) > Mathf.Epsilon)
+            {
+                distance -= scroll * zoomSpeed * 100f;
+                distance = Mathf.Clamp(distance, minDistance, maxDistance);
             }
         }
     }
