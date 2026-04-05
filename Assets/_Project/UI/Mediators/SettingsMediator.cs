@@ -7,13 +7,26 @@ public class SettingsMediator : IInitializable, IDisposable
     private readonly AudioManager _audioManager;
     private readonly AudioSettings _settings;
     private readonly UIManager _uiManager;
+    private readonly APIService _apiService;
+    private readonly UserDataService _userDataService;
+    private readonly SceneLoader _sceneLoader;
 
-    public SettingsMediator(SettingsWindow window, AudioManager audioManager, AudioSettings settings, UIManager uiManager)
+    public SettingsMediator(
+        SettingsWindow window,
+        AudioManager audioManager,
+        AudioSettings settings,
+        UIManager uiManager,
+        APIService apiService,
+        UserDataService userDataService,
+        SceneLoader sceneLoader)
     {
         _settingsWindow = window;
         _audioManager = audioManager;
         _settings = settings;
         _uiManager = uiManager;
+        _apiService = apiService;
+        _userDataService = userDataService;
+        _sceneLoader = sceneLoader;
     }
 
     public void Initialize()
@@ -22,11 +35,16 @@ public class SettingsMediator : IInitializable, IDisposable
         _settingsWindow.OnMusicVolumeChanged += OnMusicChanged;
         _settingsWindow.OnSfxVolumeChanged += OnSfxChanged;
         _settingsWindow.OnBackClicked += () => { _uiManager.Back(); };
+        _settingsWindow.OnLogoutClicked += OnLogoutClicked;
     }
 
     public void Dispose()
     {
         _settingsWindow.OnWindowOpened -= OnOpened;
+        _settingsWindow.OnMusicVolumeChanged -= OnMusicChanged;
+        _settingsWindow.OnSfxVolumeChanged -= OnSfxChanged;
+        _settingsWindow.OnBackClicked -= () => { _uiManager.Back(); };
+        _settingsWindow.OnLogoutClicked -= OnLogoutClicked;
     }
 
     private void OnOpened()
@@ -45,5 +63,11 @@ public class SettingsMediator : IInitializable, IDisposable
     {
         _settings.SetSfxVolume(v);
         _audioManager.SetSfxVolume(v);
+    }
+
+    private void OnLogoutClicked()
+    {
+        _userDataService.Clear();
+        _sceneLoader.LoadScene("Loading");
     }
 }
