@@ -17,6 +17,7 @@ public class SightDetailsView : MonoBehaviour
     
     public Action<int> OnCheckInClicked;
     public Action<int> OnCaptureClicked;
+    public event Action OnClosed;
 
     public void Init(Sprite imageSprite, string header, string description, int sightID)
     {
@@ -60,6 +61,7 @@ public class SightDetailsView : MonoBehaviour
         if (CaptureButton != null)
             CaptureButton.onClick.RemoveAllListeners();
         CloseButton.onClick.RemoveAllListeners();
+        OnClosed?.Invoke();
     }
 
     public void SetCheckInButtonState(bool state)

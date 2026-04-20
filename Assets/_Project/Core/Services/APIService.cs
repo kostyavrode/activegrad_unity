@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -307,6 +308,108 @@ public class APIService
             .Where(x => !string.IsNullOrEmpty(x))
             .Select(int.Parse)
             .ToArray();
+    }
+
+    public int[] ParsePartnerStoreIds(string json)
+    {
+        var data = JsonConvert.DeserializeObject<PartnerStoresPlayerResponse>(json);
+        return data?.store_ids ?? Array.Empty<int>();
+    }
+
+    public async Task<(bool success, PartnerStoresNearbyResponse response)> GetNearbyPartnerStores(float latitude, float longitude)
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        string lat = latitude.ToString(CultureInfo.InvariantCulture);
+        string lon = longitude.ToString(CultureInfo.InvariantCulture);
+        var url = $"{BaseUrl}partner-stores/nearby/?latitude={lat}&longitude={lon}";
+
+        var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
+        if (!success)
+        {
+            Debug.LogWarning($"[PartnerStores nearby] Request failed. URL={url}\nError/body: {message}");
+            return (false, null);
+        }
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<PartnerStoresNearbyResponse>(message);
+            var ok = response?.success == true;
+            var storeCount = response?.stores?.Length ?? 0;
+            var inv = CultureInfo.InvariantCulture;
+            var sb = new StringBuilder();
+            sb.AppendLine(
+                $"[PartnerStores nearby] success={ok} lat={latitude.ToString(inv)} lon={longitude.ToString(inv)} radius_km={(response != null ? response.radius_km.ToString(inv) : "-")} total_count={response?.total_count} stores.Length={storeCount}");
+            sb.AppendLine($"[PartnerStores nearby] Raw JSON: {message}");
+            if (response?.stores != null)
+            {
+                for (var i = 0; i < response.stores.Length; i++)
+                {
+                    var s = response.stores[i];
+                    if (s == null) continue;
+                    sb.AppendLine(
+                        $"  [{i}] id={s.id} name={s.name} dist_km={s.distance_km.ToString(inv)} lat={s.latitude.ToString(inv)} lon={s.longitude.ToString(inv)}");
+                }
+            }
+            Debug.Log(sb.ToString());
+            return (ok, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse partner-stores/nearby response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+
+    public async Task<(bool success, PartnerStoresSaveResponse response)> SavePartnerStores(int[] storeIds)
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var payload = new SavePartnerStoresRequest
+        {
+            player_id = _userData.ID,
+            store_ids = storeIds
+        };
+
+        var url = $"{BaseUrl}partner-stores/save/";
+        var (success, message) = await SendRequest(url, "POST", payload, requireAuth: true);
+        if (!success)
+            return (false, null);
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<PartnerStoresSaveResponse>(message);
+            return (response?.success == true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse partner-stores/save response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+
+    public async Task<(bool success, PartnerStoresPlayerResponse response)> GetPlayerPartnerStores(int playerId)
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}partner-stores/player/{playerId}/";
+        var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
+        if (!success)
+            return (false, null);
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<PartnerStoresPlayerResponse>(message);
+            return (response?.success == true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse partner-stores/player response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
     }
 
     /// <summary>
@@ -669,12 +772,33 @@ public class APIService
         }
     }
 
+    private static bool HttpMethodTypicallyHasNoBody(string method)
+    {
+        if (string.IsNullOrEmpty(method)) return false;
+        switch (method.ToUpperInvariant())
+        {
+            case "GET":
+            case "HEAD":
+            case "DELETE":
+                return true;
+            default:
+                return false;
+        }
+    }
+
     private async Task<(bool success, string response)> SendRequest(string url, string method, object payload, bool requireAuth, bool suppressErrorPopup = false)
     {
-        var json = payload != null ? JsonUtility.ToJson(payload) : "{}";
+        string requestBody;
+        if (payload != null)
+            requestBody = JsonUtility.ToJson(payload);
+        else if (HttpMethodTypicallyHasNoBody(method))
+            requestBody = "";
+        else
+            requestBody = "{}";
+
         var tcs = new TaskCompletionSource<(bool, string)>();
 
-        _coroutineRunner.StartCoroutine(SendCoroutine(url, method, json, requireAuth, tcs, retry: true, suppressErrorPopup));
+        _coroutineRunner.StartCoroutine(SendCoroutine(url, method, requestBody, requireAuth, tcs, retry: true, suppressErrorPopup));
 
         return await tcs.Task;
     }
@@ -682,7 +806,7 @@ public class APIService
     private IEnumerator SendCoroutine(
         string url,
         string method,
-        string json,
+        string requestBody,
         bool requireAuth,
         TaskCompletionSource<(bool, string)> tcs,
         bool retry,
@@ -690,15 +814,22 @@ public class APIService
     )
     {
         using var request = new UnityWebRequest(url, method);
-        var bodyRaw = Encoding.UTF8.GetBytes(json);
-        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        if (!string.IsNullOrEmpty(requestBody))
+        {
+            var bodyRaw = Encoding.UTF8.GetBytes(requestBody);
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.SetRequestHeader("Content-Type", "application/json");
+        }
+
         request.downloadHandler = new DownloadHandlerBuffer();
-        request.SetRequestHeader("Content-Type", "application/json");
 
         if (requireAuth && IsLoggedIn)
             request.SetRequestHeader("Authorization", $"Bearer {_accessToken}");
 
-        Debug.Log($"[APIService] {method} {url} → {json}");
+        if (string.IsNullOrEmpty(requestBody))
+            Debug.Log($"[APIService] {method} {url}");
+        else
+            Debug.Log($"[APIService] {method} {url} → {requestBody}");
 
         yield return request.SendWebRequest();
 
@@ -711,7 +842,7 @@ public class APIService
 
             if (refreshTask.Result)
             {
-                _coroutineRunner.StartCoroutine(SendCoroutine(url, method, json, requireAuth, tcs, retry: false, suppressErrorPopup));
+                _coroutineRunner.StartCoroutine(SendCoroutine(url, method, requestBody, requireAuth, tcs, retry: false, suppressErrorPopup));
                 yield break;
             }
             else
@@ -885,6 +1016,58 @@ public class APIService
         public int metal;
         public int wood;
         public int blueprints;
+    }
+
+    [Serializable]
+    public class PartnerStoreInfo
+    {
+        public int id;
+        public string name;
+        public string address;
+        public string image_url;
+        public float latitude;
+        public float longitude;
+        public float distance_km;
+        public string[] tags;
+    }
+
+    [Serializable]
+    public class PartnerStoresNearbyResponse
+    {
+        public bool success;
+        public float latitude;
+        public float longitude;
+        public float radius_km;
+        public PartnerStoreInfo[] stores;
+        public int total_count;
+    }
+
+    [Serializable]
+    private class SavePartnerStoresRequest
+    {
+        public int player_id;
+        public int[] store_ids;
+    }
+
+    [Serializable]
+    public class PartnerStoresSaveResponse
+    {
+        public bool success;
+        public string message;
+        public int player_id;
+        public int[] saved_store_ids;
+        public int total_saved;
+        public ResourcesGained resources_gained;
+    }
+
+    [Serializable]
+    public class PartnerStoresPlayerResponse
+    {
+        public bool success;
+        public int player_id;
+        public string player_username;
+        public int[] store_ids;
+        public int total_count;
     }
 
     [Serializable]

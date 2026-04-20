@@ -33,6 +33,7 @@ public class UserData
 
     public string lastStepsDate;
     public int[] sights;
+    public int[] partnerStoreIds;
 }
 
 public class UserDataService
@@ -71,6 +72,7 @@ public class UserDataService
     public int Steps => _data.dailySteps;
     
     public int[] Sights => _data.sights;
+    public int[] PartnerStoreIds => _data.partnerStoreIds;
     
     public string DateOfStart => _data.dateOfStart;
 
@@ -203,6 +205,37 @@ public class UserDataService
     {
         _data.coins = coins;
         Save();
+    }
+
+    public void SetPartnerStoreIds(int[] storeIds)
+    {
+        _data.partnerStoreIds = storeIds ?? Array.Empty<int>();
+        Save();
+    }
+
+    public void AddPartnerStoreToMarked(int storeId)
+    {
+        if (_data.partnerStoreIds == null || _data.partnerStoreIds.Length == 0)
+        {
+            _data.partnerStoreIds = new[] { storeId };
+            Save();
+            return;
+        }
+
+        foreach (var id in _data.partnerStoreIds)
+            if (id == storeId) return;
+
+        var list = new List<int>(_data.partnerStoreIds) { storeId };
+        _data.partnerStoreIds = list.ToArray();
+        Save();
+    }
+
+    public bool IsPartnerStoreUnmarked(int storeId)
+    {
+        if (_data.partnerStoreIds == null) return true;
+        foreach (var id in _data.partnerStoreIds)
+            if (id == storeId) return false;
+        return true;
     }
 
     public bool CheckSight(int sight)

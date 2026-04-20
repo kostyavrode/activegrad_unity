@@ -24,7 +24,10 @@ public class PlayerInputService : ITickable, IDisposable
     {
         if (!_isEnabled) return;
         if (!_uiManager.IsActiveWindow<MenuWindow>()) return;
-        
+
+        var canvas = GameObject.FindGameObjectWithTag("Canvas");
+        if (canvas != null && canvas.transform.childCount > 1) return;
+
         if (Input.GetMouseButtonDown(0))
         {
             Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
@@ -46,6 +49,10 @@ public class PlayerInputService : ITickable, IDisposable
         if (obj.TryGetComponent(out SightObject sightObject))
         {   
             _sightsUpdater.CreateSightDetailsPopup(sightObject.GetSightInfo());
+        }
+        else if (obj.TryGetComponent(out PartnerStoreObject partnerStoreObject))
+        {
+            _sightsUpdater.CreatePartnerStoreDetailsPopup(partnerStoreObject.GetStoreID());
         }
         else if (obj.TryGetComponent(out GameEventObject gameEventObject))
         {

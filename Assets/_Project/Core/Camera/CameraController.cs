@@ -74,6 +74,9 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
 
     private void HandleMouseInput()
     {
+        var canvas = GameObject.FindGameObjectWithTag("Canvas");
+        if (canvas != null && canvas.transform.childCount > 1) return;
+
         if (_menu.gameObject.activeSelf)
         {
             if (Input.GetMouseButton(0))

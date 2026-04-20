@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Mapbox.Examples;
@@ -11,15 +12,19 @@ public class SightsUpdater : IInitializable, IDisposable
 {
     public Dictionary<int, SightShortInfo> CachedNearestSights { get; private set; }
     public Dictionary<int, SightFullInfo> CachedSights { get; private set; }
+    public Dictionary<int, APIService.PartnerStoreInfo> CachedNearestPartnerStores { get; private set; }
 
     public Dictionary<int, Sprite> ImageCache { get; private set; } = new Dictionary<int, Sprite>();
-    
+    public Dictionary<int, Sprite> PartnerStoreImageCache { get; private set; } = new Dictionary<int, Sprite>();
+
     public event Action<int, Sprite> OnImageLoaded;
     public event Action OnSightsUpdated;
+    public event Action OnPartnerStoresUpdated;
 
     private readonly ISightService _sightService;
     private readonly LocationService _locationService;
     private readonly SightDetailsView.Factory _sightDetailsViewFactory;
+    private readonly PartnerStoreDetailsView.Factory _partnerStoreDetailsViewFactory;
     private readonly IPopupService _popupService;
     private readonly SpawnOnMap _spawnOnMap;
     private readonly APIService _apiService;
@@ -29,6 +34,7 @@ public class SightsUpdater : IInitializable, IDisposable
     private bool _isRunning;
     private bool _isLoadingImages;
     private const float MinUpdateIntervalSec = 15f;
+    private const float MaxUpdateWithoutMovementSec = 30f;
     private const float MinDistanceDegrees = 0.0005f;
     private const float PollIntervalSec = 3f;
     private const int DetailsBatchSize = 5;
@@ -37,12 +43,13 @@ public class SightsUpdater : IInitializable, IDisposable
     private float _lastUpdateTime;
     private bool _lastUpdateCoordsInitialized;
 
-    public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory, IPopupService popupService, SpawnOnMap spawnOnMap, 
+    public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory, PartnerStoreDetailsView.Factory partnerStoreDetailsViewFactory, IPopupService popupService, SpawnOnMap spawnOnMap,
         APIService apiService, UserDataService userDataService, IInventoryService inventoryService)
     {
         _sightService = sightService;
         _locationService = locationService;
         _sightDetailsViewFactory = sightDetailsViewFactory;
+        _partnerStoreDetailsViewFactory = partnerStoreDetailsViewFactory;
         _popupService = popupService;
         _spawnOnMap = spawnOnMap;
         _apiService = apiService;
@@ -71,16 +78,8 @@ public class SightsUpdater : IInitializable, IDisposable
         }
         var popup = _sightDetailsViewFactory.Create();
         popup.transform.SetParent(canvasTransform, false);
-        Sprite sprite;
-        try
-        {
-            sprite = ImageCache[pageID];
-        }
-        catch (Exception e)
-        {
-            _popupService.ShowError(e.Message);
+        if (!ImageCache.TryGetValue(pageID, out var sprite))
             sprite = Resources.Load<Sprite>("no_image");
-        }
         
         popup.Init(sprite, CachedSights[pageID].Title, CachedSights[pageID].Description,
             CachedSights[pageID].PageId);
@@ -167,9 +166,13 @@ public class SightsUpdater : IInitializable, IDisposable
                 float distDegrees = _lastUpdateCoordsInitialized ? Vector2.Distance(coords, _lastUpdateCoords) : float.MaxValue;
                 bool timeOk = timeSinceUpdate >= MinUpdateIntervalSec;
                 bool distanceOk = distDegrees >= MinDistanceDegrees;
+                bool staleByTime = timeSinceUpdate >= MaxUpdateWithoutMovementSec;
 
-                if (timeOk && distanceOk)
+                if (timeOk && (distanceOk || staleByTime))
                 {
+                    // Partner stores first: UpdateSights() spends a long time on Wikipedia details + image
+                    // loading before it returns; otherwise partner markers only appear after that work finishes.
+                    await UpdatePartnerStores(coords);
                     await UpdateSights();
                     _lastUpdateCoords = _locationService.GetCoordinates();
                     _lastUpdateTime = Time.realtimeSinceStartup;
@@ -232,14 +235,13 @@ public class SightsUpdater : IInitializable, IDisposable
         Vector2 coords = await WaitForValidCoordinates();
         
         var nearestList = await _sightService.LoadNearestSightsAsync(coords, 5000);
-
-        var spawnData = nearestList.ToArray();
-        
-        PushToSpawnOnMap(spawnData);
          
         CachedNearestSights = nearestList
             .Where(s => s != null)
             .ToDictionary(s => s.PageId, s => s);
+
+        PushToSpawnOnMap(CachedNearestSights.Values.ToArray());
+        _spawnOnMap.SpawnObjects();
         
         CachedSights ??= new Dictionary<int, SightFullInfo>();
         
@@ -256,6 +258,28 @@ public class SightsUpdater : IInitializable, IDisposable
         var (s, message) = await _apiService.GetSightsList(_userData.ID);
         _userData.SetSights(_apiService.ParseExternalIds(message));
         OnSightsUpdated?.Invoke();
+    }
+
+    private async Task UpdatePartnerStores(Vector2 coords)
+    {
+        var (success, response) = await _apiService.GetNearbyPartnerStores(coords.y, coords.x);
+        if (!success || response?.stores == null)
+        {
+            Debug.LogWarning(
+                $"[SightsUpdater] Partner stores nearby skipped: success={success}, stores null={(response?.stores == null)}, lat={coords.y} lon={coords.x}");
+            return;
+        }
+
+        CachedNearestPartnerStores = response.stores
+            .Where(store => store != null)
+            .ToDictionary(store => store.id, store => store);
+
+        PushPartnerStoresToSpawnOnMap(CachedNearestPartnerStores.Values.ToArray());
+        PushToSpawnOnMap(CachedNearestSights?.Values.ToArray() ?? Array.Empty<SightShortInfo>());
+        _spawnOnMap.SpawnObjects();
+
+        await SyncPartnerStoreMarksFromServer();
+        OnPartnerStoresUpdated?.Invoke();
     }
 
 
@@ -360,7 +384,23 @@ public class SightsUpdater : IInitializable, IDisposable
         int[] finalPageIds = pageIds.ToArray();
         _spawnOnMap._locationStrings = finalCoords;
         _spawnOnMap.pageIds = finalPageIds;
-        _spawnOnMap.SpawnObjects();
+    }
+
+    private void PushPartnerStoresToSpawnOnMap(APIService.PartnerStoreInfo[] storeInfos)
+    {
+        List<string> coords = new List<string>();
+        List<int> storeIds = new List<int>();
+
+        foreach (var storeInfo in storeInfos)
+        {
+            string lat = storeInfo.latitude.ToString(CultureInfo.InvariantCulture);
+            string lon = storeInfo.longitude.ToString(CultureInfo.InvariantCulture);
+            coords.Add($"{lat},{lon}");
+            storeIds.Add(storeInfo.id);
+        }
+
+        _spawnOnMap.partnerStoreLocationStrings = coords.ToArray();
+        _spawnOnMap.partnerStoreIds = storeIds.ToArray();
     }
 
     private async Task<Sprite> LoadSpriteAsync(string url)
@@ -422,6 +462,37 @@ public class SightsUpdater : IInitializable, IDisposable
                 await RefreshInventoryAndShowReward(response.resources_gained);
             }
         }
+    }
+
+    public async void HandlePartnerStoreClicked(int storeId)
+    {
+        if (!_userData.IsPartnerStoreUnmarked(storeId))
+            return;
+
+        var (success, response) = await _apiService.SavePartnerStores(new[] { storeId });
+        if (!success || response == null)
+            return;
+
+        if (response.saved_store_ids != null)
+        {
+            foreach (var id in response.saved_store_ids)
+                _userData.AddPartnerStoreToMarked(id);
+        }
+
+        if (response.resources_gained != null)
+            await RefreshInventoryAndShowReward(response.resources_gained);
+
+        await SyncPartnerStoreMarksFromServer();
+        OnPartnerStoresUpdated?.Invoke();
+    }
+
+    private async Task SyncPartnerStoreMarksFromServer()
+    {
+        var (success, response) = await _apiService.GetPlayerPartnerStores(_userData.ID);
+        if (!success || response == null)
+            return;
+
+        _userData.SetPartnerStoreIds(response.store_ids ?? Array.Empty<int>());
     }
 
     private async Task RefreshInventoryAndShowReward(APIService.ResourcesGained resourcesGained)
@@ -487,4 +558,61 @@ public class SightsUpdater : IInitializable, IDisposable
 
     public bool TryGetImage(int pageId, out Sprite sprite)
         => ImageCache.TryGetValue(pageId, out sprite);
+
+    public async void CreatePartnerStoreDetailsPopup(int storeId)
+    {
+        Transform canvasTransform = GameObject.FindGameObjectWithTag("Canvas").transform;
+        if (canvasTransform.childCount > 1)
+        {
+            Debug.LogError("[SightsUpdater] Canvas child count is more than 1");
+            return;
+        }
+
+        if (CachedNearestPartnerStores == null || !CachedNearestPartnerStores.TryGetValue(storeId, out var store))
+        {
+            Debug.LogError($"[SightsUpdater] Partner store {storeId} not found in cache");
+            return;
+        }
+
+        var popup = _partnerStoreDetailsViewFactory.Create();
+        popup.transform.SetParent(canvasTransform, false);
+
+        Sprite sprite = null;
+        if (!PartnerStoreImageCache.TryGetValue(storeId, out sprite) && !string.IsNullOrEmpty(store.image_url))
+        {
+            var url = FixUrl(store.image_url);
+            sprite = await LoadSpriteAsync(url);
+            if (sprite != null)
+                PartnerStoreImageCache[storeId] = sprite;
+        }
+        if (sprite == null)
+            sprite = Resources.Load<Sprite>("no_image");
+
+        bool visited = !_userData.IsPartnerStoreUnmarked(storeId);
+        popup.Init(sprite, store.name, store.address, storeId);
+        popup.SetVisitStatus(visited);
+        popup.SetVisitButtonState(!visited);
+
+        if (!visited)
+            popup.OnVisitClicked += HandlePartnerStoreVisit;
+    }
+
+    private async void HandlePartnerStoreVisit(int storeId)
+    {
+        var (success, response) = await _apiService.SavePartnerStores(new[] { storeId });
+        if (!success || response == null)
+            return;
+
+        if (response.saved_store_ids != null)
+        {
+            foreach (var id in response.saved_store_ids)
+                _userData.AddPartnerStoreToMarked(id);
+        }
+
+        if (response.resources_gained != null)
+            await RefreshInventoryAndShowReward(response.resources_gained);
+
+        await SyncPartnerStoreMarksFromServer();
+        OnPartnerStoresUpdated?.Invoke();
+    }
 }
