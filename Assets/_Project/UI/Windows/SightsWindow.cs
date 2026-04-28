@@ -1,10 +1,12 @@
 using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class SightsWindow : BaseWindow
 {
     [SerializeField] private Transform _contentParent;
+    [SerializeField] private TMP_Text _headerText;
     [SerializeField] private Button _backButton;
     
     public Transform ContentParent => _contentParent;
@@ -16,6 +18,7 @@ public class SightsWindow : BaseWindow
     {
         _backButton.onClick.AddListener(() => OnBackClicked?.Invoke());
         OnWindowOpened?.Invoke();
+        _headerText.text = _contentParent.childCount.ToString();
     }
     
     protected override void OnHide()

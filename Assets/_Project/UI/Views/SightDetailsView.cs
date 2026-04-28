@@ -1,6 +1,7 @@
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using Zenject;
 
@@ -12,7 +13,8 @@ public class SightDetailsView : MonoBehaviour
     public Button CheckInButton;
     public Button CaptureButton;
     public Button CloseButton;
-    public TMP_Text CaptureInfoText;
+    [FormerlySerializedAs("CaptureInfoText")] public TMP_Text CaptureNameText;
+    public TMP_Text CaptureDateText;
     public int SightID;
     
     public Action<int> OnCheckInClicked;
@@ -79,7 +81,7 @@ public class SightDetailsView : MonoBehaviour
     public void SetCaptureInfo(bool captured, string capturedByUsername, string capturedAt, string clanName,
         int? defenderShieldLevel = null, int? timeUntilMinutes = null, int? timeUntilSeconds = null, string blockReason = null)
     {
-        if (CaptureInfoText == null)
+        if (CaptureNameText == null)
             return;
 
         var lines = new System.Collections.Generic.List<string>();
@@ -88,7 +90,9 @@ public class SightDetailsView : MonoBehaviour
         {
             string clanInfo = !string.IsNullOrEmpty(clanName) ? $" ({clanName})" : "";
             string date = !string.IsNullOrEmpty(capturedAt) ? ParseDate(capturedAt) : "";
-            lines.Add($"Захвачено: {capturedByUsername}{clanInfo}");
+            CaptureDateText.text = ParseDate(capturedAt);
+            CaptureNameText.text = capturedByUsername;
+            //lines.Add($"Захвачено: {capturedByUsername}{clanInfo}");
             lines.Add($"Дата: {date}");
         }
         else
@@ -116,7 +120,7 @@ public class SightDetailsView : MonoBehaviour
             lines.Add($"Причина блокировки: {reasonText}");
         }
 
-        CaptureInfoText.text = string.Join("\n", lines);
+        //CaptureNameText.text = string.Join("\n", lines);
     }
 
     private string ParseDate(string dateString)
