@@ -167,13 +167,16 @@ public class GameEventService : IInitializable, IDisposable, ITickable
         SpawnEventObject(eventData, coordinates);
     }
 
+    private static readonly GameEventType[] _availableGameTypes =
+    {
+        GameEventType.Jump,
+        GameEventType.TrainPath,
+        GameEventType.FlappyBird
+    };
+
     private GameEventType GetRandomEventType()
     {
-        // Всегда возвращаем Jump как игру по умолчанию
-        return GameEventType.Jump;
-        // Для случайного выбора раскомментируйте следующую строку:
-        // var types = Enum.GetValues(typeof(GameEventType));
-        // return (GameEventType)types.GetValue(UnityEngine.Random.Range(0, types.Length));
+        return _availableGameTypes[UnityEngine.Random.Range(0, _availableGameTypes.Length)];
     }
 
     private void SpawnEventObject(GameEventData eventData, Vector2d coordinates)

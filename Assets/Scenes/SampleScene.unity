@@ -2512,7 +2512,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 620}
+  m_AnchoredPosition: {x: 0, y: 773}
   m_SizeDelta: {x: 800, y: 1240}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &201663642
@@ -7492,18 +7492,18 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 619381838}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1258386415}
-  m_Father: {fileID: 966173940}
+  m_Father: {fileID: 1678526857}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 100, y: -50}
-  m_SizeDelta: {x: 200, y: 100}
+  m_AnchoredPosition: {x: 145, y: -62.5}
+  m_SizeDelta: {x: 250, y: 105}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &619381840
 MonoBehaviour:
@@ -7569,8 +7569,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Sprite: {fileID: 21300000, guid: 9794b17ad20fe6c479a3e7480774b903, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -7646,15 +7646,15 @@ MonoBehaviour:
       m_Calls: []
   m_text: My Clan
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 159485f334e36864eb9def99a19d523a, type: 2}
+  m_sharedMaterial: {fileID: 408363220984010571, guid: 159485f334e36864eb9def99a19d523a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
-  m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+    rgba: 4287598446
+  m_fontColor: {r: 0.43137255, g: 0.56078434, b: 0.56078434, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -9052,12 +9052,12 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1890617379}
-  m_Father: {fileID: 966173940}
+  m_Father: {fileID: 1754733702}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 1, y: 1}
+  m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -80, y: -80}
-  m_SizeDelta: {x: 160, y: 160}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &685452632
 MonoBehaviour:
@@ -9116,7 +9116,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -10343,18 +10343,18 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 781726635}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 622062612}
-  m_Father: {fileID: 966173940}
+  m_Father: {fileID: 1678526857}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 1}
-  m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 105, y: -50}
-  m_SizeDelta: {x: 200, y: 100}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 645, y: -62.5}
+  m_SizeDelta: {x: 250, y: 105}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &781726637
 MonoBehaviour:
@@ -10413,15 +10413,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.003921569}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Sprite: {fileID: 21300000, guid: 9794b17ad20fe6c479a3e7480774b903, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -12689,19 +12689,16 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 685452631}
   - {fileID: 201663641}
-  - {fileID: 619381839}
-  - {fileID: 1900571297}
-  - {fileID: 781726636}
   - {fileID: 1412530292}
   - {fileID: 1041508540}
+  - {fileID: 1678526857}
   m_Father: {fileID: 1754733702}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 800, y: 1400}
+  m_SizeDelta: {x: 900, y: 1660}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &966173941
 MonoBehaviour:
@@ -13047,17 +13044,17 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Search Clan
+  m_text: Find Clan
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 159485f334e36864eb9def99a19d523a, type: 2}
+  m_sharedMaterial: {fileID: 408363220984010571, guid: 159485f334e36864eb9def99a19d523a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
-  m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+    rgba: 4287598446
+  m_fontColor: {r: 0.43137255, g: 0.56078434, b: 0.56078434, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -15663,19 +15660,17 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Top 10
-
-    Clans'
+  m_text: Top 10
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 159485f334e36864eb9def99a19d523a, type: 2}
+  m_sharedMaterial: {fileID: 408363220984010571, guid: 159485f334e36864eb9def99a19d523a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
-  m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+    rgba: 4283387695
+  m_fontColor: {r: 0.18431373, g: 0.30980393, b: 0.30980393, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -17289,9 +17284,9 @@ RectTransform:
   - {fileID: 1392152235}
   m_Father: {fileID: 966173940}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 1}
-  m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 105, y: -155.1}
+  m_AnchorMin: {x: 0.5, y: 0}
+  m_AnchorMax: {x: 0.5, y: 0}
+  m_AnchoredPosition: {x: 0, y: 50}
   m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1412530293
@@ -20299,6 +20294,111 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 2003823467774252682, guid: 060a59e36428f9f40a8ebdbb14274580, type: 3}
   m_PrefabInstance: {fileID: 5062502645043871968}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1678526856
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1678526857}
+  - component: {fileID: 1678526858}
+  - component: {fileID: 1678526860}
+  - component: {fileID: 1678526859}
+  m_Layer: 5
+  m_Name: HeaderButtons
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1678526857
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1678526856}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 619381839}
+  - {fileID: 1900571297}
+  - {fileID: 781726636}
+  m_Father: {fileID: 966173940}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 1}
+  m_AnchorMax: {x: 0.5, y: 1}
+  m_AnchoredPosition: {x: 0, y: -129}
+  m_SizeDelta: {x: 790, y: 125}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1678526858
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1678526856}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.HorizontalLayoutGroup
+  m_Padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
+  m_ChildAlignment: 4
+  m_Spacing: 0
+  m_ChildForceExpandWidth: 0
+  m_ChildForceExpandHeight: 0
+  m_ChildControlWidth: 0
+  m_ChildControlHeight: 0
+  m_ChildScaleWidth: 0
+  m_ChildScaleHeight: 0
+  m_ReverseArrangement: 0
+--- !u!114 &1678526859
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1678526856}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: 21dd2c6368bffde4ca781edab92bc35b, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &1678526860
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1678526856}
+  m_CullTransparentMesh: 1
 --- !u!1 &1719658886
 GameObject:
   m_ObjectHideFlags: 0
@@ -21400,6 +21500,7 @@ GameObject:
   - component: {fileID: 1754733702}
   - component: {fileID: 1754733704}
   - component: {fileID: 1754733705}
+  - component: {fileID: 1754733706}
   m_Layer: 5
   m_Name: ClansWindow
   m_TagString: Untagged
@@ -21420,6 +21521,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 470967998}
+  - {fileID: 685452631}
   - {fileID: 966173940}
   m_Father: {fileID: 123359349}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -21462,6 +21564,51 @@ MonoBehaviour:
   _searchPanel: {fileID: 1041508539}
   _searchInputField: {fileID: 1914909392}
   _searchButton: {fileID: 1957630540}
+--- !u!114 &1754733706
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1754733701}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dca1722f9f4242b40935070ead56eeeb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIGroupSelector
+  _items:
+  - button: {fileID: 619381840}
+    buttonText: {fileID: 1258386416}
+    normalAlpha: 0
+    selectedAlpha: 1
+    normalTextColor: {r: 0.43137255, g: 0.56078434, b: 0.56078434, a: 1}
+    selectedTextColor: {r: 0.18431373, g: 0.30980393, b: 0.30980393, a: 1}
+    OnSelected:
+      m_PersistentCalls:
+        m_Calls: []
+    buttonImage: {fileID: 0}
+  - button: {fileID: 1900571298}
+    buttonText: {fileID: 992754982}
+    normalAlpha: 0
+    selectedAlpha: 1
+    normalTextColor: {r: 0.43137255, g: 0.56078434, b: 0.56078434, a: 1}
+    selectedTextColor: {r: 0.18431373, g: 0.30980393, b: 0.30980393, a: 1}
+    OnSelected:
+      m_PersistentCalls:
+        m_Calls: []
+    buttonImage: {fileID: 0}
+  - button: {fileID: 781726637}
+    buttonText: {fileID: 622062613}
+    normalAlpha: 0
+    selectedAlpha: 1
+    normalTextColor: {r: 0.43137255, g: 0.56078434, b: 0.56078434, a: 1}
+    selectedTextColor: {r: 0.18431373, g: 0.30980393, b: 0.30980393, a: 1}
+    OnSelected:
+      m_PersistentCalls:
+        m_Calls: []
+    buttonImage: {fileID: 0}
+  _defaultSelectedIndex: 0
+  _animDuration: 0.2
 --- !u!1 &1757525381
 GameObject:
   m_ObjectHideFlags: 0
@@ -22424,6 +22571,7 @@ MonoBehaviour:
   _friendViewPrefab: {fileID: 4556815432649947957, guid: 56065524a0bdaef4eaaa900537a71e04, type: 3}
   _friendRequestViewPrefab: {fileID: 9219715758923298530, guid: f133220b758c302468c77a817dc3e407, type: 3}
   _clanViewPrefab: {fileID: 5339712689931873672, guid: 880f1198ce2ba5e4c969a1e743f22bc8, type: 3}
+  _clanPageViewPrefab: {fileID: 8167683217256876179, guid: 13223b00be9e0904994b23cd45719e7b, type: 3}
   _createClanViewPrefab: {fileID: 7045852968939150995, guid: e613370d57583d941a9c5056e2ce9f11, type: 3}
   _gameEventViewPrefab: {fileID: 7369638128805676047, guid: 21d1c905c5f012a4284454cbcc7220f7, type: 3}
   _resourceItemPrefab: {fileID: 3227698455592788916, guid: a5f118ad120fc3c4696652b5e14e3415, type: 3}
@@ -23803,18 +23951,18 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1900571296}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 992754981}
-  m_Father: {fileID: 966173940}
+  m_Father: {fileID: 1678526857}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 1}
-  m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -97, y: -50}
-  m_SizeDelta: {x: 200, y: 100}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 395, y: -62.5}
+  m_SizeDelta: {x: 250, y: 105}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1900571298
 MonoBehaviour:
@@ -23873,15 +24021,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.003921569}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Sprite: {fileID: 21300000, guid: 9794b17ad20fe6c479a3e7480774b903, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4

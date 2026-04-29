@@ -69,31 +69,6 @@ public class TrainPathUI : MonoBehaviour
     public Button FinishButton => _finishButton;
     public Image Background => _background;
 
-    // Методы для программной установки ссылок
-    public void SetStartScreen(GameObject screen) => _startScreen = screen;
-    public void SetGameScreen(GameObject screen) => _gameScreen = screen;
-    public void SetEndScreen(GameObject screen) => _endScreen = screen;
-    public void SetStartButton(Button button) => _startButton = button;
-    public void SetSkillText(TMP_Text text) => _skillText = text;
-    public void SetCloseButton(Button button) => _closeButton = button;
-    public void SetMapContainer(RectTransform container) => _mapContainer = container;
-    public void SetTrain(RectTransform train) => _train = train;
-    public void SetTimeText(TMP_Text text) => _timeText = text;
-    public void SetPathInfoText(TMP_Text text) => _pathInfoText = text;
-    public void SetResultText(TMP_Text text) => _resultText = text;
-    public void SetPlayerTimeText(TMP_Text text) => _playerTimeText = text;
-    public void SetOptimalTimeText(TMP_Text text) => _optimalTimeText = text;
-    public void SetScoreText(TMP_Text text) => _scoreText = text;
-    public void SetBonusSliderTrack(RectTransform rt) => _bonusSliderTrack = rt;
-    public void SetBonusSliderIndicator(RectTransform rt) => _bonusSliderIndicator = rt;
-    public void SetBonusLeftLabel(TMP_Text text) => _bonusLeftLabel = text;
-    public void SetBonusRightLabel(TMP_Text text) => _bonusRightLabel = text;
-    public void SetEndScreenButtonsContainer(GameObject go) => _endScreenButtonsContainer = go;
-    public void SetBonusSliderComponent(BonusSliderComponent c) => _bonusSliderComponent = c;
-    public void SetRestartButton(Button button) => _restartButton = button;
-    public void SetFinishButton(Button button) => _finishButton = button;
-    public void SetBackground(Image image) => _background = image;
-
     public void ShowScreen(TrainPathScreen screenType)
     {
         switch (screenType)
@@ -116,29 +91,35 @@ public class TrainPathUI : MonoBehaviour
         }
     }
 
-    public void SetTime(float time)
+    public void SetCountdown(float seconds)
     {
-        if (_timeText != null)
-            _timeText.text = $"Время: {time:F1}с";
+        if (_timeText == null) return;
+        int m = Mathf.FloorToInt(seconds / 60f);
+        int s = Mathf.FloorToInt(seconds % 60f);
+        _timeText.text = $"⏱ {m}:{s:00}";
+        _timeText.color = seconds < 15f ? new Color(1f, 0.25f, 0.25f) :
+                          seconds < 30f ? new Color(1f, 0.75f, 0.10f) : Color.white;
     }
 
-    public void SetPathInfo(int stationsVisited, int totalStations)
+    public void SetCargoStatus(int collected, int total)
     {
-        if (_pathInfoText != null)
-            _pathInfoText.text = $"Станций: {stationsVisited}/{totalStations}";
+        if (_pathInfoText == null) return;
+        _pathInfoText.text = collected >= total && total > 0
+            ? $"📦 {collected}/{total} — Теперь к финишу!"
+            : $"📦 {collected}/{total} — Собери все грузы";
     }
 
-    public void SetResult(float playerTime, float optimalTime, bool isOptimal, int score)
+    public void SetResult(int cargoCollected, int totalCargo, float timeRemaining, bool isTimeout, int score)
     {
         if (_resultText != null)
-            _resultText.text = isOptimal ? "Оптимальный путь!" : "Хорошая попытка!";
-        
+            _resultText.text = isTimeout ? "Время вышло!" : "Все грузы доставлены!";
+
         if (_playerTimeText != null)
-            _playerTimeText.text = $"Ваше время: {playerTime:F1}с";
-        
+            _playerTimeText.text = $"Собрано грузов: {cargoCollected}/{totalCargo}";
+
         if (_optimalTimeText != null)
-            _optimalTimeText.text = $"Оптимальное время: {optimalTime:F1}с";
-        
+            _optimalTimeText.text = isTimeout ? "Время истекло" : $"Осталось: {timeRemaining:F0}с";
+
         if (_scoreText != null)
             _scoreText.text = $"Очки: {score}";
     }

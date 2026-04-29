@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb7e4307d95cd8141b63e004d0e9138f, type: 3}
+  m_Name: TrainPathConfig
+  m_EditorClassIdentifier: Assembly-CSharp::TrainPathConfig
+  _mapWidth: 800
+  _mapHeight: 600
+  _minStations: 10
+  _maxStations: 16
+  _minTravelTime: 0.5
+  _maxTravelTime: 5
+  _travelTimeVarianceMin: 0.6
+  _travelTimeVarianceMax: 1.5
+  _minWaitTime: 0.3
+  _maxWaitTime: 2.5
+  _connectionRadiusFactor: 0.42
+  _extraConnectionProbability: 0.65
+  _minCargoStations: 2
+  _maxCargoStations: 4
+  _stationsPerCargo: 3
+  _baseCountdownTime: 90
+  _timePerCargo: 20
+  _stationSprite: {fileID: 0}
+  _startStationSprite: {fileID: 0}
+  _endStationSprite: {fileID: 0}
+  _cargoStationSprite: {fileID: 0}
+  _trainSprite: {fileID: 0}
+  _stationSize: {x: 34, y: 34}
+  _trainSize: {x: 40, y: 40}
+  _clickRadius: 30
+  _colorDefault: {r: 0.3, g: 0.35, b: 0.8, a: 1}
+  _colorHighlight: {r: 1, g: 0.9, b: 0.1, a: 1}
+  _colorCargo: {r: 0.9, g: 0.55, b: 0.1, a: 1}
+  _colorCollected: {r: 0.42, g: 0.45, b: 0.5, a: 1}
+  _colorStart: {r: 0.2, g: 0.75, b: 0.25, a: 1}
+  _colorEnd: {r: 0.75, g: 0.2, b: 0.2, a: 1}
+  _pathColorFast: {r: 0.2, g: 0.85, b: 0.35, a: 0.85}
+  _pathColorSlow: {r: 0.9, g: 0.25, b: 0.2, a: 0.85}
+  _pathWidthFast: 6
+  _pathWidthSlow: 3
+  _waitTimeFontSize: 10
+  _pathTimeFontSize: 10

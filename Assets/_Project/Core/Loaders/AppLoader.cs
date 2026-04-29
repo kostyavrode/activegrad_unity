@@ -13,7 +13,7 @@ public class AppLoader : MonoBehaviour
     {
         Debug.Log("AppLoader: Starting initialization...");
 
-        Application.targetFrameRate = 60;
+        Application.targetFrameRate = 90;
         
         if (!_apiService.IsLoggedIn)
         {

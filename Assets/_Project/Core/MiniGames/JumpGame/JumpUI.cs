@@ -69,30 +69,6 @@ public class JumpUI : MonoBehaviour
     public Button FinishButton => _finishButton;
     public Image Background => _background;
 
-    public void SetStartScreen(GameObject screen) => _startScreen = screen;
-    public void SetGameScreen(GameObject screen) => _gameScreen = screen;
-    public void SetEndScreen(GameObject screen) => _endScreen = screen;
-    public void SetStartButton(Button button) => _startButton = button;
-    public void SetSkillText(TMP_Text text) => _skillText = text;
-    public void SetCloseButton(Button button) => _closeButton = button;
-    public void SetTitleText(TMP_Text text) => _titleText = text;
-    public void SetRulesText(TMP_Text text) => _rulesText = text;
-    public void SetPlayer(RectTransform player) => _player = player;
-    public void SetPlayerHead(RectTransform head) => _playerHead = head;
-    public void SetSliderBackground(RectTransform bg) => _sliderBackground = bg;
-    public void SetZonesContainer(RectTransform container) => _zonesContainer = container;
-    public void SetSliderIndicator(RectTransform indicator) => _sliderIndicator = indicator;
-    public void SetJumpCounterText(TMP_Text text) => _jumpCounterText = text;
-    public void SetScoreText(TMP_Text text) => _scoreText = text;
-    public void SetInstructionText(TMP_Text text) => _instructionText = text;
-    public void SetResultText(TMP_Text text) => _resultText = text;
-    public void SetTotalScoreText(TMP_Text text) => _totalScoreText = text;
-    public void SetJumpResultsText(TMP_Text text) => _jumpResultsText = text;
-    public void SetBonusSliderComponent(BonusSliderComponent c) => _bonusSliderComponent = c;
-    public void SetEndScreenButtonsContainer(GameObject go) => _endScreenButtonsContainer = go;
-    public void SetFinishButton(Button button) => _finishButton = button;
-    public void SetBackground(Image image) => _background = image;
-
     public void ShowScreen(JumpScreen screenType)
     {
         if (_startScreen != null) _startScreen.SetActive(screenType == JumpScreen.Start);

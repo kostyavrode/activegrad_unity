@@ -14,26 +14,32 @@ namespace ActiveGrad.MiniGames
     /// </summary>
     public class BonusSliderComponent : MonoBehaviour
     {
-        public RectTransform SliderTrack { get; private set; }
-        public RectTransform Indicator { get; private set; }
-        public TMP_Text LeftLabel { get; private set; }
-        public TMP_Text RightLabel { get; private set; }
-        public GameObject FinishButtonContainer { get; private set; }
+        [SerializeField] private RectTransform _sliderTrack;
+        [SerializeField] private RectTransform _indicator;
+        [SerializeField] private TMP_Text _leftLabel;
+        [SerializeField] private TMP_Text _rightLabel;
+        [SerializeField] private GameObject _finishButtonContainer;
+
+        public RectTransform SliderTrack => _sliderTrack;
+        public RectTransform Indicator => _indicator;
+        public TMP_Text LeftLabel => _leftLabel;
+        public TMP_Text RightLabel => _rightLabel;
+        public GameObject FinishButtonContainer => _finishButtonContainer;
 
         private float _sliderDuration = 1f;
 
         public void Setup(RectTransform sliderTrack, RectTransform indicator, TMP_Text leftLabel, TMP_Text rightLabel, GameObject finishButtonContainer)
         {
-            SliderTrack = sliderTrack;
-            Indicator = indicator;
-            LeftLabel = leftLabel;
-            RightLabel = rightLabel;
-            FinishButtonContainer = finishButtonContainer;
+            _sliderTrack = sliderTrack;
+            _indicator = indicator;
+            _leftLabel = leftLabel;
+            _rightLabel = rightLabel;
+            _finishButtonContainer = finishButtonContainer;
 
-            if (LeftLabel != null)
-                LeftLabel.text = "Уровень профессии";
-            if (RightLabel != null)
-                RightLabel.text = "% выполнения задания";
+            if (_leftLabel != null)
+                _leftLabel.text = "Уровень профессии";
+            if (_rightLabel != null)
+                _rightLabel.text = "% выполнения задания";
         }
 
         /// <summary>
@@ -43,23 +49,23 @@ namespace ActiveGrad.MiniGames
         /// </summary>
         public void Run(Func<float> getProfessionLevel, int baseScore, Action<int, float> onComplete)
         {
-            if (FinishButtonContainer != null)
-                FinishButtonContainer.SetActive(false);
+            if (_finishButtonContainer != null)
+                _finishButtonContainer.SetActive(false);
 
             StartCoroutine(RunCoroutine(getProfessionLevel ?? (() => 0.5f), baseScore, onComplete));
         }
 
         private IEnumerator RunCoroutine(Func<float> getProfessionLevel, int baseScore, Action<int, float> onComplete)
         {
-            if (Indicator == null || SliderTrack == null)
+            if (_indicator == null || _sliderTrack == null)
             {
-                if (FinishButtonContainer != null)
-                    FinishButtonContainer.SetActive(true);
+                if (_finishButtonContainer != null)
+                    _finishButtonContainer.SetActive(true);
                 onComplete?.Invoke(baseScore, 1f);
                 yield break;
             }
 
-            float trackWidth = SliderTrack.sizeDelta.x;
+            float trackWidth = _sliderTrack.sizeDelta.x;
             float halfWidth = trackWidth * 0.5f - 5f;
             float direction = 1f;
             float pos = 0f;
@@ -83,7 +89,7 @@ namespace ActiveGrad.MiniGames
                     direction = 1f;
                 }
 
-                Indicator.anchoredPosition = new Vector2(pos, 0);
+                _indicator.anchoredPosition = new Vector2(pos, 0);
                 yield return null;
             }
 
@@ -92,7 +98,7 @@ namespace ActiveGrad.MiniGames
 
             float animTime = 0.15f;
             float animElapsed = 0f;
-            Vector2 startPos = Indicator.anchoredPosition;
+            Vector2 startPos = _indicator.anchoredPosition;
 
             while (animElapsed < animTime)
             {
@@ -100,18 +106,18 @@ namespace ActiveGrad.MiniGames
                 float t = animElapsed / animTime;
                 t = 1f - (1f - t) * (1f - t);
                 float currentPos = Mathf.Lerp(startPos.x, targetPos, t);
-                Indicator.anchoredPosition = new Vector2(currentPos, 0);
+                _indicator.anchoredPosition = new Vector2(currentPos, 0);
                 yield return null;
             }
 
-            Indicator.anchoredPosition = new Vector2(targetPos, 0);
+            _indicator.anchoredPosition = new Vector2(targetPos, 0);
 
             float normalizedDistance = Mathf.Abs(targetPos) / halfWidth;
             float bonus = 0.5f + (1f - normalizedDistance);
             int finalScore = Mathf.RoundToInt(baseScore * bonus);
 
-            if (FinishButtonContainer != null)
-                FinishButtonContainer.SetActive(true);
+            if (_finishButtonContainer != null)
+                _finishButtonContainer.SetActive(true);
 
             onComplete?.Invoke(finalScore, bonus);
         }
