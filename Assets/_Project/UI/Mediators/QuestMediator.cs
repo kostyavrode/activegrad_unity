@@ -47,21 +47,26 @@ public class QuestMediator : IInitializable, IDisposable
     
     public void Initialize()
     {
-        _questWindow.OnWindowOpened += LoadQuests;
+        _questWindow.OnWindowOpened += HandleWindowOpened;
         _questWindow.OnBackClicked += HandleBackClicked;
-        
-        // Подписываемся на события квестов
+
         _questService.OnQuestProgressChanged += HandleQuestProgressChanged;
         _questService.OnQuestCompleted += HandleQuestCompleted;
     }
 
     public void Dispose()
     {
-        _questWindow.OnWindowOpened -= LoadQuests;
+        _questWindow.OnWindowOpened -= HandleWindowOpened;
         _questWindow.OnBackClicked -= HandleBackClicked;
-        
+
         _questService.OnQuestProgressChanged -= HandleQuestProgressChanged;
         _questService.OnQuestCompleted -= HandleQuestCompleted;
+    }
+
+    private void HandleWindowOpened()
+    {
+        _questWindow.PlayTabAnimation();
+        LoadQuests();
     }
 
     private async void LoadQuests()

@@ -11,6 +11,7 @@ public class ClansMediator : IInitializable, IDisposable
     private readonly APIService _apiService;
     private readonly ClanView.Factory _clanViewFactory;
     private readonly ClanPageView.Factory _clanPageViewFactory;
+    private readonly ClanMemberView.Factory _clanMemberViewFactory;
     private readonly CreateClanView.Factory _createClanViewFactory;
     private readonly IPopupService _popupService;
 
@@ -25,6 +26,7 @@ public class ClansMediator : IInitializable, IDisposable
         APIService apiService,
         ClanView.Factory clanViewFactory,
         ClanPageView.Factory clanPageViewFactory,
+        ClanMemberView.Factory clanMemberViewFactory,
         CreateClanView.Factory createClanViewFactory,
         IPopupService popupService)
     {
@@ -33,6 +35,7 @@ public class ClansMediator : IInitializable, IDisposable
         _apiService = apiService;
         _clanViewFactory = clanViewFactory;
         _clanPageViewFactory = clanPageViewFactory;
+        _clanMemberViewFactory = clanMemberViewFactory;
         _createClanViewFactory = createClanViewFactory;
         _popupService = popupService;
     }
@@ -70,6 +73,8 @@ public class ClansMediator : IInitializable, IDisposable
         _clansWindow.ClearContent();
         DestroyAllClanViews();
         _clansWindow.ShowSearchPanel(false);
+        _clansWindow.SetCreateClanButtonActive(true);
+        _clansWindow.PlayTabAnimation(false);
 
         var (success, response) = await _apiService.GetTopClans();
 
@@ -89,6 +94,8 @@ public class ClansMediator : IInitializable, IDisposable
         _clansWindow.ClearContent();
         DestroyAllClanViews();
         _clansWindow.ShowSearchPanel(true);
+        _clansWindow.SetCreateClanButtonActive(false);
+        _clansWindow.PlayTabAnimation(true);
     }
 
     private async void HandleSearchClicked(string query)
@@ -112,6 +119,10 @@ public class ClansMediator : IInitializable, IDisposable
                 return;
             }
 
+            // Убираем панель поиска и возвращаем ScrollView — иначе она перекрывает результаты
+            _clansWindow.ShowSearchPanel(false);
+            _clansWindow.PlayTabAnimation(false);
+
             foreach (var clanData in response.clans)
                 SpawnClanView(clanData, isMyClan: false);
         }
@@ -126,6 +137,8 @@ public class ClansMediator : IInitializable, IDisposable
         _clansWindow.ClearContent();
         DestroyAllClanViews();
         _clansWindow.ShowSearchPanel(false);
+        _clansWindow.SetCreateClanButtonActive(true);
+        _clansWindow.PlayTabAnimation(false);
 
         var (success, clan) = await _apiService.GetMyClan();
 
@@ -133,6 +146,8 @@ public class ClansMediator : IInitializable, IDisposable
         {
             if (clan != null)
             {
+                // /player/{id} возвращает неполный ClanData — обогащаем через SearchClans
+                clan = await EnrichClanData(clan);
                 _myClan = clan;
                 SpawnClanView(clan, isMyClan: true);
             }
@@ -180,19 +195,26 @@ public class ClansMediator : IInitializable, IDisposable
 
     // ── ClanPageView ─────────────────────────────────────────────────────────
 
-    private void HandleOpenClanPage(ClanData clan)
+    private async void HandleOpenClanPage(ClanData clan)
     {
         CloseClanPageView();
 
-        bool isMyClan = _myClan != null && _myClan.id == clan.id;
-
         _currentClanPageView = _clanPageViewFactory.Create();
         _currentClanPageView.transform.SetParent(GameObject.FindGameObjectWithTag("Canvas").transform, false);
-        _currentClanPageView.Init(clan, isMyClan);
+        _currentClanPageView.Init(clan, _myClan);
 
         _currentClanPageView.OnBackClicked += HandleClanPageBack;
         _currentClanPageView.OnJoinClicked += HandleClanPageJoin;
         _currentClanPageView.OnLeaveClicked += HandleClanPageLeave;
+
+        var (success, response) = await _apiService.GetClanMembers(clan.id);
+
+        if (_currentClanPageView == null) return;
+
+        if (success && response?.members != null)
+            _currentClanPageView.ShowMembers(response.members, _clanMemberViewFactory);
+        else
+            _popupService.ShowError("Не удалось загрузить участников клана");
     }
 
     private async void HandleClanPageJoin(int clanId)
@@ -203,7 +225,7 @@ public class ClansMediator : IInitializable, IDisposable
         {
             _popupService.ShowSuccess(response.message ?? "Вы успешно вступили в клан!");
             await RefreshMyClan();
-            _currentClanPageView?.SetIsMyClan(true);
+            _currentClanPageView?.RefreshButtons(clanId, _myClan);
         }
         else
         {
@@ -219,7 +241,7 @@ public class ClansMediator : IInitializable, IDisposable
         {
             _popupService.ShowSuccess(message ?? "Вы покинули клан");
             _myClan = null;
-            _currentClanPageView?.SetIsMyClan(false);
+            _currentClanPageView?.RefreshButtons(_currentClanPageView.ClanId, _myClan);
         }
         else
         {
@@ -346,7 +368,28 @@ public class ClansMediator : IInitializable, IDisposable
     private async Task RefreshMyClan()
     {
         var (success, clan) = await _apiService.GetMyClan();
-        if (success) _myClan = clan;
+        if (success && clan != null)
+            _myClan = await EnrichClanData(clan);
+    }
+
+    // /player/{id} возвращает неполный ClanData (без created_at, created_by_username).
+    // Ищем клан по имени через SearchClans и возвращаем полную версию, если нашли.
+    private async Task<ClanData> EnrichClanData(ClanData clan)
+    {
+        if (!string.IsNullOrEmpty(clan.created_by_username))
+            return clan;
+
+        var (success, response) = await _apiService.SearchClans(clan.name);
+        if (!success || response?.clans == null)
+            return clan;
+
+        foreach (var full in response.clans)
+        {
+            if (full.id == clan.id)
+                return full;
+        }
+
+        return clan;
     }
 
     private void HandleBackButtonClicked() => _uiManager.Back();

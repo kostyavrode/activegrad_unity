@@ -30,7 +30,7 @@ public class SightsMediator : IInitializable, IDisposable
 
     public void Initialize()
     {
-        _sightsWindow.OnWindowOpened += LoadSights;
+        _sightsWindow.OnWindowOpened += HandleWindowOpened;
         _sightsWindow.OnBackClicked += () => _uiManager.Back();
 
         _sightsUpdater.OnImageLoaded += HandleImageLoaded;
@@ -40,10 +40,16 @@ public class SightsMediator : IInitializable, IDisposable
 
     public void Dispose()
     {
-        _sightsWindow.OnWindowOpened -= LoadSights;
+        _sightsWindow.OnWindowOpened -= HandleWindowOpened;
         _sightsUpdater.OnImageLoaded -= HandleImageLoaded;
         _sightsUpdater.OnSightsUpdated -= HandleSightsUpdated;
         _sightsUpdater.OnPartnerStoresUpdated -= HandlePartnerStoresUpdated;
+    }
+
+    private void HandleWindowOpened()
+    {
+        _sightsWindow.PlayTabAnimation();
+        LoadSights();
     }
 
     private void HandleSightsUpdated()

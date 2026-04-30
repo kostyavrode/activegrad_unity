@@ -529,8 +529,8 @@ MonoBehaviour:
 
     Wandering stars, for whom it is reserved
 
-    The blackness of
-    darkness forever'
+    The blackness of darkness
+    forever'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 097b779c05aede241a1eff3574a08a63, type: 2}
   m_sharedMaterial: {fileID: -7258416252946165371, guid: 097b779c05aede241a1eff3574a08a63, type: 2}
@@ -4014,6 +4014,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 577227662845958677}
+  - component: {fileID: 4129698361028783396}
   m_Layer: 5
   m_Name: Members
   m_TagString: Untagged
@@ -4038,8 +4039,34 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
+  m_SizeDelta: {x: 780, y: 500}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &4129698361028783396
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8339831329822972073}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.VerticalLayoutGroup
+  m_Padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
+  m_ChildAlignment: 1
+  m_Spacing: 0
+  m_ChildForceExpandWidth: 0
+  m_ChildForceExpandHeight: 0
+  m_ChildControlWidth: 0
+  m_ChildControlHeight: 0
+  m_ChildScaleWidth: 0
+  m_ChildScaleHeight: 0
+  m_ReverseArrangement: 0
 --- !u!1 &8492835392169987432
 GameObject:
   m_ObjectHideFlags: 0
@@ -4109,6 +4136,7 @@ MonoBehaviour:
   _landmarksCountText: {fileID: 1373650086152814260}
   _createdByText: {fileID: 1346923886538254238}
   _createdAtText: {fileID: 396272644675314178}
+  _membersContent: {fileID: 577227662845958677}
   _backButton: {fileID: 293095515381740273}
   _joinButton: {fileID: 6874619464474703119}
   _leaveButton: {fileID: 4160784292118062522}

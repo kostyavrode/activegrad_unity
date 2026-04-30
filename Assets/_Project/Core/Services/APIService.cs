@@ -1743,6 +1743,30 @@ public class APIService
         }
     }
 
+    public async Task<(bool success, ClanMembersResponse response)> GetClanMembers(int clanId)
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}clans/{clanId}/members/";
+
+        var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
+
+        if (!success)
+            return (false, null);
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<ClanMembersResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse clan members response: {ex.Message}\nResponse: {message}");
+            return (false, null);
+        }
+    }
+
     public async Task<(bool success, ClanData clan)> GetMyClan()
     {
         if (!IsLoggedIn)
@@ -1849,4 +1873,21 @@ public class ClanData
     public string created_by_username;
     public int member_count;
     public int captured_landmarks_count;
+}
+
+[Serializable]
+public class ClanMember
+{
+    public int id;
+    public string username;
+    public int level;
+    public string joined_at;
+}
+
+[Serializable]
+public class ClanMembersResponse
+{
+    public bool success;
+    public int clan_id;
+    public ClanMember[] members;
 }

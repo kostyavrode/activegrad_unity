@@ -37,22 +37,50 @@ public class FriendsMediator : IInitializable, IDisposable
     
     public void Initialize()
     {
-        _friendsWindow.OnWindowOpened += LoadFriends;
+        _friendsWindow.OnWindowOpened += HandleWindowOpened;
         _friendsWindow.OnBackClicked += HandleBackButtonClicked;
-        _friendsWindow.OnFriendsTabClicked += LoadFriends;
-        _friendsWindow.OnPendingTabClicked += LoadPendingRequests;
-        _friendsWindow.OnSentTabClicked += LoadSentRequests;
+        _friendsWindow.OnFriendsTabClicked += HandleFriendsTab;
+        _friendsWindow.OnPendingTabClicked += HandlePendingTab;
+        _friendsWindow.OnSentTabClicked += HandleSentTab;
     }
 
     public void Dispose()
     {
-        _friendsWindow.OnWindowOpened -= LoadFriends;
+        _friendsWindow.OnWindowOpened -= HandleWindowOpened;
         _friendsWindow.OnBackClicked -= HandleBackButtonClicked;
-        _friendsWindow.OnFriendsTabClicked -= LoadFriends;
-        _friendsWindow.OnPendingTabClicked -= LoadPendingRequests;
-        _friendsWindow.OnSentTabClicked -= LoadSentRequests;
+        _friendsWindow.OnFriendsTabClicked -= HandleFriendsTab;
+        _friendsWindow.OnPendingTabClicked -= HandlePendingTab;
+        _friendsWindow.OnSentTabClicked -= HandleSentTab;
         DestroyAllViews();
     }
+
+    // ── Tab handlers ─────────────────────────────────────────────────────────
+
+    private void HandleWindowOpened()
+    {
+        _friendsWindow.PlayTabAnimation();
+        LoadFriends();
+    }
+
+    private void HandleFriendsTab()
+    {
+        _friendsWindow.PlayTabAnimation();
+        LoadFriends();
+    }
+
+    private void HandlePendingTab()
+    {
+        _friendsWindow.PlayTabAnimation();
+        LoadPendingRequests();
+    }
+
+    private void HandleSentTab()
+    {
+        _friendsWindow.PlayTabAnimation();
+        LoadSentRequests();
+    }
+
+    // ── Data loading ─────────────────────────────────────────────────────────
 
     private async void LoadFriends()
     {

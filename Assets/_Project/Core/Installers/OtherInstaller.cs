@@ -19,6 +19,7 @@ public class OtherInstaller : MonoInstaller
     [SerializeField] private FriendRequestView _friendRequestViewPrefab;
     [SerializeField] private ClanView _clanViewPrefab;
     [SerializeField] private ClanPageView _clanPageViewPrefab;
+    [SerializeField] private ClanMemberView _clanMemberViewPrefab;
     [SerializeField] private CreateClanView _createClanViewPrefab;
     [SerializeField] private GameEventView _gameEventViewPrefab;
     [SerializeField] private ResourceItemView _resourceItemPrefab;
@@ -137,6 +138,7 @@ public class OtherInstaller : MonoInstaller
         
         Container.BindFactory<ClanView, ClanView.Factory>().FromComponentInNewPrefab(_clanViewPrefab).AsTransient();
         Container.BindFactory<ClanPageView, ClanPageView.Factory>().FromComponentInNewPrefab(_clanPageViewPrefab).AsTransient();
+        Container.BindFactory<ClanMemberView, ClanMemberView.Factory>().FromComponentInNewPrefab(_clanMemberViewPrefab).AsTransient();
         Container.BindFactory<CreateClanView, CreateClanView.Factory>().FromComponentInNewPrefab(_createClanViewPrefab).AsTransient();
         
 #if UNITY_EDITOR

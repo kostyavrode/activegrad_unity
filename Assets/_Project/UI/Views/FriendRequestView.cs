@@ -38,7 +38,7 @@ public class FriendRequestView : MonoBehaviour
         _isPending = true;
         _usernameText.text = username;
         _nameText.text = $"{firstName} {lastName}";
-        _levelText.text = $"Level: {level}";
+        _levelText.text = $"{level}";
         _acceptRejectButtons.SetActive(true);
         _statusText.gameObject.SetActive(false);
     }
@@ -49,10 +49,10 @@ public class FriendRequestView : MonoBehaviour
         _isPending = false;
         _usernameText.text = username;
         _nameText.text = $"{firstName} {lastName}";
-        _levelText.text = $"Level: {level}";
+        _levelText.text = $" {level}";
         _acceptRejectButtons.SetActive(false);
         _statusText.gameObject.SetActive(true);
-        _statusText.text = $"Status: {status}";
+        _statusText.text = $" {status}";
     }
     
     private void HandleAcceptClick()

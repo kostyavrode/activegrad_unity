@@ -33,15 +33,21 @@ public class PromoCodesMediator : IInitializable, IDisposable
     
     public void Initialize()
     {
-        _promoCodesWindow.OnWindowOpened += LoadPromoCodes;
+        _promoCodesWindow.OnWindowOpened += HandleWindowOpened;
         _promoCodesWindow.OnBackClicked += HandleBackButtonClicked;
     }
 
     public void Dispose()
     {
-        _promoCodesWindow.OnWindowOpened -= LoadPromoCodes;
+        _promoCodesWindow.OnWindowOpened -= HandleWindowOpened;
         _promoCodesWindow.OnBackClicked -= HandleBackButtonClicked;
         DestroyPromoCodeViews();
+    }
+
+    private void HandleWindowOpened()
+    {
+        _promoCodesWindow.PlayTabAnimation();
+        LoadPromoCodes();
     }
 
     private async void LoadPromoCodes()

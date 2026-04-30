@@ -28,14 +28,20 @@ public class ShopMediator : IInitializable, IDisposable
     
     public void Initialize()
     {
-        _shopWindow.OnWindowOpened += CreateShopItems;
+        _shopWindow.OnWindowOpened += HandleWindowOpened;
         _shopWindow.OnBackClicked += HandleBackClicked;
     }
 
     public void Dispose()
     {
-        _shopWindow.OnWindowOpened -= CreateShopItems;
+        _shopWindow.OnWindowOpened -= HandleWindowOpened;
         _shopWindow.OnBackClicked -= HandleBackClicked;
+    }
+
+    private void HandleWindowOpened()
+    {
+        _shopWindow.PlayTabAnimation();
+        CreateShopItems();
     }
 
     private void HandleBackClicked()
