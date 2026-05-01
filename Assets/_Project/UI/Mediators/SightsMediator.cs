@@ -46,11 +46,7 @@ public class SightsMediator : IInitializable, IDisposable
         _sightsUpdater.OnPartnerStoresUpdated -= HandlePartnerStoresUpdated;
     }
 
-    private void HandleWindowOpened()
-    {
-        _sightsWindow.PlayTabAnimation();
-        LoadSights();
-    }
+    private void HandleWindowOpened() => LoadSights();
 
     private void HandleSightsUpdated()
     {
@@ -94,6 +90,9 @@ public class SightsMediator : IInitializable, IDisposable
         }
 
         AppendPartnerStores();
+
+        if (_sightItemViews.Count > 0 || _partnerStoreItemViews.Count > 0)
+            _sightsWindow.PlayTabAnimation();
     }
 
     private void RefreshPartnerStores()

@@ -56,29 +56,10 @@ public class FriendsMediator : IInitializable, IDisposable
 
     // ── Tab handlers ─────────────────────────────────────────────────────────
 
-    private void HandleWindowOpened()
-    {
-        _friendsWindow.PlayTabAnimation();
-        LoadFriends();
-    }
-
-    private void HandleFriendsTab()
-    {
-        _friendsWindow.PlayTabAnimation();
-        LoadFriends();
-    }
-
-    private void HandlePendingTab()
-    {
-        _friendsWindow.PlayTabAnimation();
-        LoadPendingRequests();
-    }
-
-    private void HandleSentTab()
-    {
-        _friendsWindow.PlayTabAnimation();
-        LoadSentRequests();
-    }
+    private void HandleWindowOpened() => LoadFriends();
+    private void HandleFriendsTab()   => LoadFriends();
+    private void HandlePendingTab()   => LoadPendingRequests();
+    private void HandleSentTab()      => LoadSentRequests();
 
     // ── Data loading ─────────────────────────────────────────────────────────
 
@@ -86,21 +67,18 @@ public class FriendsMediator : IInitializable, IDisposable
     {
         _friendsWindow.ClearContent();
         DestroyAllViews();
-        
+
         var (success, response) = await _apiService.GetFriends();
-        
+
         if (!success || response == null || response.friends == null)
-        {
             return;
-        }
 
         for (int i = 0; i < response.friends.Length; i++)
         {
             var friendData = response.friends[i];
             var friendView = _friendViewFactory.Create();
-            
+
             friendView.transform.SetParent(_friendsWindow.Content, false);
-            
             friendView.Init(
                 friendData.id,
                 friendData.username,
@@ -108,33 +86,31 @@ public class FriendsMediator : IInitializable, IDisposable
                 friendData.last_name,
                 friendData.level
             );
-            
             friendView.OnRemoveClicked += HandleRemoveFriend;
             friendView.OnProfileClicked += HandleFriendProfileClicked;
-            
+
             _spawnedFriendViews.Add(friendView);
         }
+
+        _friendsWindow.PlayTabAnimation();
     }
 
     private async void LoadPendingRequests()
     {
         _friendsWindow.ClearContent();
         DestroyAllViews();
-        
+
         var (success, response) = await _apiService.GetPendingFriendRequests();
-        
+
         if (!success || response == null || response.pending_requests == null)
-        {
             return;
-        }
 
         for (int i = 0; i < response.pending_requests.Length; i++)
         {
             var requestData = response.pending_requests[i];
             var requestView = _friendRequestViewFactory.Create();
-            
+
             requestView.transform.SetParent(_friendsWindow.Content, false);
-            
             requestView.InitAsPending(
                 requestData.id,
                 requestData.from_user.username,
@@ -142,33 +118,31 @@ public class FriendsMediator : IInitializable, IDisposable
                 requestData.from_user.last_name,
                 requestData.from_user.level
             );
-            
             requestView.OnAcceptClicked += HandleAcceptRequest;
             requestView.OnRejectClicked += HandleRejectRequest;
-            
+
             _spawnedRequestViews.Add(requestView);
         }
+
+        _friendsWindow.PlayTabAnimation();
     }
 
     private async void LoadSentRequests()
     {
         _friendsWindow.ClearContent();
         DestroyAllViews();
-        
+
         var (success, response) = await _apiService.GetSentFriendRequests();
-        
+
         if (!success || response == null || response.sent_requests == null)
-        {
             return;
-        }
 
         for (int i = 0; i < response.sent_requests.Length; i++)
         {
             var requestData = response.sent_requests[i];
             var requestView = _friendRequestViewFactory.Create();
-            
+
             requestView.transform.SetParent(_friendsWindow.Content, false);
-            
             requestView.InitAsSent(
                 requestData.id,
                 requestData.to_user.username,
@@ -177,9 +151,11 @@ public class FriendsMediator : IInitializable, IDisposable
                 requestData.to_user.level,
                 requestData.status
             );
-            
+
             _spawnedRequestViews.Add(requestView);
         }
+
+        _friendsWindow.PlayTabAnimation();
     }
 
     private async void HandleRemoveFriend(int friendId)

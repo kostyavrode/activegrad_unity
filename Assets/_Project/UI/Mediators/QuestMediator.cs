@@ -63,11 +63,7 @@ public class QuestMediator : IInitializable, IDisposable
         _questService.OnQuestCompleted -= HandleQuestCompleted;
     }
 
-    private void HandleWindowOpened()
-    {
-        _questWindow.PlayTabAnimation();
-        LoadQuests();
-    }
+    private void HandleWindowOpened() => LoadQuests();
 
     private async void LoadQuests()
     {
@@ -83,6 +79,9 @@ public class QuestMediator : IInitializable, IDisposable
             view.SetData(tracker.QuestData, tracker.ProgressData);
             _spawnedItems.Add(view);
         }
+
+        if (_spawnedItems.Count > 0)
+            _questWindow.PlayTabAnimation();
     }
 
     private void ClearQuests()

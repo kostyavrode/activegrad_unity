@@ -38,11 +38,7 @@ public class ShopMediator : IInitializable, IDisposable
         _shopWindow.OnBackClicked -= HandleBackClicked;
     }
 
-    private void HandleWindowOpened()
-    {
-        _shopWindow.PlayTabAnimation();
-        CreateShopItems();
-    }
+    private void HandleWindowOpened() => CreateShopItems();
 
     private void HandleBackClicked()
     {
@@ -76,9 +72,11 @@ public class ShopMediator : IInitializable, IDisposable
             
             _shopItemViews.Add(sItem);
             _shopItemViews[i].Init(response.Items[i].Name, response.Items[i].Description, response.Items[i].Price.ToString());
-            
+
             _ = LoadAndApplyImageAsync(sItem, response.Items[i].ImageUrl);
         }
+
+        _shopWindow.PlayTabAnimation();
     }
     
     private async Task LoadPlayerStats()

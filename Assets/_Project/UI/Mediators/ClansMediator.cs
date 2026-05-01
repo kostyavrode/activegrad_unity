@@ -74,7 +74,6 @@ public class ClansMediator : IInitializable, IDisposable
         DestroyAllClanViews();
         _clansWindow.ShowSearchPanel(false);
         _clansWindow.SetCreateClanButtonActive(true);
-        _clansWindow.PlayTabAnimation(false);
 
         var (success, response) = await _apiService.GetTopClans();
 
@@ -82,6 +81,8 @@ public class ClansMediator : IInitializable, IDisposable
         {
             foreach (var clanData in response.top_clans)
                 SpawnClanView(clanData, isMyClan: false);
+
+            _clansWindow.PlayTabAnimation(false);
         }
         else
         {
@@ -121,10 +122,11 @@ public class ClansMediator : IInitializable, IDisposable
 
             // Убираем панель поиска и возвращаем ScrollView — иначе она перекрывает результаты
             _clansWindow.ShowSearchPanel(false);
-            _clansWindow.PlayTabAnimation(false);
 
             foreach (var clanData in response.clans)
                 SpawnClanView(clanData, isMyClan: false);
+
+            _clansWindow.PlayTabAnimation(false);
         }
         else
         {
@@ -138,7 +140,6 @@ public class ClansMediator : IInitializable, IDisposable
         DestroyAllClanViews();
         _clansWindow.ShowSearchPanel(false);
         _clansWindow.SetCreateClanButtonActive(true);
-        _clansWindow.PlayTabAnimation(false);
 
         var (success, clan) = await _apiService.GetMyClan();
 
@@ -150,6 +151,7 @@ public class ClansMediator : IInitializable, IDisposable
                 clan = await EnrichClanData(clan);
                 _myClan = clan;
                 SpawnClanView(clan, isMyClan: true);
+                _clansWindow.PlayTabAnimation(false);
             }
             else
             {

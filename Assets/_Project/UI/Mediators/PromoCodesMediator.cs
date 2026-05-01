@@ -44,11 +44,7 @@ public class PromoCodesMediator : IInitializable, IDisposable
         DestroyPromoCodeViews();
     }
 
-    private void HandleWindowOpened()
-    {
-        _promoCodesWindow.PlayTabAnimation();
-        LoadPromoCodes();
-    }
+    private void HandleWindowOpened() => LoadPromoCodes();
 
     private async void LoadPromoCodes()
     {
@@ -73,12 +69,12 @@ public class PromoCodesMediator : IInitializable, IDisposable
             promoCodeView.OnCopyButtonClicked += (code) => _clipboardService.CopyToClipboard(code);
             
             _spawnedViews.Add(promoCodeView);
-            
+
             if (!string.IsNullOrEmpty(promoCodeData.quest_image_url))
-            {
                 _ = LoadAndApplyImageAsync(promoCodeView, promoCodeData.quest_image_url);
-            }
         }
+
+        _promoCodesWindow.PlayTabAnimation();
     }
 
     private async Task LoadAndApplyImageAsync(PromoCodeView view, string imageUrl)
