@@ -4,14 +4,31 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Универсальный виджет рецепта крафта. Отображает предмет, требования и кнопку крафта.
-/// Кнопка активна только когда ресурсов достаточно.
+/// Виджет рецепта крафта.
+/// Автоматически отображает иконки и количество ресурсов из слотов, заданных в инспекторе.
+/// Каждый ResourceSlot привязан к конкретному resourceId (например "wood", "metal").
 /// </summary>
 public class CraftRecipeView : MonoBehaviour
 {
+    [Serializable]
+    public struct ResourceSlot
+    {
+        [Tooltip("id ресурса с сервера: wood, metal, blueprints и т.д.")]
+        public string resourceId;
+        public Image iconImage;
+        public TMP_Text amountText;
+    }
+
     [SerializeField] private TMP_Text _itemNameText;
-    [SerializeField] private TMP_Text _requirementsText;
     [SerializeField] private Button _craftButton;
+
+    [Header("Слоты ресурсов")]
+    [Tooltip("Заполни resourceId для каждого слота и привяжи нужные Image и TMP_Text из префаба")]
+    [SerializeField] private ResourceSlot[] _resourceSlots;
+
+    [Header("Состояние 'уже скрафчено'")]
+    [Tooltip("GameObject, который показывается когда предмет уже скрафчен (иконка, текст 'Готово' и т.п.)")]
+    [SerializeField] private GameObject _craftedBadge;
 
     private string _itemId;
 
@@ -31,23 +48,101 @@ public class CraftRecipeView : MonoBehaviour
             _craftButton.onClick.RemoveAllListeners();
     }
 
-    public void Init(string itemId, string displayName, string requirementsText, bool canCraft)
+    /// <param name="itemId">id предмета</param>
+    /// <param name="displayName">Отображаемое название</param>
+    /// <param name="requirements">Требования для крафта (сырые данные с сервера)</param>
+    /// <param name="iconConfig">Конфиг иконок для подстановки спрайтов</param>
+    /// <param name="canCraft">Достаточно ли ресурсов для крафта</param>
+    /// <param name="isCrafted">Предмет уже был скрафчен</param>
+    public void Init(
+        string itemId,
+        string displayName,
+        APIService.InventoryRequirementData[] requirements,
+        IconConfig iconConfig,
+        bool canCraft,
+        bool isCrafted = false)
     {
         _itemId = itemId ?? "";
 
         if (_itemNameText != null)
             _itemNameText.text = displayName ?? "";
 
-        if (_requirementsText != null)
-            _requirementsText.text = requirementsText ?? "";
+        ApplyResourceSlots(requirements, iconConfig);
 
-        SetInteractable(canCraft);
+        if (isCrafted)
+        {
+            if (_craftButton != null)
+                _craftButton.gameObject.SetActive(false);
+
+            if (_craftedBadge != null)
+                _craftedBadge.SetActive(true);
+        }
+        else
+        {
+            if (_craftButton != null)
+                _craftButton.gameObject.SetActive(true);
+
+            if (_craftedBadge != null)
+                _craftedBadge.SetActive(false);
+
+            SetInteractable(canCraft);
+        }
     }
 
     public void SetInteractable(bool canCraft)
     {
         if (_craftButton != null)
             _craftButton.interactable = canCraft;
+    }
+
+    /// <summary>
+    /// Для каждого слота ищет совпадение по resourceId среди требований рецепта.
+    /// Если нашёл — ставит иконку из IconConfig и количество. Если нет — скрывает слот.
+    /// </summary>
+    private void ApplyResourceSlots(APIService.InventoryRequirementData[] requirements, IconConfig iconConfig)
+    {
+        if (_resourceSlots == null) return;
+
+        foreach (var slot in _resourceSlots)
+        {
+            var requirement = FindRequirement(requirements, slot.resourceId);
+            bool hasRequirement = requirement != null;
+
+            // Показываем/скрываем иконку
+            if (slot.iconImage != null)
+            {
+                slot.iconImage.gameObject.SetActive(hasRequirement);
+                if (hasRequirement)
+                {
+                    var sprite = iconConfig?.GetSprite(slot.resourceId);
+                    if (sprite != null)
+                        slot.iconImage.sprite = sprite;
+                }
+            }
+
+            // Показываем/скрываем количество
+            if (slot.amountText != null)
+            {
+                slot.amountText.gameObject.SetActive(hasRequirement);
+                if (hasRequirement)
+                    slot.amountText.text = requirement.amount.ToString();
+            }
+        }
+    }
+
+    private static APIService.InventoryRequirementData FindRequirement(
+        APIService.InventoryRequirementData[] requirements,
+        string resourceId)
+    {
+        if (requirements == null || string.IsNullOrEmpty(resourceId)) return null;
+
+        foreach (var req in requirements)
+        {
+            if (req != null && req.resource_id == resourceId)
+                return req;
+        }
+
+        return null;
     }
 
     public class Factory : Zenject.PlaceholderFactory<CraftRecipeView> { }

@@ -25,6 +25,7 @@ public class OtherInstaller : MonoInstaller
     [SerializeField] private ResourceItemView _resourceItemPrefab;
     [SerializeField] private InventoryItemView _inventoryItemPrefab;
     [SerializeField] private CraftRecipeView _craftRecipePrefab;
+    [SerializeField] private IconConfig _iconConfig;
     [SerializeField] private GameObject _gameEventMarkerPrefab;
     [SerializeField] private AbstractMap _map;
     [SerializeField] private SpawnOnMap _spawnOnMap;
@@ -32,7 +33,9 @@ public class OtherInstaller : MonoInstaller
     public override void InstallBindings()
     {
         Container.BindInterfacesAndSelfTo<GPSLocationProvider>().AsSingle();
-        
+
+        Container.BindInterfacesAndSelfTo<FrustumCullingService>().AsSingle().NonLazy();
+
         Container.BindInterfacesAndSelfTo<GamePopupService>().AsSingle().NonLazy();
         
         Container.BindInterfacesAndSelfTo<LocationService>().AsSingle();
@@ -67,6 +70,7 @@ public class OtherInstaller : MonoInstaller
         Container.BindInterfacesTo<ClansMediator>().AsSingle();
 
         Container.Bind<IInventoryService>().To<InventoryService>().AsSingle();
+        Container.Bind<IconConfig>().FromInstance(_iconConfig).AsSingle();
         Container.BindInterfacesTo<InventoryMediator>().AsSingle();
 
         Container.BindFactory<QuestItemView, QuestItemView.Factory>()

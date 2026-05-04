@@ -24,6 +24,7 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
     private CharacterService _characterService;
     private SightsUpdater _sightsUpdater;
     private Transform _target;
+    private Transform _canvasTransform;
     private float _currentAngle;
     private float _currentTilt;
 
@@ -38,6 +39,12 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
     {
         _currentAngle = 0f;
         _currentTilt = Mathf.Clamp(_currentTilt, minTilt, maxTilt);
+
+        var player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null) _target = player.transform;
+
+        var canvas = GameObject.FindGameObjectWithTag("Canvas");
+        if (canvas != null) _canvasTransform = canvas.transform;
     }
 
     public void Tick()
@@ -51,11 +58,11 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
                 return;
         }
 
-//#if UNITY_EDITOR || UNITY_STANDALONE
+#if UNITY_EDITOR || UNITY_STANDALONE
         HandleMouseInput();
-//#else
-//        HandleTouchInput();
-//#endif
+#else
+        HandleTouchInput();
+#endif
 
         Vector3 offset = Quaternion.Euler(_currentTilt, _currentAngle, 0) * new Vector3(0, 0, -distance);
         Vector3 targetPos = _target.position + Vector3.up * height;
@@ -74,8 +81,7 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
 
     private void HandleMouseInput()
     {
-        var canvas = GameObject.FindGameObjectWithTag("Canvas");
-        if (canvas != null && canvas.transform.childCount > 1) return;
+        if (_canvasTransform != null && _canvasTransform.childCount > 1) return;
 
         if (_menu.gameObject.activeSelf)
         {
@@ -109,6 +115,53 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
         }
     }
     
+    private void HandleTouchInput()
+    {
+        if (_canvasTransform != null && _canvasTransform.childCount > 1) return;
+
+        if (!_menu.gameObject.activeSelf) return;
+
+        if (Input.touchCount == 1)
+        {
+            Touch touch = Input.GetTouch(0);
+
+            if (touch.phase == TouchPhase.Moved)
+            {
+                float deltaX = touch.deltaPosition.x * 0.1f;
+                float deltaY = touch.deltaPosition.y * 0.1f;
+
+                if (Mathf.Abs(deltaX) >= horizontalThreshold * 0.01f)
+                    _currentAngle += deltaX * rotationSpeed * Time.deltaTime;
+
+                if (Mathf.Abs(deltaY) >= verticalThreshold * 0.01f)
+                {
+                    _currentTilt -= deltaY * tiltSpeed * Time.deltaTime;
+                    _currentTilt = Mathf.Clamp(_currentTilt, minTilt, maxTilt);
+                }
+            }
+        }
+        else if (Input.touchCount == 2)
+        {
+            Touch touch0 = Input.GetTouch(0);
+            Touch touch1 = Input.GetTouch(1);
+
+            // Позиции пальцев на предыдущем кадре
+            Vector2 touch0Prev = touch0.position - touch0.deltaPosition;
+            Vector2 touch1Prev = touch1.position - touch1.deltaPosition;
+
+            float prevDistance = Vector2.Distance(touch0Prev, touch1Prev);
+            float currDistance = Vector2.Distance(touch0.position, touch1.position);
+
+            float delta = prevDistance - currDistance;
+
+            if (Mathf.Abs(delta) > 0.1f)
+            {
+                distance += delta * zoomSpeed;
+                distance = Mathf.Clamp(distance, minDistance, maxDistance);
+            }
+        }
+    }
+
     private void CheckHit(Ray ray)
     {
         if (Physics.Raycast(ray, out var hit))

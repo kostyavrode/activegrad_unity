@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 7758986612129487085}
   - component: {fileID: 6801834414525249713}
   - component: {fileID: 4812422834780978070}
+  - component: {fileID: 554197268717132924}
   m_Layer: 0
   m_Name: _TEST_Point_On_Map
   m_TagString: Untagged
@@ -115,6 +116,19 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0.000000059604645, y: 0.6, z: -0.00000008940697}
+--- !u!114 &554197268717132924
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8174337391774317492}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 794deb9308dc72740b1f40b1f9e07668, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CullableObject
+  _customBoundsSize: {x: 2, y: 2, z: 2}
 --- !u!1001 &3244330525472840042
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -12,6 +12,8 @@ public class InventoryWindow : BaseWindow
     [Header("Containers")]
     [Tooltip("Контейнер для ресурсов и предметов: сначала ResourceItemView, затем InventoryItemView (меч, щит)")]
     [SerializeField] private Transform _resourcesContainer;
+    
+    [SerializeField] private Transform _itemsContainer;
 
     [Tooltip("Подокно крафта: контейнер для виджетов рецептов (CraftRecipeView)")]
     [SerializeField] private Transform _craftRecipesContainer;
@@ -20,6 +22,8 @@ public class InventoryWindow : BaseWindow
     [SerializeField] private Button _backButton;
 
     public Transform ResourcesContainer => _resourcesContainer;
+    
+    public Transform ItemsContainer => _itemsContainer;
     public Transform CraftRecipesContainer => _craftRecipesContainer;
 
     public event Action OnBackClicked;

@@ -24,7 +24,6 @@
         public GPSLocationProvider(CoroutineRunner coroutineRunner)
         {
             _coroutineRunner = coroutineRunner;
-            Debug.Log($"[GPSLocationProvider] Constructor called. Instance: {GetHashCode()}");
         }
 
         public void Initialize()
@@ -35,55 +34,29 @@
         private IEnumerator RequestAndStartGPS()
         {
     #if UNITY_ANDROID
-            // Проверяем и запрашиваем разрешение
             if (!Permission.HasUserAuthorizedPermission(Permission.FineLocation))
-            {
-                Debug.Log("[GPS] Запрос разрешения на использование геолокации...");
                 Permission.RequestUserPermission(Permission.FineLocation);
-            }
 
-            // Ждём, пока пользователь разрешит
             while (!Permission.HasUserAuthorizedPermission(Permission.FineLocation))
-            {
-                Debug.Log("[GPS] Ожидание разрешения от пользователя...");
                 yield return new WaitForSeconds(1f);
-            }
 
-            // Проверяем, включен ли GPS
             while (!Input.location.isEnabledByUser)
-            {
-                Debug.LogWarning("[GPS] GPS выключен. Ожидание включения пользователем...");
                 yield return new WaitForSeconds(2f);
-            }
-    #else 
-            
     #endif
 
-            Debug.Log("[GPS] Запуск службы геолокации...");
-            Input.location.Start(1f, 1f); // (accuracy, minDistance)
+            Input.location.Start(1f, 1f);
 
             int maxWait = 20;
             while (Input.location.status == LocationServiceStatus.Initializing && maxWait > 0)
             {
-                Debug.Log("[GPS] Инициализация...");
                 yield return new WaitForSeconds(1);
                 maxWait--;
             }
 
-            if (maxWait <= 0)
-            {
-                Debug.LogWarning("[GPS] Таймаут при запуске службы геолокации.");
+            if (maxWait <= 0 || Input.location.status == LocationServiceStatus.Failed)
                 yield break;
-            }
-
-            if (Input.location.status == LocationServiceStatus.Failed)
-            {
-                Debug.LogWarning("[GPS] Не удалось получить координаты.");
-                yield break;
-            }
 
             _isRunning = true;
-            Debug.Log("[GPS] Служба геолокации успешно запущена.");
         }
 
         public void Tick()
@@ -97,19 +70,10 @@
                 {
                     _lastCoordinates = new Vector2(data.longitude, data.latitude);
                 }
-                Debug.LogWarning("[GPS] Работает:."+_lastCoordinates);
             }
             else if (Input.location.status == LocationServiceStatus.Stopped)
             {
-                Debug.LogWarning("[GPS] Служба геолокации остановлена.");
-#if UNITY_EDITOR
-                if (!_isTestMode)
-                {
-                    _lastCoordinates = GetRandomCoords();
-                }
-#else
                 _lastCoordinates = GetRandomCoords();
-#endif
                 _isRunning = false;
             }
     #else
@@ -121,10 +85,6 @@
                     _timer = 0f;
                     _lastCoordinates = GetRandomCoords();
                 }
-            }
-            else
-            {
-                Debug.Log($"[GPSLocationProvider] Tick (Editor): _lastCoordinates=Lat={_lastCoordinates.y}, Lon={_lastCoordinates.x}");
             }
     #endif
         }

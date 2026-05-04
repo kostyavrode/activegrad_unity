@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 using Zenject;
@@ -12,6 +11,7 @@ public class InventoryMediator : IInitializable, IDisposable
     private readonly APIService _apiService;
     private readonly IInventoryService _inventoryService;
     private readonly IPopupService _popupService;
+    private readonly IconConfig _iconConfig;
     private readonly ResourceItemView.Factory _resourceItemFactory;
     private readonly InventoryItemView.Factory _inventoryItemFactory;
     private readonly CraftRecipeView.Factory _craftRecipeFactory;
@@ -30,6 +30,7 @@ public class InventoryMediator : IInitializable, IDisposable
         APIService apiService,
         IInventoryService inventoryService,
         IPopupService popupService,
+        IconConfig iconConfig,
         ResourceItemView.Factory resourceItemFactory,
         InventoryItemView.Factory inventoryItemFactory,
         CraftRecipeView.Factory craftRecipeFactory)
@@ -39,6 +40,7 @@ public class InventoryMediator : IInitializable, IDisposable
         _apiService = apiService;
         _inventoryService = inventoryService;
         _popupService = popupService;
+        _iconConfig = iconConfig;
         _resourceItemFactory = resourceItemFactory;
         _inventoryItemFactory = inventoryItemFactory;
         _craftRecipeFactory = craftRecipeFactory;
@@ -151,9 +153,11 @@ public class InventoryMediator : IInitializable, IDisposable
             if (r == null) continue;
             var view = _resourceItemFactory.Create();
             view.transform.SetParent(container, false);
-            view.Init(r.display_name ?? r.id, r.amount);
+            view.Init(r.display_name ?? r.id, r.amount, _iconConfig?.GetSprite(r.id));
             _resourceViews.Add(view);
         }
+
+        container = _inventoryWindow.ItemsContainer;
 
         foreach (var item in _lastItems)
         {
@@ -161,13 +165,13 @@ public class InventoryMediator : IInitializable, IDisposable
 
             string statInfo = null;
             if (item.sharpness.HasValue)
-                statInfo = $"Острота: {item.sharpness.Value}";
+                statInfo = $" {item.sharpness.Value}";
             else if (item.durability.HasValue)
-                statInfo = $"Стойкость: {item.durability.Value}";
+                statInfo = $" {item.durability.Value}";
 
             var view = _inventoryItemFactory.Create();
             view.transform.SetParent(container, false);
-            view.Init(item.display_name ?? item.id, statInfo);
+            view.Init(item.display_name ?? item.id, statInfo, _iconConfig?.GetSprite(item.id));
             _itemViews.Add(view);
         }
     }
@@ -191,28 +195,19 @@ public class InventoryMediator : IInitializable, IDisposable
         foreach (var recipe in _recipes)
         {
             if (recipe == null) continue;
-            if (_inventoryService.HasItem(recipe.id)) continue;
 
-            var requirementsStr = BuildRequirementsText(recipe.requirements);
-            var canCraft = CanCraft(recipe);
+            var isCrafted = _inventoryService.HasItem(recipe.id);
+            var canCraft = !isCrafted && CanCraft(recipe);
 
             var view = _craftRecipeFactory.Create();
             view.transform.SetParent(container, false);
-            view.Init(recipe.id, recipe.display_name ?? recipe.id, requirementsStr, canCraft);
-            view.OnCraftClicked += HandleCraftClicked;
+            view.Init(recipe.id, recipe.display_name ?? recipe.id, recipe.requirements, _iconConfig, canCraft, isCrafted);
+
+            if (!isCrafted)
+                view.OnCraftClicked += HandleCraftClicked;
+
             _recipeViews.Add(view);
         }
-    }
-
-    private string BuildRequirementsText(APIService.InventoryRequirementData[] requirements)
-    {
-        if (requirements == null || requirements.Length == 0)
-            return "";
-
-        var parts = requirements
-            .Where(r => r != null)
-            .Select(r => $"{r.display_name ?? r.resource_id}: {r.amount}");
-        return string.Join(", ", parts);
     }
 
     private bool CanCraft(APIService.InventoryRecipeData recipe)
