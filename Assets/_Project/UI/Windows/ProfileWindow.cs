@@ -20,6 +20,12 @@ public class ProfileWindow : BaseWindow
     [SerializeField] private Button _intelligenceUpgradeBtn;
     [SerializeField] private Button _agilityUpgradeBtn;
 
+    [Header("Прогресс-бары")]
+    [SerializeField] private Image _strengthBar;
+    [SerializeField] private Image _intelligenceBar;
+    [SerializeField] private Image _agilityBar;
+    [SerializeField] private Image _expBar;
+
     [SerializeField] private Button _backButton;
     
     public event Action OnBackClicked;
@@ -52,6 +58,9 @@ public class ProfileWindow : BaseWindow
         if (_expText != null) _expText.text = userData.Length > 4 ? userData[4] : "";
         if (_registrationDateText != null) _registrationDateText.text = userData.Length > 5 && userData[5].Length >= 10 ? userData[5].Substring(0, 10) : "";
         if (_idText != null) _idText.text = userData.Length > 6 ? userData[6] : "";
+
+        if (_expBar != null && userData.Length > 4 && int.TryParse(userData[4], out int exp))
+            _expBar.fillAmount = Mathf.Clamp01(exp / 1000f);
     }
 
     public void SetStats(int strength, int intelligence, int agility, int statUpgradePoints)
@@ -59,7 +68,12 @@ public class ProfileWindow : BaseWindow
         if (_strengthText != null) _strengthText.text = strength.ToString();
         if (_intelligenceText != null) _intelligenceText.text = intelligence.ToString();
         if (_agilityText != null) _agilityText.text = agility.ToString();
-        
+
+        Debug.Log($"[ProfileWindow] SetStats bars: str={strength} ({_strengthBar != null}) int={intelligence} ({_intelligenceBar != null}) agi={agility} ({_agilityBar != null})");
+        if (_strengthBar != null) _strengthBar.fillAmount = Mathf.Clamp01(strength / 10f);
+        if (_intelligenceBar != null) _intelligenceBar.fillAmount = Mathf.Clamp01(intelligence / 10f);
+        if (_agilityBar != null) _agilityBar.fillAmount = Mathf.Clamp01(agility / 10f);
+
         bool canUpgrade = statUpgradePoints > 0;
         if (_strengthUpgradeBtn != null) _strengthUpgradeBtn.gameObject.SetActive(canUpgrade);
         if (_intelligenceUpgradeBtn != null) _intelligenceUpgradeBtn.gameObject.SetActive(canUpgrade);
