@@ -25,6 +25,7 @@ public class ClanPageView : MonoBehaviour
     public event Action OnBackClicked;
     public event Action<int> OnJoinClicked;
     public event Action OnLeaveClicked;
+    public event Action<int> OnMemberClicked;
 
     public int ClanId { get; private set; }
 
@@ -77,6 +78,7 @@ public class ClanPageView : MonoBehaviour
             var view = factory.Create();
             view.transform.SetParent(_membersContent, false);
             view.Init(member);
+            view.OnClicked += id => OnMemberClicked?.Invoke(id);
         }
     }
 

@@ -15,6 +15,8 @@ public class SightDetailsView : MonoBehaviour
     public Button CloseButton;
     [FormerlySerializedAs("CaptureInfoText")] public TMP_Text CaptureNameText;
     public TMP_Text CaptureDateText;
+    public TMP_Text CaptureProbabilityText;
+    public Image CaptureProbabilityBar;
     public int SightID;
     
     public Action<int> OnCheckInClicked;
@@ -88,16 +90,15 @@ public class SightDetailsView : MonoBehaviour
 
         if (captured)
         {
-            string clanInfo = !string.IsNullOrEmpty(clanName) ? $" ({clanName})" : "";
-            string date = !string.IsNullOrEmpty(capturedAt) ? ParseDate(capturedAt) : "";
-            CaptureDateText.text = ParseDate(capturedAt);
-            CaptureNameText.text = capturedByUsername;
-            //lines.Add($"Захвачено: {capturedByUsername}{clanInfo}");
-            lines.Add($"Дата: {date}");
+            CaptureNameText.text = !string.IsNullOrEmpty(capturedByUsername) ? capturedByUsername : "—";
+            if (CaptureDateText != null)
+                CaptureDateText.text = !string.IsNullOrEmpty(capturedAt) ? ParseDate(capturedAt) : "—";
         }
         else
         {
-            lines.Add("Достопримечательность еще не захвачена");
+            CaptureNameText.text = "—";
+            if (CaptureDateText != null)
+                CaptureDateText.text = "—";
         }
 
         if (defenderShieldLevel.HasValue)
@@ -121,6 +122,15 @@ public class SightDetailsView : MonoBehaviour
         }
 
         //CaptureNameText.text = string.Join("\n", lines);
+    }
+
+    public void SetCaptureProbability(int percent)
+    {
+        if (CaptureProbabilityText != null)
+            CaptureProbabilityText.text = $"{percent}%";
+
+        if (CaptureProbabilityBar != null)
+            CaptureProbabilityBar.fillAmount = Mathf.Clamp01(percent / 100f);
     }
 
     private string ParseDate(string dateString)

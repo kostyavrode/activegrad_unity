@@ -1576,6 +1576,7 @@ public class APIService
         public int? time_until_next_capture_minutes;
         public int? time_until_next_capture_seconds;
         public string block_reason;
+        public int capture_probability;
     }
 
     [Serializable]

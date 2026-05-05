@@ -14,6 +14,7 @@ public class ClansMediator : IInitializable, IDisposable
     private readonly ClanMemberView.Factory _clanMemberViewFactory;
     private readonly CreateClanView.Factory _createClanViewFactory;
     private readonly IPopupService _popupService;
+    private readonly GamePopupService _gamePopupService;
 
     private List<ClanView> _spawnedClanViews = new List<ClanView>();
     private ClanData _myClan;
@@ -28,7 +29,8 @@ public class ClansMediator : IInitializable, IDisposable
         ClanPageView.Factory clanPageViewFactory,
         ClanMemberView.Factory clanMemberViewFactory,
         CreateClanView.Factory createClanViewFactory,
-        IPopupService popupService)
+        IPopupService popupService,
+        GamePopupService gamePopupService)
     {
         _clansWindow = clansWindow;
         _uiManager = uiManager;
@@ -38,6 +40,7 @@ public class ClansMediator : IInitializable, IDisposable
         _clanMemberViewFactory = clanMemberViewFactory;
         _createClanViewFactory = createClanViewFactory;
         _popupService = popupService;
+        _gamePopupService = gamePopupService;
     }
 
     public void Initialize()
@@ -208,6 +211,7 @@ public class ClansMediator : IInitializable, IDisposable
         _currentClanPageView.OnBackClicked += HandleClanPageBack;
         _currentClanPageView.OnJoinClicked += HandleClanPageJoin;
         _currentClanPageView.OnLeaveClicked += HandleClanPageLeave;
+        _currentClanPageView.OnMemberClicked += HandleMemberClicked;
 
         var (success, response) = await _apiService.GetClanMembers(clan.id);
 
@@ -256,12 +260,23 @@ public class ClansMediator : IInitializable, IDisposable
         CloseClanPageView();
     }
 
+    private async void HandleMemberClicked(int playerId)
+    {
+        var (success, message) = await _apiService.SearchPlayer(playerId);
+
+        if (success)
+            _gamePopupService.CreateOtherPlayerProfilePopup(message);
+        else
+            _popupService.ShowError(message);
+    }
+
     private void CloseClanPageView()
     {
         if (_currentClanPageView == null) return;
         _currentClanPageView.OnBackClicked -= HandleClanPageBack;
         _currentClanPageView.OnJoinClicked -= HandleClanPageJoin;
         _currentClanPageView.OnLeaveClicked -= HandleClanPageLeave;
+        _currentClanPageView.OnMemberClicked -= HandleMemberClicked;
         _currentClanPageView.Close();
         _currentClanPageView = null;
     }

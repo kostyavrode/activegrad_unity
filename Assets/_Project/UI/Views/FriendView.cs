@@ -40,7 +40,7 @@ public class FriendView : MonoBehaviour
         _friendId = friendId;
         _usernameText.text = username;
         _nameText.text = $"{firstName} {lastName}";
-        _levelText.text = $"Level: {level}";
+        _levelText.text = $" {level}";
     }
     
     private void HandleRemoveClick()

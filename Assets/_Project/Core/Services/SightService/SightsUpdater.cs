@@ -126,6 +126,8 @@ public class SightsUpdater : IInitializable, IDisposable
             popup.SetCaptureInfo(response.captured, capturedBy, capturedAt, clanName,
                 shieldLevel, timeMin, timeSec, response.block_reason);
 
+            popup.SetCaptureProbability(response.capture_probability);
+
             float distToSight = GetDistanceToSight(pageID);
             if (distToSight <= 600)
             {
