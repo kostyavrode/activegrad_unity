@@ -92,9 +92,8 @@ public class GamePopupService
 
     private void HandlePopupBackClicked()
     {
-        Debug.Log(_currentPopup);
-        if (_currentPopup != null)
-            GameObject.Destroy(_currentPopup);
+        // Вью сам делает fade-out и Destroy — здесь только сбрасываем ссылку
+        _currentPopup = null;
     }
 
     public RootResponse DeserializePlayerResponse(string json)

@@ -2699,5 +2699,6 @@ MonoBehaviour:
   _levelText: {fileID: 1638741702163998616}
   _sightsText: {fileID: 1353531399454579539}
   _idText: {fileID: 8957276853183181642}
+  _canvasGroup: {fileID: 4355781040136883756}
   _backButton: {fileID: 293095515381740273}
   _sightsButton: {fileID: 2553112557563472343}

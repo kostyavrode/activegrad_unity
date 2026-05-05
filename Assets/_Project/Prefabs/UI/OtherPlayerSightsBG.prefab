@@ -693,6 +693,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4879817878516191472}
   - component: {fileID: 4662829970281626722}
+  - component: {fileID: 6742341047629714404}
   m_Layer: 0
   m_Name: OtherPlayerSightsBG
   m_TagString: Untagged
@@ -730,4 +731,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OtherPlayerSightsDetailsView
   _closeButton: {fileID: 6251209348052621509}
+  _canvasGroup: {fileID: 6742341047629714404}
   Content: {fileID: 3341168101638357211}
+--- !u!225 &6742341047629714404
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9148486487804878437}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0

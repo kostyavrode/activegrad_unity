@@ -224,6 +224,7 @@ GameObject:
   - component: {fileID: 7716077420535813231}
   - component: {fileID: 3617033755286480685}
   - component: {fileID: 2249801351598856588}
+  - component: {fileID: 4833187135879344878}
   m_Layer: 5
   m_Name: Popup
   m_TagString: Untagged
@@ -268,6 +269,7 @@ MonoBehaviour:
   _indicator: {fileID: 2136042378424744766}
   _messageText: {fileID: 5644694391574776285}
   _closeButton: {fileID: 711388576442160528}
+  _canvasGroup: {fileID: 4833187135879344878}
   _autoHideDelay: 3
 --- !u!222 &3617033755286480685
 CanvasRenderer:
@@ -307,6 +309,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!225 &4833187135879344878
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2075252987861248332}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &6849472885573361320
 GameObject:
   m_ObjectHideFlags: 0
