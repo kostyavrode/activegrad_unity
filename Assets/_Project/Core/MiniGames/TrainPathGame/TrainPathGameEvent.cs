@@ -35,7 +35,10 @@ public class TrainPathGameEvent : BaseGameEvent
 
         _controller = _gameRoot.GetComponent<TrainPathController>();
         if (_controller == null)
-            _controller = _gameRoot.AddComponent<TrainPathController>();
+        {
+            Debug.LogError("[TrainPathGameEvent] TrainPathController не найден на префабе! Добавь компонент вручную.");
+            return;
+        }
 
         _controller.Initialize(this, ui, _userDataService);
     }

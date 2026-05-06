@@ -240,22 +240,10 @@ public class UserDataService
 
     public bool CheckSight(int sight)
     {
-        bool res = false;
-        int i=0;
-        foreach (var VARIABLE in Sights)
-        {
-            if (VARIABLE == sight)
-            {
-                i += 1;
-            }
-        }
-
-        if (i == 0)
-        {
-            res = true;
-        }
-        
-        return res;
+        if (Sights == null) return true;
+        foreach (var id in Sights)
+            if (id == sight) return false;
+        return true;
     }
 
     private void CheckDailyStepsReset()

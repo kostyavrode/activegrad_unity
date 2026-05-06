@@ -15,6 +15,7 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
     private readonly Dictionary<int, QuestProgressTracker> _activeQuests = new Dictionary<int, QuestProgressTracker>();
     
     private const string QuestProgressKey = "QuestProgress";
+    private const string QuestLoadDateKey = "QuestLoadDate";
     private string _lastQuestLoadDate;
     
     public event Action<int> OnQuestCompleted; // questId
@@ -35,6 +36,7 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
     
     public void Initialize()
     {
+        _lastQuestLoadDate = PlayerPrefs.GetString(QuestLoadDateKey, string.Empty);
         LoadQuestProgress();
         CheckDailyReset();
     }
@@ -68,6 +70,8 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
         
         var quests = ParseQuests(response);
         _lastQuestLoadDate = DateTime.Now.ToString("yyyy-MM-dd");
+        PlayerPrefs.SetString(QuestLoadDateKey, _lastQuestLoadDate);
+        PlayerPrefs.Save();
         
         Debug.Log($"[QuestService] Received {quests.Length} quests from server");
         Debug.Log($"[QuestService] Available condition factories: {_conditionFactories.Count} ({string.Join(", ", _conditionFactories.Keys)})");
@@ -215,15 +219,17 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
         Debug.Log($"[QuestService] Sending completion to server for quest {questId}...");
         
         var (success, response) = await _apiService.CompleteQuest(questId, stepsToSend);
-        
-//        Debug.Log(response.message);
-        
+
+        // Помечаем локально выполненным в любом случае — чтобы не слать повторные запросы
+        tracker.MarkRewardClaimed();
+        SaveQuestProgress();
+
         if (!success || response == null)
         {
-            Debug.LogWarning($"[QuestService] Failed to complete quest {questId} on server. Server may not have synced progress yet.");
+            Debug.LogWarning($"[QuestService] Failed to complete quest {questId} on server.");
             return;
         }
-        
+
         if (!response.success)
         {
             Debug.LogWarning($"[QuestService] Server rejected quest {questId} completion: {response.message}");
@@ -254,9 +260,6 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
         }
         
         OnQuestCompleted?.Invoke(questId);
-        
-        tracker.MarkRewardClaimed();
-        SaveQuestProgress();
     }
     
     private void UpdatePlayerStats(APIService.PlayerStats stats)
