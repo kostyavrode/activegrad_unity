@@ -21,14 +21,16 @@ public class CraftRecipeView : MonoBehaviour
 
     [SerializeField] private TMP_Text _itemNameText;
     [SerializeField] private Button _craftButton;
+    [SerializeField] private TMP_Text _buttonLabel;
 
     [Header("Слоты ресурсов")]
     [Tooltip("Заполни resourceId для каждого слота и привяжи нужные Image и TMP_Text из префаба")]
     [SerializeField] private ResourceSlot[] _resourceSlots;
 
-    [Header("Состояние 'уже скрафчено'")]
-    [Tooltip("GameObject, который показывается когда предмет уже скрафчен (иконка, текст 'Готово' и т.п.)")]
+    [Header("Состояние 'уже скрафчено' / макс. уровень")]
+    [Tooltip("GameObject, который показывается когда предмет уже скрафчен или достигнут макс. уровень")]
     [SerializeField] private GameObject _craftedBadge;
+    [SerializeField] private TMP_Text _craftedBadgeText;
 
     private string _itemId;
 
@@ -48,19 +50,15 @@ public class CraftRecipeView : MonoBehaviour
             _craftButton.onClick.RemoveAllListeners();
     }
 
-    /// <param name="itemId">id предмета</param>
-    /// <param name="displayName">Отображаемое название</param>
-    /// <param name="requirements">Требования для крафта (сырые данные с сервера)</param>
-    /// <param name="iconConfig">Конфиг иконок для подстановки спрайтов</param>
-    /// <param name="canCraft">Достаточно ли ресурсов для крафта</param>
-    /// <param name="isCrafted">Предмет уже был скрафчен</param>
     public void Init(
         string itemId,
         string displayName,
         APIService.InventoryRequirementData[] requirements,
         IconConfig iconConfig,
         bool canCraft,
-        bool isCrafted = false)
+        bool isCrafted = false,
+        string buttonLabel = null,
+        string badgeText = null)
     {
         _itemId = itemId ?? "";
 
@@ -69,21 +67,22 @@ public class CraftRecipeView : MonoBehaviour
 
         ApplyResourceSlots(requirements, iconConfig);
 
-        if (isCrafted)
-        {
-            if (_craftButton != null)
-                _craftButton.gameObject.SetActive(false);
+        bool showBadge = isCrafted && requirements == null;
+        bool showButton = !showBadge;
 
-            if (_craftedBadge != null)
-                _craftedBadge.SetActive(true);
-        }
-        else
-        {
-            if (_craftButton != null)
-                _craftButton.gameObject.SetActive(true);
+        if (_craftButton != null)
+            _craftButton.gameObject.SetActive(showButton);
 
-            if (_craftedBadge != null)
-                _craftedBadge.SetActive(false);
+        if (_craftedBadge != null)
+            _craftedBadge.SetActive(showBadge);
+
+        if (showBadge && _craftedBadgeText != null && badgeText != null)
+            _craftedBadgeText.text = badgeText;
+
+        if (showButton)
+        {
+            if (_buttonLabel != null)
+                _buttonLabel.text = buttonLabel ?? "Создать";
 
             SetInteractable(canCraft);
         }

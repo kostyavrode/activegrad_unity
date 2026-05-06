@@ -298,9 +298,11 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
 
     private void CheckDailyReset()
     {
+        if (!_apiService.IsLoggedIn)
+            return;
+
         string today = DateTime.Now.ToString("yyyy-MM-dd");
-        
-        // Проверяем только если дата изменилась и если квесты еще не загружены
+
         if (_lastQuestLoadDate != today && _activeQuests.Count == 0)
         {
             Debug.Log("[QuestService] Daily reset - clearing quests and loading new ones");

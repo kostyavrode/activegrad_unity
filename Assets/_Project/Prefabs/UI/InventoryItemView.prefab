@@ -867,8 +867,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InventoryItemView
   _nameText: {fileID: 4132474330803340733}
   _statText: {fileID: 9193096152951742412}
+  _levelText: {fileID: 3601267857757919803}
   _iconImage: {fileID: 8799467591370756237}
   _progressBar: {fileID: 8578362576369731197}
+  _upgradeButton: {fileID: 0}
+  _upgradeCostText: {fileID: 0}
 --- !u!114 &8921887756616368518
 MonoBehaviour:
   m_ObjectHideFlags: 0

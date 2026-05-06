@@ -67,7 +67,7 @@ public class SettingsMediator : IInitializable, IDisposable
 
     private void OnLogoutClicked()
     {
-        _userDataService.Clear();
+        _apiService.Logout();
         _sceneLoader.LoadScene("Loading");
     }
 }

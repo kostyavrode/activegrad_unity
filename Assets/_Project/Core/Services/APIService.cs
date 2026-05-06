@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 using Zenject;
 using JsonConvert = Newtonsoft.Json.JsonConvert;
@@ -188,7 +189,21 @@ public class APIService
 
         return false;
     }
-    
+
+    public void Logout()
+    {
+        _accessToken = string.Empty;
+        _refreshToken = string.Empty;
+        _userData.Clear();
+    }
+
+    private void ForceLogout()
+    {
+        Debug.LogWarning("[APIService] Refresh токен истёк — принудительный выход");
+        Logout();
+        SceneManager.LoadScene("Loading");
+    }
+
     public async Task<(bool success, string message)> UpdateClothes(int boots, int pants, int tshirt, int cap, string gender)
     {
         if (!IsLoggedIn)
@@ -531,55 +546,34 @@ public class APIService
     /// <summary>
     /// Улучшить меч. Ресурсы влияют на вероятность успеха.
     /// </summary>
-    public async Task<(bool success, InventoryUpgradeResponse response)> UpgradeSword(int metal, int wood, int blueprints)
+    public async Task<(bool success, InventoryUpgradeResponse response)> UpgradeSword()
     {
-        if (!IsLoggedIn)
-            return (false, null);
-
+        if (!IsLoggedIn) return (false, null);
         var url = $"{BaseUrl}inventory/upgrade/sword/";
-        var payload = new InventoryUpgradeRequest { metal = metal, wood = wood, blueprints = blueprints };
-        var (success, message) = await SendRequest(url, "POST", payload, requireAuth: true);
-
-        if (!success)
-            return (false, null);
-
-        try
-        {
-            var response = JsonConvert.DeserializeObject<InventoryUpgradeResponse>(message);
-            return (true, response);
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError($"[APIService] Failed to parse upgrade sword response: {ex.Message}\nResponse: {message}");
-            return (false, null);
-        }
+        var (success, message) = await SendRequest(url, "POST", null, requireAuth: true);
+        if (!success) return (false, null);
+        try { return (true, JsonConvert.DeserializeObject<InventoryUpgradeResponse>(message)); }
+        catch (Exception ex) { Debug.LogError($"[APIService] UpgradeSword parse error: {ex.Message}"); return (false, null); }
     }
 
-    /// <summary>
-    /// Улучшить щит.
-    /// </summary>
-    public async Task<(bool success, InventoryUpgradeResponse response)> UpgradeShield(int metal, int wood, int blueprints)
+    public async Task<(bool success, InventoryUpgradeResponse response)> UpgradeShield()
     {
-        if (!IsLoggedIn)
-            return (false, null);
-
+        if (!IsLoggedIn) return (false, null);
         var url = $"{BaseUrl}inventory/upgrade/shield/";
-        var payload = new InventoryUpgradeRequest { metal = metal, wood = wood, blueprints = blueprints };
-        var (success, message) = await SendRequest(url, "POST", payload, requireAuth: true);
+        var (success, message) = await SendRequest(url, "POST", null, requireAuth: true);
+        if (!success) return (false, null);
+        try { return (true, JsonConvert.DeserializeObject<InventoryUpgradeResponse>(message)); }
+        catch (Exception ex) { Debug.LogError($"[APIService] UpgradeShield parse error: {ex.Message}"); return (false, null); }
+    }
 
-        if (!success)
-            return (false, null);
-
-        try
-        {
-            var response = JsonConvert.DeserializeObject<InventoryUpgradeResponse>(message);
-            return (true, response);
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError($"[APIService] Failed to parse upgrade shield response: {ex.Message}\nResponse: {message}");
-            return (false, null);
-        }
+    public async Task<(bool success, UpgradeCostsResponse response)> GetUpgradeCosts()
+    {
+        if (!IsLoggedIn) return (false, null);
+        var url = $"{BaseUrl}inventory/upgrade/costs/";
+        var (success, message) = await SendRequest(url, "GET", null, requireAuth: true);
+        if (!success) return (false, null);
+        try { return (true, JsonConvert.DeserializeObject<UpgradeCostsResponse>(message)); }
+        catch (Exception ex) { Debug.LogError($"[APIService] GetUpgradeCosts parse error: {ex.Message}"); return (false, null); }
     }
 
     /// <summary>
@@ -847,7 +841,8 @@ public class APIService
             }
             else
             {
-                tcs.TrySetResult((false, "Unauthorized: refresh failed"));
+                ForceLogout();
+                tcs.TrySetResult((false, "Unauthorized: session expired"));
                 yield break;
             }
         }
@@ -1556,11 +1551,26 @@ public class APIService
     {
         public bool success;
         public bool upgraded;
-        public float probability;
-        public float roll;
-        public int sword_sharpness;   // для меча
-        public int? shield_durability; // для щита
+        public int new_level;
         public InventoryData inventory;
+    }
+
+    [Serializable]
+    public class UpgradeCostsResponse
+    {
+        public bool success;
+        public UpgradeCostEntry sword;
+        public UpgradeCostEntry shield;
+    }
+
+    [Serializable]
+    public class UpgradeCostEntry
+    {
+        public bool has_item;
+        public bool can_upgrade;
+        public int current_level;
+        public int? next_level;
+        public InventoryRequirementData[] requirements;
     }
 
     [Serializable]

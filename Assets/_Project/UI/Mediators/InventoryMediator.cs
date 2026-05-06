@@ -23,6 +23,7 @@ public class InventoryMediator : IInitializable, IDisposable
     private APIService.InventoryRecipeData[] _recipes = Array.Empty<APIService.InventoryRecipeData>();
     private APIService.InventoryResourceData[] _lastResources = Array.Empty<APIService.InventoryResourceData>();
     private APIService.InventoryItemData[] _lastItems = Array.Empty<APIService.InventoryItemData>();
+    private APIService.UpgradeCostsResponse _upgradeCosts;
 
     public InventoryMediator(
         InventoryWindow inventoryWindow,
@@ -60,7 +61,10 @@ public class InventoryMediator : IInitializable, IDisposable
         foreach (var view in _recipeViews)
         {
             if (view != null)
+            {
                 view.OnCraftClicked -= HandleCraftClicked;
+                view.OnCraftClicked -= HandleUpgradeClicked;
+            }
         }
     }
 
@@ -87,14 +91,13 @@ public class InventoryMediator : IInitializable, IDisposable
         }
 
         var (recipesSuccess, recipesResponse) = await _apiService.GetInventoryRecipes();
-        if (recipesSuccess && recipesResponse?.recipes != null)
-        {
-            _recipes = recipesResponse.recipes;
-        }
-        else
-        {
-            _recipes = Array.Empty<APIService.InventoryRecipeData>();
-        }
+        _recipes = recipesSuccess && recipesResponse?.recipes != null
+            ? recipesResponse.recipes
+            : Array.Empty<APIService.InventoryRecipeData>();
+
+        var (costsSuccess, costsResponse) = await _apiService.GetUpgradeCosts();
+        if (costsSuccess && costsResponse != null)
+            _upgradeCosts = costsResponse;
 
         RefreshUI();
     }
@@ -140,8 +143,12 @@ public class InventoryMediator : IInitializable, IDisposable
 
         foreach (var v in _itemViews)
         {
-            if (v != null && v.gameObject != null)
-                UnityEngine.Object.Destroy(v.gameObject);
+            if (v != null)
+            {
+                v.OnUpgradeClicked -= HandleUpgradeClicked;
+                if (v.gameObject != null)
+                    UnityEngine.Object.Destroy(v.gameObject);
+            }
         }
         _itemViews.Clear();
 
@@ -169,9 +176,15 @@ public class InventoryMediator : IInitializable, IDisposable
             else if (item.durability.HasValue)
                 statInfo = $" {item.durability.Value}";
 
+            APIService.UpgradeCostEntry cost = null;
+            if (_upgradeCosts != null)
+                cost = item.id == "sword" ? _upgradeCosts.sword : _upgradeCosts.shield;
+
             var view = _inventoryItemFactory.Create();
             view.transform.SetParent(container, false);
-            view.Init(item.display_name ?? item.id, statInfo, _iconConfig?.GetSprite(item.id));
+            view.Init(item.id, item.display_name ?? item.id, statInfo, _iconConfig?.GetSprite(item.id));
+            view.SetUpgradeInfo(cost);
+            view.OnUpgradeClicked += HandleUpgradeClicked;
             _itemViews.Add(view);
         }
     }
@@ -183,6 +196,7 @@ public class InventoryMediator : IInitializable, IDisposable
             if (view != null)
             {
                 view.OnCraftClicked -= HandleCraftClicked;
+                view.OnCraftClicked -= HandleUpgradeClicked;
                 if (view.gameObject != null)
                     UnityEngine.Object.Destroy(view.gameObject);
             }
@@ -197,17 +211,66 @@ public class InventoryMediator : IInitializable, IDisposable
             if (recipe == null) continue;
 
             var isCrafted = _inventoryService.HasItem(recipe.id);
-            var canCraft = !isCrafted && CanCraft(recipe);
-
             var view = _craftRecipeFactory.Create();
             view.transform.SetParent(container, false);
-            view.Init(recipe.id, recipe.display_name ?? recipe.id, recipe.requirements, _iconConfig, canCraft, isCrafted);
 
-            if (!isCrafted)
+            if (isCrafted)
+            {
+                int currentLevel = GetItemLevel(recipe.id);
+                bool isMaxLevel = currentLevel >= 10;
+
+                if (isMaxLevel)
+                {
+                    view.Init(recipe.id, recipe.display_name ?? recipe.id, null, _iconConfig, false,
+                        isCrafted: true, badgeText: "Макс. уровень");
+                }
+                else
+                {
+                    APIService.UpgradeCostEntry cost = _upgradeCosts != null
+                        ? (recipe.id == "sword" ? _upgradeCosts.sword : _upgradeCosts.shield)
+                        : null;
+
+                    var requirements = cost?.requirements;
+                    string label = cost != null
+                        ? $"Улучшить ({cost.current_level}→{cost.next_level})"
+                        : "Улучшить";
+
+                    view.Init(recipe.id, recipe.display_name ?? recipe.id, requirements, _iconConfig, true, buttonLabel: label);
+                    view.OnCraftClicked += HandleUpgradeClicked;
+                }
+            }
+            else
+            {
+                view.Init(recipe.id, recipe.display_name ?? recipe.id, recipe.requirements, _iconConfig, true, buttonLabel: "Создать");
                 view.OnCraftClicked += HandleCraftClicked;
+            }
 
             _recipeViews.Add(view);
         }
+    }
+
+    private int GetItemLevel(string itemId)
+    {
+        if (_lastItems == null) return 1;
+        foreach (var item in _lastItems)
+        {
+            if (item?.id != itemId) continue;
+            if (itemId == "sword" && item.sharpness.HasValue) return item.sharpness.Value;
+            if (itemId == "shield" && item.durability.HasValue) return item.durability.Value;
+        }
+        return 1;
+    }
+
+    private bool CanAfford(APIService.InventoryRequirementData[] requirements)
+    {
+        if (requirements == null) return false;
+        foreach (var req in requirements)
+        {
+            if (req == null) continue;
+            if (_inventoryService.GetResourceAmount(req.resource_id) < req.amount)
+                return false;
+        }
+        return true;
     }
 
     private bool CanCraft(APIService.InventoryRecipeData recipe)
@@ -223,6 +286,27 @@ public class InventoryMediator : IInitializable, IDisposable
                 return false;
         }
         return true;
+    }
+
+    private async void HandleUpgradeClicked(string itemId)
+    {
+        bool success;
+        APIService.InventoryUpgradeResponse response;
+
+        if (itemId == "sword")
+            (success, response) = await _apiService.UpgradeSword();
+        else
+            (success, response) = await _apiService.UpgradeShield();
+
+        if (success && response?.success == true)
+        {
+            _popupService.ShowSuccess($"Улучшено до уровня {response.new_level}!");
+            await LoadAndRefresh();
+        }
+        else
+        {
+            _popupService.ShowError("Не удалось улучшить. Недостаточно ресурсов или достигнут максимальный уровень.");
+        }
     }
 
     private async void HandleCraftClicked(string itemId)
