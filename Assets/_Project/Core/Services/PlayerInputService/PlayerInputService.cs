@@ -15,19 +15,20 @@ public class PlayerInputService : ITickable, IDisposable
     private bool _isDragging;
     private const float DragThreshold = 15f;
 
-    // Настраиваемые прямоугольники
+    // Настройка прямоугольников в ВЕРХНИХ углах
+    [Header("Top-Left Corner Settings")]
+    private readonly bool _enableTopLeftCorner = true;
+    private readonly Vector2 _topLeftCornerSize = new Vector2(250f, 250f); // width, height
+    private readonly Vector2 _topLeftCornerOffset = new Vector2(0f, 0f);    // x offset from left, y offset from TOP
+    
+    [Header("Top-Right Corner Settings")]
+    private readonly bool _enableTopRightCorner = true;
+    private readonly Vector2 _topRightCornerSize = new Vector2(250f, 600f); // width, height
+    private readonly Vector2 _topRightCornerOffset = new Vector2(0f, 0f);   // x offset from right, y offset from TOP
+    
+    // Прямоугольники
     private Rect _topLeftRect;
     private Rect _topRightRect;
-    
-    // Параметры прямоугольников (можно изменить здесь)
-    private readonly Vector2 _topLeftRectSize = new Vector2(200f, 200f);
-    private readonly Vector2 _topRightRectSize = new Vector2(200f, 200f);
-    private readonly Vector2 _topLeftRectOffset = new Vector2(0f, 0f); // Смещение от левого верхнего угла
-    private readonly Vector2 _topRightRectOffset = new Vector2(0f, 0f); // Смещение от правого верхнего угла
-    
-    // Флаги включения/выключения прямоугольников
-    private readonly bool _enableTopLeftRect = true;
-    private readonly bool _enableTopRightRect = true;
 
     [Inject]
     public PlayerInputService(Camera mainCamera, SightsUpdater sightsUpdater, UIManager uiManager, GameEventService gameEventService)
@@ -42,18 +43,20 @@ public class PlayerInputService : ITickable, IDisposable
 
     private void InitializeRects()
     {
+        // Левый ВЕРХНИЙ угол - Y считается от ВЕРХНЕГО края экрана
         _topLeftRect = new Rect(
-            _topLeftRectOffset.x,
-            _topLeftRectOffset.y,
-            _topLeftRectSize.x,
-            _topLeftRectSize.y
+            _topLeftCornerOffset.x,
+            _topLeftCornerOffset.y,  // Y от верхнего края (0 = верх экрана)
+            _topLeftCornerSize.x,
+            _topLeftCornerSize.y
         );
         
+        // Правый ВЕРХНИЙ угол
         _topRightRect = new Rect(
-            Screen.width - _topRightRectSize.x - _topRightRectOffset.x,
-            _topRightRectOffset.y,
-            _topRightRectSize.x,
-            _topRightRectSize.y
+            Screen.width - _topRightCornerSize.x - _topRightCornerOffset.x,
+            _topRightCornerOffset.y,  // Y от верхнего края (0 = верх экрана)
+            _topRightCornerSize.x,
+            _topRightCornerSize.y
         );
     }
 
@@ -65,7 +68,6 @@ public class PlayerInputService : ITickable, IDisposable
         var canvas = GameObject.FindGameObjectWithTag("Canvas");
         if (canvas != null && canvas.transform.childCount > 1) return;
         
-        // Обновляем позицию правого прямоугольника при изменении размера экрана
         UpdateRectsPosition();
 
 #if UNITY_EDITOR || UNITY_STANDALONE
@@ -77,18 +79,16 @@ public class PlayerInputService : ITickable, IDisposable
     
     private void UpdateRectsPosition()
     {
-        // Обновляем позицию правого прямоугольника при изменении размера экрана
-        if (_enableTopRightRect)
+        if (_enableTopRightCorner)
         {
-            _topRightRect.x = Screen.width - _topRightRect.width - _topRightRectOffset.x;
-            _topRightRect.y = _topRightRectOffset.y;
+            _topRightRect.x = Screen.width - _topRightCornerSize.x - _topRightCornerOffset.x;
+            _topRightRect.y = _topRightCornerOffset.y;  // Сохраняем Y от верхнего края
         }
         
-        // Левый прямоугольник тоже может менять позицию при изменении оффсета
-        if (_enableTopLeftRect)
+        if (_enableTopLeftCorner)
         {
-            _topLeftRect.x = _topLeftRectOffset.x;
-            _topLeftRect.y = _topLeftRectOffset.y;
+            _topLeftRect.x = _topLeftCornerOffset.x;
+            _topLeftRect.y = _topLeftCornerOffset.y;  // Сохраняем Y от верхнего края
         }
     }
 
@@ -108,14 +108,14 @@ public class PlayerInputService : ITickable, IDisposable
 
         if (Input.GetMouseButtonUp(0) && !_isDragging)
         {
-            // Проверяем, не попал ли клик в UI прямоугольники
-            if (IsPointInUIBlocks(Input.mousePosition))
-            {
-                Debug.Log("UI tapped");
-            }
+            Vector2 mousePosition = Input.mousePosition;
+            // Преобразуем координаты мыши в UI координаты (Y от верхнего края)
+            Vector2 uiPosition = new Vector2(mousePosition.x, Screen.height - mousePosition.y);
+            
+            if (IsPointInTopCorners(uiPosition))
                 return;
                 
-            Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
+            Ray ray = _mainCamera.ScreenPointToRay(mousePosition);
             CheckHit(ray);
         }
     }
@@ -139,8 +139,9 @@ public class PlayerInputService : ITickable, IDisposable
         }
         else if (touch.phase == UnityEngine.TouchPhase.Ended && !_isDragging)
         {
-            // Проверяем, не попал ли клик в UI прямоугольники
-            if (IsPointInUIBlocks(touch.position))
+            Vector2 uiPosition = new Vector2(touch.position.x, Screen.height - touch.position.y);
+            
+            if (IsPointInTopCorners(uiPosition))
                 return;
                 
             Ray ray = _mainCamera.ScreenPointToRay(touch.position);
@@ -148,14 +149,20 @@ public class PlayerInputService : ITickable, IDisposable
         }
     }
 
-    private bool IsPointInUIBlocks(Vector2 screenPoint)
+    private bool IsPointInTopCorners(Vector2 screenPoint)
     {
-        if (_enableTopLeftRect && _topLeftRect.Contains(screenPoint))
+        if (_enableTopLeftCorner && _topLeftRect.Contains(screenPoint))
+        {
+            Debug.Log($"Click blocked by TOP-LEFT corner area: {_topLeftRect}");
             return true;
-            
-        if (_enableTopRightRect && _topRightRect.Contains(screenPoint))
+        }
+        
+        if (_enableTopRightCorner && _topRightRect.Contains(screenPoint))
+        {
+            Debug.Log($"Click blocked by TOP-RIGHT corner area: {_topRightRect}");
             return true;
-            
+        }
+        
         return false;
     }
 
@@ -186,24 +193,12 @@ public class PlayerInputService : ITickable, IDisposable
     
     public void SetEnabled(bool enabled) => _isEnabled = enabled;
     
-    // Опциональные публичные методы для динамической настройки (если понадобятся)
-    public void SetTopLeftRectActive(bool active)
+    public void DrawDebugRects()
     {
-        // Для возможности динамического изменения через рефлексию или другие системы
-        var field = GetType().GetField("_enableTopLeftRect", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        if (field != null && field.IsInitOnly == false)
-        {
-            field.SetValue(this, active);
-        }
-    }
-    
-    public void SetTopRightRectActive(bool active)
-    {
-        var field = GetType().GetField("_enableTopRightRect", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        if (field != null && field.IsInitOnly == false)
-        {
-            field.SetValue(this, active);
-        }
+        #if UNITY_EDITOR
+        Debug.Log($"TOP-LEFT Rect: {_topLeftRect}");
+        Debug.Log($"TOP-RIGHT Rect: {_topRightRect}");
+        #endif
     }
     
     public void Dispose()
