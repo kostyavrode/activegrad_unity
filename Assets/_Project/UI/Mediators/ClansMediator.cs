@@ -206,6 +206,7 @@ public class ClansMediator : IInitializable, IDisposable
 
         _currentClanPageView = _clanPageViewFactory.Create();
         _currentClanPageView.transform.SetParent(GameObject.FindGameObjectWithTag("Canvas").transform, false);
+        // Показываем страницу сразу с текущим _myClan (может быть null если вкладка «Мой клан» не открывалась)
         _currentClanPageView.Init(clan, _myClan);
 
         _currentClanPageView.OnBackClicked += HandleClanPageBack;
@@ -213,7 +214,16 @@ public class ClansMediator : IInitializable, IDisposable
         _currentClanPageView.OnLeaveClicked += HandleClanPageLeave;
         _currentClanPageView.OnMemberClicked += HandleMemberClicked;
 
-        var (success, response) = await _apiService.GetClanMembers(clan.id);
+        // Запускаем оба запроса параллельно — без дополнительной задержки
+        var membersTask = _apiService.GetClanMembers(clan.id);
+        await RefreshMyClan(); // выполняется пока membersTask тоже идёт
+
+        if (_currentClanPageView == null) return;
+
+        // Обновляем кнопки с актуальными данными — теперь _myClan точно загружен
+        _currentClanPageView.RefreshButtons(clan.id, _myClan);
+
+        var (success, response) = await membersTask;
 
         if (_currentClanPageView == null) return;
 

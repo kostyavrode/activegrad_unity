@@ -15,19 +15,21 @@ public class GameEventService : IInitializable, IDisposable, ITickable
     private readonly GameEventView.Factory _gameEventViewFactory;
     private readonly MiniGamesService _miniGamesService;
     private readonly DiContainer _container;
-    
+    private readonly APIService _apiService;
+    private readonly IPopupService _popupService;
+
     private readonly float _spawnInterval = 5f;
     private readonly float _minSpawnRadius = 50f;
     private readonly float _maxSpawnRadius = 200f;
     private readonly float _eventLifetime = 600f;
     private readonly int _maxActiveEvents = 5;
     private readonly float _collisionCheckRadius = 10f;
-    
+
     private bool _isRunning;
     private float _nextSpawnTime;
     private Dictionary<string, GameEventData> _activeEvents = new Dictionary<string, GameEventData>();
     private Dictionary<string, GameObject> _spawnedObjects = new Dictionary<string, GameObject>();
-    
+
     public event Action<string, GameEventResult> OnGameCompleted;
 
     private GameObject _gameEventMarkerPrefab;
@@ -38,6 +40,8 @@ public class GameEventService : IInitializable, IDisposable, ITickable
         GameEventView.Factory gameEventViewFactory,
         MiniGamesService miniGamesService,
         DiContainer container,
+        APIService apiService,
+        IPopupService popupService,
         [Inject(Id = "GameEventMarker")] GameObject gameEventMarkerPrefab)
     {
         _locationService = locationService;
@@ -45,6 +49,8 @@ public class GameEventService : IInitializable, IDisposable, ITickable
         _gameEventViewFactory = gameEventViewFactory;
         _miniGamesService = miniGamesService;
         _container = container;
+        _apiService = apiService;
+        _popupService = popupService;
         _gameEventMarkerPrefab = gameEventMarkerPrefab;
     }
 
@@ -171,7 +177,7 @@ public class GameEventService : IInitializable, IDisposable, ITickable
     {
         GameEventType.Jump,
         GameEventType.TrainPath,
-        GameEventType.FlappyBird
+        GameEventType.TapCircle
     };
 
     private GameEventType GetRandomEventType()
@@ -280,7 +286,45 @@ public class GameEventService : IInitializable, IDisposable, ITickable
         if (result.IsSuccess)
         {
             RemoveEvent(eventId);
+            SendMinigameRewardAsync(result.Score);
         }
+    }
+
+    private async void SendMinigameRewardAsync(int scorePercent)
+    {
+        Debug.Log($"[GameEventService] CompleteMinigame → отправляем score_percent={scorePercent}");
+
+        var (success, response) = await _apiService.CompleteMinigame(scorePercent);
+
+        if (!success || response == null)
+        {
+            Debug.LogError("[GameEventService] CompleteMinigame: запрос не прошёл (success=" + success + ", response=" + (response == null ? "null" : "non-null") + ")");
+            _popupService.ShowError("Не удалось отправить результат. Проверьте соединение.");
+            return;
+        }
+
+        Debug.Log($"[GameEventService] CompleteMinigame ответ: success={response.success} score={response.score_percent} total_resources={response.total_resources}");
+
+        if (response.total_resources == 0)
+        {
+            _popupService.ShowError("Результат недостаточен. Ресурсы не получены.");
+            return;
+        }
+
+        if (response.resources_gained == null)
+        {
+            Debug.LogWarning("[GameEventService] CompleteMinigame: resources_gained == null при total_resources=" + response.total_resources);
+            _popupService.ShowSuccess($"Получено ресурсов: {response.total_resources}");
+            return;
+        }
+
+        var parts = new System.Collections.Generic.List<string>();
+        if (response.resources_gained.metal > 0)      parts.Add($"+{response.resources_gained.metal} металл");
+        if (response.resources_gained.wood > 0)       parts.Add($"+{response.resources_gained.wood} дерево");
+        if (response.resources_gained.blueprints > 0) parts.Add($"+{response.resources_gained.blueprints} чертёж");
+
+        string rewardText = parts.Count > 0 ? string.Join(", ", parts) : $"ресурсы ×{response.total_resources}";
+        _popupService.ShowSuccess("Награда: " + rewardText);
     }
 
     private void RemoveEvent(string eventId)

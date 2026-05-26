@@ -32,6 +32,7 @@ public class SightsMediator : IInitializable, IDisposable
     {
         _sightsWindow.OnWindowOpened += HandleWindowOpened;
         _sightsWindow.OnBackClicked += () => _uiManager.Back();
+        _sightsWindow.OnCollectRewardsClicked += HandleCollectRewardsClicked;
 
         _sightsUpdater.OnImageLoaded += HandleImageLoaded;
         _sightsUpdater.OnSightsUpdated += HandleSightsUpdated;
@@ -41,9 +42,15 @@ public class SightsMediator : IInitializable, IDisposable
     public void Dispose()
     {
         _sightsWindow.OnWindowOpened -= HandleWindowOpened;
+        _sightsWindow.OnCollectRewardsClicked -= HandleCollectRewardsClicked;
         _sightsUpdater.OnImageLoaded -= HandleImageLoaded;
         _sightsUpdater.OnSightsUpdated -= HandleSightsUpdated;
         _sightsUpdater.OnPartnerStoresUpdated -= HandlePartnerStoresUpdated;
+    }
+
+    private async void HandleCollectRewardsClicked()
+    {
+        await _sightsUpdater.CollectCaptureRewardsAsync();
     }
 
     private void HandleWindowOpened() => LoadSights();
@@ -63,24 +70,16 @@ public class SightsMediator : IInitializable, IDisposable
     private void LoadSights()
     {
         ClearItems();
+        _sightsWindow.BeginBatchAdd();
 
         try
         {
             foreach (var kv in _sightsUpdater.CachedNearestSights)
             {
                 var info = kv.Value;
-
-                var item = _factory.Create();
-                item.transform.SetParent(_sightsWindow.ContentParent, false);
-
-                item.Title.text = info.Title;
-                item.Distance.text = $"{info.Distance} м";
-                item.PageId = info.PageId;
-                item.OnClicked += HandleItemClicked;
-
+                var item = CreateItem(info.Title, $"{info.Distance} м", info.PageId, HandleItemClicked);
                 if (_sightsUpdater.TryGetImage(info.PageId, out var sprite))
                     item.SetImage(sprite);
-
                 _sightItemViews.Add(item);
             }
         }
@@ -90,9 +89,23 @@ public class SightsMediator : IInitializable, IDisposable
         }
 
         AppendPartnerStores();
+        _sightsWindow.EndBatchAdd();
 
         if (_sightItemViews.Count > 0 || _partnerStoreItemViews.Count > 0)
             _sightsWindow.PlayTabAnimation();
+    }
+
+    private SightItemView CreateItem(string title, string distance, int pageId, Action<int> clickHandler)
+    {
+        var item = _factory.Create();
+        item.transform.SetParent(_sightsWindow.ContentParent, false);
+        item.Title.text = title;
+        item.Distance.text = distance;
+        item.PageId = pageId;
+        item.OnClicked += clickHandler;
+        // OptimizeForScroll вызывается в Awake, но на случай если префаб уже создан — вызовем явно.
+        item.OptimizeForScroll();
+        return item;
     }
 
     private void RefreshPartnerStores()
@@ -106,7 +119,9 @@ public class SightsMediator : IInitializable, IDisposable
         }
         _partnerStoreItemViews.Clear();
 
+        _sightsWindow.BeginBatchAdd();
         AppendPartnerStores();
+        _sightsWindow.EndBatchAdd();
     }
 
     private void AppendPartnerStores()
@@ -118,15 +133,8 @@ public class SightsMediator : IInitializable, IDisposable
             foreach (var kv in _sightsUpdater.CachedNearestPartnerStores)
             {
                 var store = kv.Value;
-
-                var item = _factory.Create();
-                item.transform.SetParent(_sightsWindow.ContentParent, false);
-
-                item.Title.text = !string.IsNullOrEmpty(store.name) ? store.name : "default";
-                item.Distance.text = $"{store.distance_km * 1000:F0} м";
-                item.PageId = store.id;
-                item.OnClicked += HandlePartnerStoreClicked;
-
+                var name = !string.IsNullOrEmpty(store.name) ? store.name : "default";
+                var item = CreateItem(name, $"{store.distance_km * 1000:F0} м", store.id, HandlePartnerStoreClicked);
                 _partnerStoreItemViews.Add(item);
             }
         }

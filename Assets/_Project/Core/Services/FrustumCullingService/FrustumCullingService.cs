@@ -13,17 +13,20 @@ public class FrustumCullingService : IInitializable, IDisposable
     private readonly Camera _camera;
     private readonly CoroutineRunner _coroutineRunner;
 
-    private readonly List<CullableObject> _registered = new();
-    private readonly List<CullableObject> _pendingAdd = new();
+    private readonly List<CullableObject> _registered    = new();
+    private readonly List<CullableObject> _pendingAdd    = new();
     private readonly List<CullableObject> _pendingRemove = new();
 
     private readonly Plane[] _frustumPlanes = new Plane[6];
-    private Coroutine _cullingCoroutine;
+    private Coroutine _frustumCoroutine;
+    private Coroutine _distanceCoroutine;
 
-    // Буфер: объект отключается значительно позже, чем уходит с экрана.
-    // Чем больше значение — тем дальше за границей камеры происходит отключение
+    // Frustum: проверяем часто — нужна плавность появления/скрытия
+    private const float FrustumCheckInterval  = 0.15f;
+    // Distance: проверяем редко — игрок не перемещается мгновенно
+    private const float DistanceCheckInterval = 0.5f;
+    // Буфер: объект отключается чуть позже, чем уходит с экрана
     private const float CullMargin = 8f;
-    private const float CheckInterval = 0.15f;
 
     public FrustumCullingService(Camera camera, CoroutineRunner coroutineRunner)
     {
@@ -34,25 +37,26 @@ public class FrustumCullingService : IInitializable, IDisposable
     public void Initialize()
     {
         Instance = this;
-        _cullingCoroutine = _coroutineRunner.StartCoroutine(CullingLoop());
+        _frustumCoroutine  = _coroutineRunner.StartCoroutine(FrustumLoop());
+        _distanceCoroutine = _coroutineRunner.StartCoroutine(DistanceLoop());
     }
 
     public void Dispose()
     {
         Instance = null;
 
-        if (_cullingCoroutine != null)
-            _coroutineRunner.StopCoroutine(_cullingCoroutine);
+        if (_frustumCoroutine  != null) _coroutineRunner.StopCoroutine(_frustumCoroutine);
+        if (_distanceCoroutine != null) _coroutineRunner.StopCoroutine(_distanceCoroutine);
 
         _registered.Clear();
         _pendingAdd.Clear();
         _pendingRemove.Clear();
     }
 
+    // ── регистрация ───────────────────────────────────────────────────────────
+
     public void Register(CullableObject obj)
     {
-        // Защита от дублей: объект может снова вызвать OnEnable
-        // после того как мы сами его отключили через SetActive(false)
         if (!_registered.Contains(obj) && !_pendingAdd.Contains(obj))
             _pendingAdd.Add(obj);
     }
@@ -62,29 +66,17 @@ public class FrustumCullingService : IInitializable, IDisposable
         _pendingRemove.Add(obj);
     }
 
-    private IEnumerator CullingLoop()
+    // ── frustum loop (0.15 с) ─────────────────────────────────────────────────
+
+    private IEnumerator FrustumLoop()
     {
         while (true)
         {
-            yield return new WaitForSeconds(CheckInterval);
+            yield return new WaitForSeconds(FrustumCheckInterval);
 
-            // Применяем отложенные изменения списка, чтобы не модифицировать
-            // коллекцию во время итерации
-            if (_pendingRemove.Count > 0)
-            {
-                foreach (var obj in _pendingRemove)
-                    _registered.Remove(obj);
-                _pendingRemove.Clear();
-            }
+            FlushPending();
 
-            if (_pendingAdd.Count > 0)
-            {
-                _registered.AddRange(_pendingAdd);
-                _pendingAdd.Clear();
-            }
-
-            if (_registered.Count == 0 || _camera == null)
-                continue;
+            if (_registered.Count == 0 || _camera == null) continue;
 
             GeometryUtility.CalculateFrustumPlanes(_camera, _frustumPlanes);
 
@@ -98,6 +90,54 @@ public class FrustumCullingService : IInitializable, IDisposable
                 bool visible = GeometryUtility.TestPlanesAABB(_frustumPlanes, bounds);
                 obj.SetVisible(visible);
             }
+        }
+    }
+
+    // ── distance loop (0.5 с) ─────────────────────────────────────────────────
+
+    private IEnumerator DistanceLoop()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(DistanceCheckInterval);
+
+            if (_registered.Count == 0 || _camera == null) continue;
+
+            Vector3 playerPos = _camera.transform.position;
+
+            foreach (var obj in _registered)
+            {
+                if (obj == null) continue;
+
+                float threshold = obj.DistanceCullDistance;
+                bool near = (obj.transform.position - playerPos).sqrMagnitude
+                            <= threshold * threshold;
+
+                obj.SetNear(near);
+            }
+        }
+    }
+
+    // ── общий хелпер ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Применяет отложенные добавления/удаления из списка.
+    /// Вызывается только из FrustumLoop, т.к. оба цикла читают один и тот же список —
+    /// структурные изменения делаем один раз, в более частом цикле.
+    /// </summary>
+    private void FlushPending()
+    {
+        if (_pendingRemove.Count > 0)
+        {
+            foreach (var obj in _pendingRemove)
+                _registered.Remove(obj);
+            _pendingRemove.Clear();
+        }
+
+        if (_pendingAdd.Count > 0)
+        {
+            _registered.AddRange(_pendingAdd);
+            _pendingAdd.Clear();
         }
     }
 }

@@ -7,37 +7,21 @@ public class JumpGameEvent : BaseGameEvent
     private JumpController _controller;
 
     [Inject] private UserDataService _userDataService;
+    [InjectOptional] private JumpGameConfig _config;
 
     protected override void OnStartGame()
     {
-        LoadGamePrefab();
-    }
+        _gameRoot = new GameObject("JumpGame");
+        _gameRoot.transform.SetParent(_parentContainer, false);
 
-    private void LoadGamePrefab()
-    {
-        var prefab = Resources.Load<GameObject>("MiniGames/JumpGame");
+        var rootRect = _gameRoot.AddComponent<RectTransform>();
+        rootRect.anchorMin = Vector2.zero;
+        rootRect.anchorMax = Vector2.one;
+        rootRect.offsetMin = Vector2.zero;
+        rootRect.offsetMax = Vector2.zero;
 
-        if (prefab == null)
-        {
-            Debug.LogError("[JumpGameEvent] Префаб JumpGame не найден в Resources/MiniGames/JumpGame.prefab");
-            return;
-        }
-
-        _gameRoot = Object.Instantiate(prefab, _parentContainer);
-        _gameRoot.name = "JumpGame";
-
-        var ui = _gameRoot.GetComponent<JumpUI>();
-        if (ui == null)
-        {
-            Debug.LogError("[JumpGameEvent] Компонент JumpUI не найден на префабе!");
-            return;
-        }
-
-        _controller = _gameRoot.GetComponent<JumpController>();
-        if (_controller == null)
-            _controller = _gameRoot.AddComponent<JumpController>();
-
-        _controller.Initialize(this, ui, _userDataService);
+        _controller = _gameRoot.AddComponent<JumpController>();
+        _controller.Initialize(this, _userDataService != null ? _userDataService.Agility : 1, _config);
     }
 
     protected override void OnCleanup()
@@ -46,11 +30,14 @@ public class JumpGameEvent : BaseGameEvent
             Object.Destroy(_gameRoot);
     }
 
-    public void OnGameEnded(int totalScore)
+    // Вызывается кнопкой «Получить награду» на экране результата.
+    // Игрок дошёл до конца → IsSuccess всегда true; бэкенд сам решает размер награды.
+    public void OnGameEnded(int score)
     {
-        FinishGame(true, totalScore);
+        FinishGame(true, score);
     }
 
+    // Вызывается только при закрытии крестиком до окончания игры
     public void CloseGame()
     {
         FinishGame(false, 0);

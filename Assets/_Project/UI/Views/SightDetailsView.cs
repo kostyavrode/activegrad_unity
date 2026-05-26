@@ -1,4 +1,5 @@
 using System;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -18,7 +19,12 @@ public class SightDetailsView : MonoBehaviour
     public TMP_Text CaptureProbabilityText;
     public Image CaptureProbabilityBar;
     public int SightID;
-    
+
+    [SerializeField] private CanvasGroup _canvasGroup;
+
+    private const float AnimationDuration = 0.15f;
+    private Tween _tween;
+
     public Action<int> OnCheckInClicked;
     public Action<int> OnCaptureClicked;
     public event Action OnClosed;
@@ -50,12 +56,36 @@ public class SightDetailsView : MonoBehaviour
             });
         }
 
-        CloseButton.onClick.AddListener(() => Destroy(gameObject));
-        
+        CloseButton.onClick.AddListener(Close);
+
         if (CheckInButton != null)
             CheckInButton.interactable = false;
         if (CaptureButton != null)
             CaptureButton.interactable = false;
+
+        if (_canvasGroup != null)
+        {
+            _canvasGroup.alpha = 0f;
+            _tween = _canvasGroup.DOFade(1f, AnimationDuration).SetUpdate(true);
+        }
+    }
+
+    public void Close()
+    {
+        CloseButton.interactable = false;
+        _tween?.Kill();
+
+        if (_canvasGroup != null)
+        {
+            _tween = _canvasGroup
+                .DOFade(0f, AnimationDuration)
+                .SetUpdate(true)
+                .OnComplete(() => Destroy(gameObject));
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void OnDestroy()

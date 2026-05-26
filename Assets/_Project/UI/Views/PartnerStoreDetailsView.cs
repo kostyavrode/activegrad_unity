@@ -63,7 +63,7 @@ public class PartnerStoreDetailsView : MonoBehaviour
     public void SetVisitStatus(bool visited)
     {
         if (VisitStatusText == null) return;
-        VisitStatusText.text = visited ? "Вы уже посетили этот магазин" : "Вы ещё не посетили этот магазин";
+        VisitStatusText.text = visited ? "Отмечено" : "Новый";
     }
 
     public class Factory : PlaceholderFactory<PartnerStoreDetailsView> { }

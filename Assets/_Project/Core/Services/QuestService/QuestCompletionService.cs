@@ -69,7 +69,8 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
             }
         
         var quests = ParseQuests(response);
-        _lastQuestLoadDate = DateTime.Now.ToString("yyyy-MM-dd");
+        // Сохраняем в UTC — должно совпадать с CheckDailyReset
+        _lastQuestLoadDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
         PlayerPrefs.SetString(QuestLoadDateKey, _lastQuestLoadDate);
         PlayerPrefs.Save();
         
@@ -304,11 +305,15 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
         if (!_apiService.IsLoggedIn)
             return;
 
-        string today = DateTime.Now.ToString("yyyy-MM-dd");
+        // Используем UTC — сервер работает в UTC, сброс происходит в 00:00 UTC
+        string today = DateTime.UtcNow.ToString("yyyy-MM-dd");
 
-        if (_lastQuestLoadDate != today && _activeQuests.Count == 0)
+        if (_lastQuestLoadDate != today)
         {
-            Debug.Log("[QuestService] Daily reset - clearing quests and loading new ones");
+            Debug.Log($"[QuestService] Daily reset triggered (lastLoad={_lastQuestLoadDate}, todayUTC={today}) — reloading quests");
+            // Чистим сохранённый прогресс, чтобы старые isCompleted=true не восстановились
+            PlayerPrefs.DeleteKey(QuestProgressKey);
+            PlayerPrefs.Save();
             ClearQuests();
             _ = LoadQuestsAsync();
         }

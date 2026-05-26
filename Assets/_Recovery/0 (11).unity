@@ -755,6 +755,7 @@ MonoBehaviour:
   _scrollViewRect: {fileID: 1039765692}
   _slideUpOffset: 80
   _animationDuration: 0.3
+  _scrollRect: {fileID: 0}
 --- !u!225 &60630585
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -7670,6 +7671,7 @@ MonoBehaviour:
   _levelText: {fileID: 814677421}
   _expText: {fileID: 1445457582}
   _idText: {fileID: 526637999}
+  _capturedSightsText: {fileID: 0}
   _strengthText: {fileID: 1753877654}
   _intelligenceText: {fileID: 2083806815}
   _agilityText: {fileID: 1968903480}
@@ -28245,6 +28247,7 @@ MonoBehaviour:
   _inventoryItemPrefab: {fileID: 8884948086110471157, guid: 564b8e26f57557c42907626c0e0e6bde, type: 3}
   _craftRecipePrefab: {fileID: 621612662938468646, guid: 2ddf47c18073912469a7a1dbb051485d, type: 3}
   _iconConfig: {fileID: 11400000, guid: 5b437b7ae07ac324ebf379e4c223681d, type: 2}
+  _jumpGameConfig: {fileID: 0}
   _gameEventMarkerPrefab: {fileID: 8174337391774317492, guid: 6a0853b2617b28a4b9f08608ffd877b6, type: 3}
   _map: {fileID: 1613871291}
   _spawnOnMap: {fileID: 402055880}

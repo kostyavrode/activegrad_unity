@@ -10,37 +10,17 @@ public class TrainPathGameEvent : BaseGameEvent
 
     protected override void OnStartGame()
     {
-        LoadGamePrefab();
-    }
+        _gameRoot = new GameObject("TrainPathGame");
+        _gameRoot.transform.SetParent(_parentContainer, false);
 
-    private void LoadGamePrefab()
-    {
-        var prefab = Resources.Load<GameObject>("MiniGames/TrainPathGame");
+        var rt = _gameRoot.AddComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
 
-        if (prefab == null)
-        {
-            Debug.LogError("[TrainPathGameEvent] Префаб TrainPathGame не найден в Resources/MiniGames/TrainPathGame.prefab");
-            return;
-        }
-
-        _gameRoot = Object.Instantiate(prefab, _parentContainer);
-        _gameRoot.name = "TrainPathGame";
-
-        var ui = _gameRoot.GetComponent<TrainPathUI>();
-        if (ui == null)
-        {
-            Debug.LogError("[TrainPathGameEvent] Компонент TrainPathUI не найден на префабе!");
-            return;
-        }
-
-        _controller = _gameRoot.GetComponent<TrainPathController>();
-        if (_controller == null)
-        {
-            Debug.LogError("[TrainPathGameEvent] TrainPathController не найден на префабе! Добавь компонент вручную.");
-            return;
-        }
-
-        _controller.Initialize(this, ui, _userDataService);
+        _controller = _gameRoot.AddComponent<TrainPathController>();
+        _controller.Initialize(this, _userDataService != null ? _userDataService.Intelligence : 1);
     }
 
     protected override void OnCleanup()
@@ -49,24 +29,9 @@ public class TrainPathGameEvent : BaseGameEvent
             Object.Destroy(_gameRoot);
     }
 
-    public void OnGameEnded(float playerTime, float optimalTime, bool isOptimal)
-    {
-        int score = CalculateScore(playerTime, optimalTime, isOptimal);
-        FinishGame(true, score);
-    }
-
     public void OnGameEndedWithFinalScore(int finalScore)
     {
         FinishGame(true, finalScore);
-    }
-
-    private int CalculateScore(float playerTime, float optimalTime, bool isOptimal)
-    {
-        if (isOptimal)
-            return 100;
-
-        float ratio = optimalTime / playerTime;
-        return Mathf.RoundToInt(ratio * 100);
     }
 
     public void CloseGame()

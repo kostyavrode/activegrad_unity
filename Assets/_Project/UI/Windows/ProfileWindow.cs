@@ -13,6 +13,7 @@ public class ProfileWindow : BaseWindow
     [SerializeField] private TMP_Text _levelText;
     [SerializeField] private TMP_Text _expText;
     [SerializeField] private TMP_Text _idText;
+    [SerializeField] private TMP_Text _capturedSightsText;
     [SerializeField] private TMP_Text _strengthText;
     [SerializeField] private TMP_Text _intelligenceText;
     [SerializeField] private TMP_Text _agilityText;
@@ -61,6 +62,15 @@ public class ProfileWindow : BaseWindow
 
         if (_expBar != null && userData.Length > 4 && int.TryParse(userData[4], out int exp))
             _expBar.fillAmount = Mathf.Clamp01(exp / 1000f);
+
+        if (_capturedSightsText != null && userData.Length > 7)
+            _capturedSightsText.text = userData[7];
+    }
+
+    public void SetCapturedSights(int count)
+    {
+        if (_capturedSightsText != null)
+            _capturedSightsText.text = count.ToString();
     }
 
     public void SetStats(int strength, int intelligence, int agility, int statUpgradePoints)

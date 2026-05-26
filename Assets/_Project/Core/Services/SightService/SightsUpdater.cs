@@ -405,6 +405,10 @@ public class SightsUpdater : IInitializable, IDisposable
         _spawnOnMap.partnerStoreIds = storeIds.ToArray();
     }
 
+    // Максимальный размер стороны текстуры для айтемов списка.
+    // Wikipedia отдаёт 1000-2000px — нам столько не нужно.
+    private const int MaxTextureSize = 256;
+
     private async Task<Sprite> LoadSpriteAsync(string url)
     {
         int retryDelayMs = 10000;
@@ -417,8 +421,9 @@ public class SightsUpdater : IInitializable, IDisposable
 
                 if (req.result == UnityWebRequest.Result.Success)
                 {
-                    var tex = DownloadHandlerTexture.GetContent(req);
-                    return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(.5f, .5f));
+                    var rawTex = DownloadHandlerTexture.GetContent(req);
+                    var tex    = DownscaleTexture(rawTex, MaxTextureSize);
+                    return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
                 }
 
                 if (req.responseCode == 429)
@@ -438,6 +443,42 @@ public class SightsUpdater : IInitializable, IDisposable
         Debug.LogError($"[SightsUpdater] Image load failed after retries: {url}");
         return null;
     }
+
+    /// <summary>
+    /// Даунскейлит текстуру до maxSize через GPU (RenderTexture → ReadPixels).
+    /// Если текстура уже меньше — возвращает оригинал без копирования.
+    /// Генерирует мипмапы для качественного рендера при маленьких размерах айтема.
+    /// </summary>
+    private static Texture2D DownscaleTexture(Texture2D src, int maxSize)
+    {
+        if (src.width <= maxSize && src.height <= maxSize)
+        {
+            // Даже небольшую текстуру перекладываем с мипмапами, если их нет
+            if (!src.mipmapCount.Equals(1)) return src;
+        }
+
+        float ratio = (float)src.width / src.height;
+        int w, h;
+        if (src.width >= src.height) { w = maxSize; h = Mathf.Max(1, Mathf.RoundToInt(maxSize / ratio)); }
+        else                         { h = maxSize; w = Mathf.Max(1, Mathf.RoundToInt(maxSize * ratio)); }
+
+        var rt   = RenderTexture.GetTemporary(w, h, 0, RenderTextureFormat.ARGB32);
+        Graphics.Blit(src, rt);
+
+        var prev = RenderTexture.active;
+        RenderTexture.active = rt;
+
+        // RGB24 + mipmap: ~3× меньше памяти чем RGBA32 без мипмапов
+        var dst = new Texture2D(w, h, TextureFormat.RGB24, mipChain: true);
+        dst.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+        dst.Apply(updateMipmaps: true);
+
+        RenderTexture.active = prev;
+        RenderTexture.ReleaseTemporary(rt);
+        UnityEngine.Object.Destroy(src); // освобождаем полноразмерный оригинал
+
+        return dst;
+    }
     
     private async Task<Vector2> WaitForValidCoordinates()
     {
@@ -455,15 +496,38 @@ public class SightsUpdater : IInitializable, IDisposable
     private async void HandleCheckInButtonClicked(int pageId)
     {
         var (success, response) = await _apiService.SetSightMarked(pageId);
-        if (success)
-        {
-            _userData.AddSightToMarked(pageId);
+        if (!success) return;
 
-            if (response?.resources_gained != null)
-            {
-                await RefreshInventoryAndShowReward(response.resources_gained);
-            }
+        _userData.AddSightToMarked(pageId);
+
+        var (invSuccess, invResponse) = await _apiService.GetInventory();
+        if (invSuccess && invResponse?.resources != null)
+            _inventoryService.SetResources(invResponse.resources);
+
+        if (response?.resources_gained != null)
+            ShowCheckInRewardPopup(response.resources_gained);
+    }
+
+    private void ShowCheckInRewardPopup(APIService.ResourcesGained gained)
+    {
+        var bonus = gained.first_visit_bonus;
+        if (bonus != null && (bonus.metal > 0 || bonus.wood > 0 || bonus.blueprints > 0))
+        {
+            string resourceName;
+            int amount;
+            if (bonus.metal > 0)           { resourceName = "металл";  amount = bonus.metal; }
+            else if (bonus.wood > 0)       { resourceName = "дерево";  amount = bonus.wood; }
+            else                           { resourceName = "чертёж";  amount = bonus.blueprints; }
+            _popupService.ShowSuccess($"Первое посещение! +{amount} {resourceName}");
+            return;
         }
+
+        var parts = new List<string>();
+        if (gained.metal > 0)      parts.Add($"+{gained.metal} металл");
+        if (gained.wood > 0)       parts.Add($"+{gained.wood} дерево");
+        if (gained.blueprints > 0) parts.Add($"+{gained.blueprints} чертежи");
+        if (parts.Count > 0)
+            _popupService.ShowSuccess("Вы получили: " + string.Join(", ", parts));
     }
 
     public async void HandlePartnerStoreClicked(int storeId)
@@ -514,19 +578,51 @@ public class SightsUpdater : IInitializable, IDisposable
 
     private async void HandleCaptureButtonClicked(int pageId)
     {
-        // Захват достопримечательности (новая серверная логика)
         var (captureSuccess, captureResponse) = await _apiService.CaptureLandmark(pageId);
 
         if (captureSuccess && captureResponse != null)
         {
-            var message = !string.IsNullOrEmpty(captureResponse.message)
-                ? captureResponse.message
-                : "Достопримечательность захвачена!";
-            _popupService.ShowSuccess(message);
+            // Обновляем инвентарь и показываем сообщение захвата + бонус
+            var (invSuccess, invResponse) = await _apiService.GetInventory();
+            if (invSuccess && invResponse?.resources != null)
+                _inventoryService.SetResources(invResponse.resources);
+
+            var reward = captureResponse.capture_reward;
+            string bonusPart = "";
+            if (reward != null)
+            {
+                if (reward.metal > 0)           bonusPart = $" +{reward.metal} металл";
+                else if (reward.wood > 0)       bonusPart = $" +{reward.wood} дерево";
+                else if (reward.blueprints > 0) bonusPart = $" +{reward.blueprints} чертёж";
+            }
+            _popupService.ShowSuccess($"Захвачено!{bonusPart}");
 
             await RefreshCaptureInfoInPopup(pageId, captureResponse.capture);
         }
-        // Если захват не удался, сообщение об ошибке уже показано внутри APIService (SendRequest)
+    }
+
+    public async Task CollectCaptureRewardsAsync()
+    {
+        var (success, response) = await _apiService.CollectCaptureRewards();
+        if (!success || response == null) return;
+
+        var (invSuccess, invResponse) = await _apiService.GetInventory();
+        if (invSuccess && invResponse?.resources != null)
+            _inventoryService.SetResources(invResponse.resources);
+
+        if (response.total_hours == 0)
+        {
+            _popupService.ShowInfo("Нет доступных наград. Захватите достопримечательность и возвращайтесь!");
+            return;
+        }
+
+        var gained = response.resources_gained;
+        var parts = new List<string>();
+        if (gained.metal > 0)      parts.Add($"+{gained.metal} металл");
+        if (gained.wood > 0)       parts.Add($"+{gained.wood} дерево");
+        if (gained.blueprints > 0) parts.Add($"+{gained.blueprints} чертежи");
+
+        _popupService.ShowSuccess($"Награда за {response.total_hours} ч.: " + string.Join(", ", parts));
     }
 
     private async Task RefreshCaptureInfoInPopup(int pageId, APIService.LandmarkCaptureRecord captureFromResponse = null)

@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 7758986612129487085}
   - component: {fileID: 6801834414525249713}
   - component: {fileID: 4812422834780978070}
-  - component: {fileID: 554197268717132924}
+  - component: {fileID: 4086374101384271461}
   m_Layer: 0
   m_Name: _TEST_Point_On_Map
   m_TagString: Untagged
@@ -116,7 +116,7 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0.000000059604645, y: 0.6, z: -0.00000008940697}
---- !u!114 &554197268717132924
+--- !u!114 &4086374101384271461
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -130,6 +130,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CullableObject
   _customBoundsSize: {x: 2, y: 2, z: 2}
   _fadeDuration: 0.2
+  _distanceManagedObjects:
+  - {fileID: 9222708783076277798}
+  _distanceCullDistance: 30
 --- !u!1001 &3244330525472840042
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -140,15 +143,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: fe330edc54f083345a305a5e0c652d45, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.2
+      value: 0.13
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: fe330edc54f083345a305a5e0c652d45, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.2
+      value: 0.15
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: fe330edc54f083345a305a5e0c652d45, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.2
+      value: 0.13
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: fe330edc54f083345a305a5e0c652d45, type: 3}
       propertyPath: m_LocalPosition.x
@@ -189,6 +192,10 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: fe330edc54f083345a305a5e0c652d45, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6067185528594298527, guid: fe330edc54f083345a305a5e0c652d45, type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: fe330edc54f083345a305a5e0c652d45, type: 3}
       propertyPath: m_Name
@@ -300,15 +307,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1205021609740332654, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.7
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 1205021609740332654, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.7
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 1205021609740332654, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.7
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 1205021609740332654, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
       propertyPath: m_LocalPosition.x
@@ -354,6 +361,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Magic shield blue
       objectReference: {fileID: 0}
+    - target: {fileID: 1289543790355709915, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1684423448260017312, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
       propertyPath: prewarm
       value: 1
@@ -361,6 +372,10 @@ PrefabInstance:
     - target: {fileID: 1684423448260017312, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
       propertyPath: startDelay.scalar
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1684423448260017312, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
+      propertyPath: InitialModule.maxNumParticles
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 1684423448260017312, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
       propertyPath: InitialModule.startLifetime.minScalar
@@ -375,11 +390,27 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2955197092750843386, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
+      propertyPath: InitialModule.maxNumParticles
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2955197092750843386, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
       propertyPath: InitialModule.startLifetime.scalar
       value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 6296318069342208415, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
       propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8241726842330886118, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
+      propertyPath: m_MaxParticleSize
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8241726842330886118, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
+      propertyPath: m_ApplyActiveColorSpace
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8241726842330886118, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
+      propertyPath: m_UseCustomVertexStreams
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -390,5 +421,10 @@ PrefabInstance:
 --- !u!4 &9124817576431021971 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1205021609740332654, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
+  m_PrefabInstance: {fileID: 7933308414842929661}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &9222708783076277798 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1289543790355709915, guid: b99922c2f59b1a542bdd06ae8bee47ae, type: 3}
   m_PrefabInstance: {fileID: 7933308414842929661}
   m_PrefabAsset: {fileID: 0}

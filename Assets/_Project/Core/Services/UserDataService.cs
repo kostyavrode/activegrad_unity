@@ -161,6 +161,13 @@ public class UserDataService
         Save();
     }
 
+    public void SetLevelAndExperience(int level, int experience)
+    {
+        _data.level      = level;
+        _data.experience = experience;
+        Save();
+    }
+
     public void AddExperience(int amount)
     {
         _data.experience += amount;

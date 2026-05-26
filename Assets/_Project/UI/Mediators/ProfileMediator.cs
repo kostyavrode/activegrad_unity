@@ -58,14 +58,23 @@ public class ProfileMediator : IInitializable, IDisposable
         if (success && response?.player_stats != null)
         {
             var ps = response.player_stats;
+
+            // Обновляем уровень и опыт — сервер является источником истины
+            _userDataService.SetLevelAndExperience(ps.level, ps.experience);
+            // Обновляем характеристики
             _userDataService.SetStats(ps.strength, ps.intelligence, ps.agility, ps.stat_upgrade_points);
+
+            // Обновляем весь профиль (уровень, опыт, характеристики)
+            RefreshProfileInfo();
             _profileWindow.SetStats(ps.strength, ps.intelligence, ps.agility, ps.stat_upgrade_points);
         }
     }
 
     private void RefreshProfileInfo()
     {
-        string[] info = new string[7];
+        int capturedCount = _userDataService.Sights?.Length ?? 0;
+
+        string[] info = new string[8];
         info[0] = _userDataService.Username;
         info[1] = _userDataService.FirstName;
         info[2] = _userDataService.LastName;
@@ -73,7 +82,9 @@ public class ProfileMediator : IInitializable, IDisposable
         info[4] = _userDataService.Experience.ToString();
         info[5] = _userDataService.DateOfStart ?? "";
         info[6] = _userDataService.ID.ToString();
+        info[7] = capturedCount.ToString();
         _profileWindow.SetInfo(info);
+        _profileWindow.SetCapturedSights(capturedCount);
     }
 
     private async void HandleUpgradeStatClicked(string statType)

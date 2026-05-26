@@ -6,7 +6,8 @@ public enum GameEventType
     Quiz,
     Puzzle,
     Memory,
-    Reaction
+    Reaction,
+    TapCircle
 }
 
 

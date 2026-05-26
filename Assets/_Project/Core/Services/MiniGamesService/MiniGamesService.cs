@@ -19,8 +19,6 @@ public class MiniGamesService
                 return _container.Instantiate<TrainPathGameEvent>();
             case GameEventType.Jump:
                 return _container.Instantiate<JumpGameEvent>();
-            case GameEventType.FlappyBird:
-                return _container.Instantiate<FlappyBirdGameEvent>();
             case GameEventType.Quiz:
                 return _container.Instantiate<QuizGameEvent>();
             case GameEventType.Puzzle:
@@ -29,6 +27,8 @@ public class MiniGamesService
                 return _container.Instantiate<MemoryGameEvent>();
             case GameEventType.Reaction:
                 return _container.Instantiate<ReactionGameEvent>();
+            case GameEventType.TapCircle:
+                return _container.Instantiate<TapCircleGameEvent>();
             default:
                 Debug.LogWarning($"Unknown game type: {gameType}");
                 return null;

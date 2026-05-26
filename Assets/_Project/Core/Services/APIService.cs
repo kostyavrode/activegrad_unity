@@ -640,6 +640,58 @@ public class APIService
         }
     }
     
+    /// <summary>
+    /// Собирает почасовые ресурсы за все захваченные игроком достопримечательности.
+    /// </summary>
+    public async Task<(bool success, CollectCaptureRewardsResponse response)> CollectCaptureRewards()
+    {
+        if (!IsLoggedIn)
+            return (false, null);
+
+        var url = $"{BaseUrl}landmarks/collect-rewards/";
+        var (success, message) = await SendRequest(url, "POST", new { }, requireAuth: true);
+
+        if (!success)
+            return (false, null);
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<CollectCaptureRewardsResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse collect-rewards response: {ex.Message}");
+            return (false, null);
+        }
+    }
+
+    /// <summary>
+    /// Отправляет результат мини-игры на сервер и получает ресурсы.
+    /// scorePercent: 0–100. >= 90 → 2 ресурса, >= 65 → 1 ресурс, иначе → 0.
+    /// </summary>
+    public async Task<(bool success, MinigameCompleteResponse response)> CompleteMinigame(int scorePercent)
+    {
+        if (!IsLoggedIn) return (false, null);
+
+        var url = $"{BaseUrl}inventory/minigame-complete/";
+        var payload = new MinigameCompleteRequest { score_percent = scorePercent };
+        var (success, message) = await SendRequest(url, "POST", payload, requireAuth: true, suppressErrorPopup: true);
+
+        if (!success) return (false, null);
+
+        try
+        {
+            var response = JsonConvert.DeserializeObject<MinigameCompleteResponse>(message);
+            return (true, response);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[APIService] Failed to parse minigame-complete response: {ex.Message}");
+            return (false, null);
+        }
+    }
+
     public async Task<(bool success, string message)> UpdateDailySteps(int steps)
     {
         if (!IsLoggedIn) return (false, "Not logged in");
@@ -1006,11 +1058,20 @@ public class APIService
     }
 
     [Serializable]
+    public class FirstVisitBonus
+    {
+        public int metal;
+        public int wood;
+        public int blueprints;
+    }
+
+    [Serializable]
     public class ResourcesGained
     {
         public int metal;
         public int wood;
         public int blueprints;
+        public FirstVisitBonus first_visit_bonus;
     }
 
     [Serializable]
@@ -1067,6 +1128,9 @@ public class APIService
 
     [Serializable]
     private class EmptyRequest { }
+
+    [Serializable]
+    private class MinigameCompleteRequest { public int score_percent; }
     
     [Serializable]
     private class LandmarkCaptureRequest
@@ -1595,6 +1659,25 @@ public class APIService
         public bool success;
         public string message;
         public LandmarkCaptureRecord capture;
+        public ResourcesGained capture_reward;
+    }
+
+    [Serializable]
+    public class CollectCaptureRewardsResponse
+    {
+        public bool success;
+        public string message;
+        public ResourcesGained resources_gained;
+        public int total_hours;
+    }
+
+    [Serializable]
+    public class MinigameCompleteResponse
+    {
+        public bool success;
+        public int score_percent;
+        public ResourcesGained resources_gained;
+        public int total_resources;
     }
 
     [Serializable]

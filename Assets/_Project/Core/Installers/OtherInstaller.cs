@@ -26,6 +26,7 @@ public class OtherInstaller : MonoInstaller
     [SerializeField] private InventoryItemView _inventoryItemPrefab;
     [SerializeField] private CraftRecipeView _craftRecipePrefab;
     [SerializeField] private IconConfig _iconConfig;
+    [SerializeField] private JumpGameConfig _jumpGameConfig;
     [SerializeField] private GameObject _gameEventMarkerPrefab;
     [SerializeField] private AbstractMap _map;
     [SerializeField] private SpawnOnMap _spawnOnMap;
@@ -71,6 +72,8 @@ public class OtherInstaller : MonoInstaller
 
         Container.Bind<IInventoryService>().To<InventoryService>().AsSingle();
         Container.Bind<IconConfig>().FromInstance(_iconConfig).AsSingle();
+        if (_jumpGameConfig != null)
+            Container.Bind<JumpGameConfig>().FromInstance(_jumpGameConfig).AsSingle();
         Container.BindInterfacesTo<InventoryMediator>().AsSingle();
 
         Container.BindFactory<QuestItemView, QuestItemView.Factory>()
