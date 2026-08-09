@@ -47,6 +47,8 @@ public class CharacterService : IInitializable, ITickable
         clothing.ApplyClothing(_userData.Data);
 
         MapShadowHelper.EnableCastShadows(instance.transform);
+        CharacterRimApplier.ApplyToHierarchy(instance.transform);
+        instance.AddComponent<BlobShadowDecal>();
         
         _lastCoords = _locationService.GetCoordinates();
     }
