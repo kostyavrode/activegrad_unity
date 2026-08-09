@@ -68,10 +68,24 @@ public class FriendsMediator : IInitializable, IDisposable
         _friendsWindow.ClearContent();
         DestroyAllViews();
 
+        var listState = UIListStatePresenter.GetOrCreate(_friendsWindow.Content);
+        listState.ShowLoading(3);
+
         var (success, response) = await _apiService.GetFriends();
 
         if (!success || response == null || response.friends == null)
+        {
+            listState.ShowEmpty("Не удалось загрузить друзей");
             return;
+        }
+
+        if (response.friends.Length == 0)
+        {
+            listState.ShowEmpty("Список друзей пуст");
+            return;
+        }
+
+        listState.Hide();
 
         for (int i = 0; i < response.friends.Length; i++)
         {
@@ -100,10 +114,24 @@ public class FriendsMediator : IInitializable, IDisposable
         _friendsWindow.ClearContent();
         DestroyAllViews();
 
+        var listState = UIListStatePresenter.GetOrCreate(_friendsWindow.Content);
+        listState.ShowLoading(3);
+
         var (success, response) = await _apiService.GetPendingFriendRequests();
 
         if (!success || response == null || response.pending_requests == null)
+        {
+            listState.ShowEmpty("Не удалось загрузить заявки");
             return;
+        }
+
+        if (response.pending_requests.Length == 0)
+        {
+            listState.ShowEmpty("Нет входящих заявок");
+            return;
+        }
+
+        listState.Hide();
 
         for (int i = 0; i < response.pending_requests.Length; i++)
         {
@@ -132,10 +160,24 @@ public class FriendsMediator : IInitializable, IDisposable
         _friendsWindow.ClearContent();
         DestroyAllViews();
 
+        var listState = UIListStatePresenter.GetOrCreate(_friendsWindow.Content);
+        listState.ShowLoading(3);
+
         var (success, response) = await _apiService.GetSentFriendRequests();
 
         if (!success || response == null || response.sent_requests == null)
+        {
+            listState.ShowEmpty("Не удалось загрузить заявки");
             return;
+        }
+
+        if (response.sent_requests.Length == 0)
+        {
+            listState.ShowEmpty("Нет отправленных заявок");
+            return;
+        }
+
+        listState.Hide();
 
         for (int i = 0; i < response.sent_requests.Length; i++)
         {

@@ -4,8 +4,9 @@ public interface IWindow
 
     void Hide();
 
-    bool IsVisible
-    {
-        get;
-    }
+    void PushToBackground();
+
+    void PopFromBackground();
+
+    bool IsVisible { get; }
 }

@@ -22,6 +22,8 @@ public class ClanPageView : MonoBehaviour
     [SerializeField] private Button _joinButton;
     [SerializeField] private Button _leaveButton;
 
+    private CanvasGroup _canvasGroup;
+
     public event Action OnBackClicked;
     public event Action<int> OnJoinClicked;
     public event Action OnLeaveClicked;
@@ -31,9 +33,19 @@ public class ClanPageView : MonoBehaviour
 
     private void Awake()
     {
+        _canvasGroup = GetComponent<CanvasGroup>();
+        if (_canvasGroup == null)
+            _canvasGroup = gameObject.AddComponent<CanvasGroup>();
+
         _backButton.onClick.AddListener(() => OnBackClicked?.Invoke());
         if (_joinButton != null) _joinButton.onClick.AddListener(() => OnJoinClicked?.Invoke(ClanId));
         if (_leaveButton != null) _leaveButton.onClick.AddListener(() => OnLeaveClicked?.Invoke());
+    }
+
+    private void OnEnable()
+    {
+        if (_canvasGroup != null)
+            _canvasGroup.alpha = 1f;
     }
 
     private void OnDestroy()
@@ -43,7 +55,6 @@ public class ClanPageView : MonoBehaviour
         if (_leaveButton != null) _leaveButton.onClick.RemoveAllListeners();
     }
 
-    // playerClan — клан игрока (null если не в клане)
     public void Init(ClanData clan, ClanData playerClan)
     {
         ClanId = clan.id;
@@ -57,7 +68,7 @@ public class ClanPageView : MonoBehaviour
         if (_createdAtText != null)
         {
             if (!string.IsNullOrEmpty(clan.created_at) &&
-                System.DateTime.TryParse(clan.created_at, out var date))
+                DateTime.TryParse(clan.created_at, out var date))
                 _createdAtText.text = date.ToString("dd.MM.yyyy");
             else
                 _createdAtText.text = clan.created_at ?? "";
@@ -82,7 +93,6 @@ public class ClanPageView : MonoBehaviour
         }
     }
 
-    // Вызывается после join/leave чтобы обновить кнопки без пересоздания вью
     public void RefreshButtons(int clanId, ClanData playerClan)
     {
         bool isMyClan = playerClan != null && playerClan.id == clanId;
@@ -92,7 +102,10 @@ public class ClanPageView : MonoBehaviour
         if (_leaveButton != null) _leaveButton.gameObject.SetActive(isMyClan);
     }
 
-    public void Close() => Destroy(gameObject);
+    public void Close()
+    {
+        Destroy(gameObject);
+    }
 
     public class Factory : PlaceholderFactory<ClanPageView> { }
 }

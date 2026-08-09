@@ -28,6 +28,9 @@ public class InventoryItemView : MonoBehaviour
     {
         if (_upgradeButton != null)
             _upgradeButton.onClick.RemoveAllListeners();
+
+        if (_progressBar != null)
+            UIProgressBarHelper.Kill(_progressBar);
     }
 
     public void Init(string itemId, string displayName, string statInfo, Sprite icon = null)
@@ -41,7 +44,7 @@ public class InventoryItemView : MonoBehaviour
         {
             _statText.text = statInfo ?? "";
             _statText.gameObject.SetActive(!string.IsNullOrEmpty(statInfo));
-            UpdateProgressBar(statInfo);
+            UpdateProgressBar(statInfo, instant: true);
         }
 
         if (_iconImage != null && icon != null)
@@ -71,7 +74,7 @@ public class InventoryItemView : MonoBehaviour
         }
     }
 
-    private void UpdateProgressBar(string statInfo)
+    private void UpdateProgressBar(string statInfo, bool instant = false)
     {
         if (_progressBar == null) return;
 
@@ -81,7 +84,7 @@ public class InventoryItemView : MonoBehaviour
             if (match.Success && float.TryParse(match.Value.Replace('.', ','), out float value))
             {
                 value = Mathf.Clamp(value, 0f, 10f);
-                _progressBar.fillAmount = value / 10f;
+                UIProgressBarHelper.SetFillAmount(_progressBar, value / 10f, instant: instant);
                 _progressBar.gameObject.SetActive(true);
                 _levelText.text = "Уровень: " + ((int)value).ToString();
                 return;

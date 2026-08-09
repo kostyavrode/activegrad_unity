@@ -35,6 +35,8 @@ public class ProfileWindow : BaseWindow
 
     protected override void OnShow()
     {
+        ResetProgressBars();
+
         _backButton.onClick.AddListener(() => OnBackClicked?.Invoke());
         if (_strengthUpgradeBtn != null) _strengthUpgradeBtn.onClick.AddListener(() => OnUpgradeStatClicked?.Invoke("strength"));
         if (_intelligenceUpgradeBtn != null) _intelligenceUpgradeBtn.onClick.AddListener(() => OnUpgradeStatClicked?.Invoke("intelligence"));
@@ -61,7 +63,7 @@ public class ProfileWindow : BaseWindow
         if (_idText != null) _idText.text = userData.Length > 6 ? userData[6] : "";
 
         if (_expBar != null && userData.Length > 4 && int.TryParse(userData[4], out int exp))
-            _expBar.fillAmount = Mathf.Clamp01(exp / 1000f);
+            UIProgressBarHelper.SetFillAmount(_expBar, Mathf.Clamp01(exp / 1000f), animateFromZero: true);
 
         if (_capturedSightsText != null && userData.Length > 7)
             _capturedSightsText.text = userData[7];
@@ -80,13 +82,21 @@ public class ProfileWindow : BaseWindow
         if (_agilityText != null) _agilityText.text = agility.ToString();
 
         Debug.Log($"[ProfileWindow] SetStats bars: str={strength} ({_strengthBar != null}) int={intelligence} ({_intelligenceBar != null}) agi={agility} ({_agilityBar != null})");
-        if (_strengthBar != null) _strengthBar.fillAmount = Mathf.Clamp01(strength / 10f);
-        if (_intelligenceBar != null) _intelligenceBar.fillAmount = Mathf.Clamp01(intelligence / 10f);
-        if (_agilityBar != null) _agilityBar.fillAmount = Mathf.Clamp01(agility / 10f);
+        if (_strengthBar != null) UIProgressBarHelper.SetFillAmount(_strengthBar, Mathf.Clamp01(strength / 10f), animateFromZero: true);
+        if (_intelligenceBar != null) UIProgressBarHelper.SetFillAmount(_intelligenceBar, Mathf.Clamp01(intelligence / 10f), animateFromZero: true);
+        if (_agilityBar != null) UIProgressBarHelper.SetFillAmount(_agilityBar, Mathf.Clamp01(agility / 10f), animateFromZero: true);
 
         bool canUpgrade = statUpgradePoints > 0;
         if (_strengthUpgradeBtn != null) _strengthUpgradeBtn.gameObject.SetActive(canUpgrade);
         if (_intelligenceUpgradeBtn != null) _intelligenceUpgradeBtn.gameObject.SetActive(canUpgrade);
         if (_agilityUpgradeBtn != null) _agilityUpgradeBtn.gameObject.SetActive(canUpgrade);
+    }
+
+    private void ResetProgressBars()
+    {
+        UIProgressBarHelper.ResetFill(_expBar);
+        UIProgressBarHelper.ResetFill(_strengthBar);
+        UIProgressBarHelper.ResetFill(_intelligenceBar);
+        UIProgressBarHelper.ResetFill(_agilityBar);
     }
 }

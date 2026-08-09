@@ -50,12 +50,30 @@ public class ShopMediator : IInitializable, IDisposable
     private async void CreateShopItems()
     {
         _shopWindow.UpdateCoinsDisplay(_userDataService.Coins);
+
+        var listState = UIListStatePresenter.GetOrCreate(_shopWindow.ContentParent);
+        listState.ShowLoading(3);
         
         await LoadPlayerStats();
         
         DestroyShopItems();
         var (success, message) = await _apiService.GetShopitemsList();
+
+        if (!success || string.IsNullOrEmpty(message))
+        {
+            listState.ShowEmpty("Не удалось загрузить магазин");
+            return;
+        }
+
         ShopApiResponse response = JsonConvert.DeserializeObject<ShopApiResponse>(message);
+
+        if (response == null || response.Items == null || response.TotalCount == 0)
+        {
+            listState.ShowEmpty("Магазин пуст");
+            return;
+        }
+
+        listState.Hide();
 
         for (int i = 0; i < response.TotalCount; i++)
         {

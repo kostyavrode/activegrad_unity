@@ -117,6 +117,8 @@ public class OtherInstaller : MonoInstaller
         
         Container.BindInterfacesAndSelfTo<AbstractMap>().FromComponentInHierarchy(_map).AsSingle();
 
+        Container.BindInterfacesAndSelfTo<MapBuildingOptimizationBootstrap>().AsSingle().NonLazy();
+
         Container.BindInterfacesAndSelfTo<SpawnOnMap>().FromComponentInHierarchy(_spawnOnMap).AsSingle();
         
         Container.Bind<Camera>().FromComponentInHierarchy(_mainCamera).AsSingle();

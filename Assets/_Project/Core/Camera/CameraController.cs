@@ -19,20 +19,20 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
     [SerializeField] private float horizontalThreshold = 30f;
     [SerializeField] private float verticalThreshold = 120f;
 
-    [SerializeField] private Transform _menu;
-
     private CharacterService _characterService;
     private SightsUpdater _sightsUpdater;
+    private UIManager _uiManager;
     private Transform _target;
     private Transform _canvasTransform;
     private float _currentAngle;
     private float _currentTilt;
 
     [Inject]
-    public void Construct(CharacterService characterService, SightsUpdater sightsUpdater)
+    public void Construct(CharacterService characterService, SightsUpdater sightsUpdater, UIManager uiManager)
     {
         _characterService = characterService;
         _sightsUpdater = sightsUpdater;
+        _uiManager = uiManager;
     }
 
     public void Initialize()
@@ -81,45 +81,36 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
 
     private void HandleMouseInput()
     {
-        if (_canvasTransform != null && _canvasTransform.childCount > 1) return;
+        if (!CanControlWorld()) return;
 
-        if (_menu.gameObject.activeSelf)
+        if (Input.GetMouseButton(0))
         {
-            if (Input.GetMouseButton(0))
+            float deltaX = Input.GetAxis("Mouse X");
+            float deltaY = Input.GetAxis("Mouse Y");
+
+            if (Mathf.Abs(deltaX) >= horizontalThreshold * 0.01f)
             {
-                /*Ray ray = cameraTransform.GetComponent<Camera>().ScreenPointToRay(Input.mousePosition);
-                CheckHit(ray);*/
-                
-                
-                float deltaX = Input.GetAxis("Mouse X");
-                float deltaY = Input.GetAxis("Mouse Y");
-
-                if (Mathf.Abs(deltaX) >= horizontalThreshold * 0.01f)
-                {
-                    _currentAngle += deltaX * rotationSpeed * Time.deltaTime;
-                }
-
-                if (Mathf.Abs(deltaY) >= verticalThreshold * 0.01f)
-                {
-                    _currentTilt -= deltaY * tiltSpeed * Time.deltaTime;
-                    _currentTilt = Mathf.Clamp(_currentTilt, minTilt, maxTilt);
-                }
+                _currentAngle += deltaX * rotationSpeed * Time.deltaTime;
             }
 
-            float scroll = Input.GetAxis("Mouse ScrollWheel");
-            if (Mathf.Abs(scroll) > Mathf.Epsilon)
+            if (Mathf.Abs(deltaY) >= verticalThreshold * 0.01f)
             {
-                distance -= scroll * zoomSpeed * 100f;
-                distance = Mathf.Clamp(distance, minDistance, maxDistance);
+                _currentTilt -= deltaY * tiltSpeed * Time.deltaTime;
+                _currentTilt = Mathf.Clamp(_currentTilt, minTilt, maxTilt);
             }
+        }
+
+        float scroll = Input.GetAxis("Mouse ScrollWheel");
+        if (Mathf.Abs(scroll) > Mathf.Epsilon)
+        {
+            distance -= scroll * zoomSpeed * 100f;
+            distance = Mathf.Clamp(distance, minDistance, maxDistance);
         }
     }
     
     private void HandleTouchInput()
     {
-        if (_canvasTransform != null && _canvasTransform.childCount > 1) return;
-
-        if (!_menu.gameObject.activeSelf) return;
+        if (!CanControlWorld()) return;
 
         if (Input.touchCount == 1)
         {
@@ -160,6 +151,17 @@ public class CameraController : MonoBehaviour, ITickable, IInitializable
                 distance = Mathf.Clamp(distance, minDistance, maxDistance);
             }
         }
+    }
+
+    private bool CanControlWorld()
+    {
+        if (_uiManager == null || !_uiManager.IsActiveWindow<MenuWindow>())
+            return false;
+
+        if (_canvasTransform != null && _canvasTransform.childCount > 1)
+            return false;
+
+        return true;
     }
 
     private void CheckHit(Ray ray)

@@ -26,7 +26,7 @@ public class QuestItemView : MonoBehaviour
         if (progressData != null)
         {
             _progressData = progressData;
-            UpdateProgress(progressData);
+            UpdateProgress(progressData, instant: true);
         }
         else
         {
@@ -34,11 +34,11 @@ public class QuestItemView : MonoBehaviour
             {
                 _progressText.text = $"0/{quest.count}";
             }
-            UpdateProgressFill(0, quest.count);
+            UpdateProgressFill(0, quest.count, instant: true);
         }
     }
     
-    public void UpdateProgress(QuestProgressData progress)
+    public void UpdateProgress(QuestProgressData progress, bool instant = false)
     {
         _progressData = progress;
         
@@ -47,24 +47,24 @@ public class QuestItemView : MonoBehaviour
             _progressText.text = $"{progress.currentProgress}/{progress.requiredCount}";
         }
         
-        UpdateProgressFill(progress.currentProgress, progress.requiredCount);
+        UpdateProgressFill(progress.currentProgress, progress.requiredCount, instant);
         
         if (progress.isCompleted)
         {
-            MarkAsCompleted();
+            MarkAsCompleted(instant);
         }
     }
     
-    private void UpdateProgressFill(int currentProgress, int requiredCount)
+    private void UpdateProgressFill(int currentProgress, int requiredCount, bool instant)
     {
-        if (_progressImageFiller != null && requiredCount > 0)
-        {
-            float fillAmount = (float)currentProgress / requiredCount;
-            _progressImageFiller.fillAmount = Mathf.Clamp01(fillAmount);
-        }
+        if (_progressImageFiller == null || requiredCount <= 0)
+            return;
+
+        var fillAmount = (float)currentProgress / requiredCount;
+        UIProgressBarHelper.SetFillAmount(_progressImageFiller, fillAmount, instant: instant);
     }
     
-    public void MarkAsCompleted()
+    public void MarkAsCompleted(bool instant = false)
     {
         if (_completedIcon != null)
         {
@@ -78,8 +78,14 @@ public class QuestItemView : MonoBehaviour
         
         if (_progressImageFiller != null)
         {
-            _progressImageFiller.fillAmount = 1f;
+            UIProgressBarHelper.SetFillAmount(_progressImageFiller, 1f, instant: instant);
         }
+    }
+
+    private void OnDestroy()
+    {
+        if (_progressImageFiller != null)
+            UIProgressBarHelper.Kill(_progressImageFiller);
     }
     
     public class Factory : Zenject.PlaceholderFactory<QuestItemView> { }

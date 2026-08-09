@@ -37,7 +37,7 @@ public class SelectMediator : IInitializable, IDisposable
 
     private void HandleBackClicked()
     {
-        _uiManager.Show<MenuWindow>();
+        _uiManager.Back();
     }
 
     private void HandlePlayerSearchClicked()

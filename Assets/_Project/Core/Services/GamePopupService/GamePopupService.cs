@@ -85,6 +85,9 @@ public class GamePopupService
                 //_sightItemViews.Add(item);
         }
 
+        if (popup.Content != null)
+            UIListEntranceHelper.Kill(popup.Content);
+
     }
     
     private void HandleItemClicked(int pageId)

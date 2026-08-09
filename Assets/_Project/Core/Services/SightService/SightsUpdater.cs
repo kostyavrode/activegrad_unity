@@ -687,7 +687,7 @@ public class SightsUpdater : IInitializable, IDisposable
             sprite = Resources.Load<Sprite>("no_image");
 
         bool visited = !_userData.IsPartnerStoreUnmarked(storeId);
-        popup.Init(sprite, store.name, store.address, storeId);
+        popup.Init(sprite, store.name, store.address, storeId, store.distance_km, store.tags);
         popup.SetVisitStatus(visited);
         popup.SetVisitButtonState(!visited);
 

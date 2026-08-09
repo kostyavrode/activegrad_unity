@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
 using Zenject;
 
@@ -61,21 +60,37 @@ public class QuestMediator : IInitializable, IDisposable
 
         _questService.OnQuestProgressChanged -= HandleQuestProgressChanged;
         _questService.OnQuestCompleted -= HandleQuestCompleted;
+
+        ClearQuests();
     }
 
     private void HandleWindowOpened() => LoadQuests();
 
     private async void LoadQuests()
     {
+        ClearQuests();
+
+        var listState = UIListStatePresenter.GetOrCreate(_questWindow.ContentParent);
+        listState.ShowLoading(3);
+
         await _questService.LoadQuestsAsync();
         
         var questTrackers = _questService.GetAllQuests();
         
         Debug.Log($"[QuestMediator] Displaying {questTrackers.Count} quests (only with registered factories)");
 
+        if (questTrackers.Count == 0)
+        {
+            listState.ShowEmpty("Нет активных заданий");
+            return;
+        }
+
+        listState.Hide();
+
         foreach (var tracker in questTrackers)
         {
             var view = _questItemFactory.Create();
+            view.transform.SetParent(_questWindow.ContentParent, false);
             view.SetData(tracker.QuestData, tracker.ProgressData);
             _spawnedItems.Add(view);
         }
@@ -86,7 +101,14 @@ public class QuestMediator : IInitializable, IDisposable
 
     private void ClearQuests()
     {
+        for (var i = _spawnedItems.Count - 1; i >= 0; i--)
+        {
+            if (_spawnedItems[i] != null)
+                UnityEngine.Object.Destroy(_spawnedItems[i].gameObject);
+        }
+
         _spawnedItems.Clear();
+        _questWindow.ClearQuests();
     }
 
     private Quest[] PostProcessQuests(string message)
@@ -100,13 +122,11 @@ public class QuestMediator : IInitializable, IDisposable
     private void HandleBackClicked()
     {
         _uiManager.Back();
-        ClearQuests();
     }
     
     private void HandleQuestProgressChanged(int questId, int progress)
     {
-        // Обновляем UI элемента квеста
-        var view = _spawnedItems.FirstOrDefault(v => v.QuestId == questId);
+        var view = _spawnedItems.FirstOrDefault(v => v != null && v.QuestId == questId);
         if (view != null)
         {
             var progressData = _questService.GetQuestProgress(questId);
@@ -120,8 +140,7 @@ public class QuestMediator : IInitializable, IDisposable
     private void HandleQuestCompleted(int questId)
     {
         Debug.Log($"[QuestMediator] Quest {questId} completed!");
-        // Обновляем UI для завершенного квеста
-        var view = _spawnedItems.FirstOrDefault(v => v.QuestId == questId);
+        var view = _spawnedItems.FirstOrDefault(v => v != null && v.QuestId == questId);
         if (view != null)
         {
             view.MarkAsCompleted();

@@ -99,6 +99,12 @@ public class SightsMediator : IInitializable, IDisposable
         AppendPartnerStores();
         _sightsWindow.EndBatchAdd();
 
+        var listState = UIListStatePresenter.GetOrCreate(_sightsWindow.ContentParent);
+        if (_sightItemViews.Count == 0 && _partnerStoreItemViews.Count == 0)
+            listState.ShowEmpty("Рядом нет достопримечательностей");
+        else
+            listState.Hide();
+
         if (_sightItemViews.Count > 0 || _partnerStoreItemViews.Count > 0)
             _sightsWindow.PlayTabAnimation();
     }

@@ -35,11 +35,16 @@ public class ClansWindow : BaseWindow
 
     private Vector2 _scrollViewOriginalPos;
     private Tween _scrollTween;
+    private bool _scrollOriginInitialized;
 
     protected override void OnShow()
     {
-        if (_scrollViewRect != null)
-            _scrollViewOriginalPos = _scrollViewRect.anchoredPosition;
+        UIScrollListAnimations.PrepareForShow(
+            _scrollViewRect,
+            ref _scrollViewOriginalPos,
+            ref _scrollOriginInitialized,
+            ref _scrollTween,
+            _content);
 
         _backButton.onClick.AddListener(() => OnBackClicked?.Invoke());
         _topClansTabButton.onClick.AddListener(() => OnTopClansTabClicked?.Invoke());
@@ -65,6 +70,7 @@ public class ClansWindow : BaseWindow
             _searchButton.onClick.RemoveAllListeners();
 
         ResetScrollViewImmediate();
+        UIListEntranceHelper.Kill(_content);
         SetCreateClanButtonActive(true);
         ClearContent();
     }
@@ -88,12 +94,13 @@ public class ClansWindow : BaseWindow
             ? _scrollViewOriginalPos + new Vector2(0, -_searchScrollOffset)
             : _scrollViewOriginalPos;
 
-        // Мгновенно ставим чуть ниже цели, затем поднимаем вверх
-        _scrollViewRect.anchoredPosition = target + new Vector2(0, -_slideUpOffset);
-
-        _scrollTween = _scrollViewRect
-            .DOAnchorPos(target, _animationDuration)
-            .SetEase(Ease.OutQuad);
+        _scrollTween = UIScrollListAnimations.PlaySlideUpWithStagger(
+            _scrollViewRect,
+            target,
+            _slideUpOffset,
+            _animationDuration,
+            _content,
+            _scrollTween);
     }
 
     public void ShowSearchPanel(bool show)
@@ -114,8 +121,11 @@ public class ClansWindow : BaseWindow
 
     private void ResetScrollViewImmediate()
     {
-        if (_scrollViewRect == null) return;
-        _scrollTween?.Kill();
-        _scrollViewRect.anchoredPosition = _scrollViewOriginalPos;
+        UIScrollListAnimations.PrepareForShow(
+            _scrollViewRect,
+            ref _scrollViewOriginalPos,
+            ref _scrollOriginInitialized,
+            ref _scrollTween,
+            _content);
     }
 }

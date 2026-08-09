@@ -21,6 +21,12 @@ public class ShopItemView : MonoBehaviour
         }
     }
 
+    private void Awake()
+    {
+        if (BuyButton != null && BuyButton.GetComponent<UIButtonAttentionPulse>() == null)
+            BuyButton.gameObject.AddComponent<UIButtonAttentionPulse>();
+    }
+
     public void SetImage(Sprite image)
     {
         Image.sprite = image;

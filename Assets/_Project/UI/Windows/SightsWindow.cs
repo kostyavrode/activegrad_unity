@@ -28,11 +28,16 @@ public class SightsWindow : BaseWindow
 
     private Vector2 _scrollViewOriginalPos;
     private Tween _scrollTween;
+    private bool _scrollOriginInitialized;
 
     protected override void OnShow()
     {
-        if (_scrollViewRect != null)
-            _scrollViewOriginalPos = _scrollViewRect.anchoredPosition;
+        UIScrollListAnimations.PrepareForShow(
+            _scrollViewRect,
+            ref _scrollViewOriginalPos,
+            ref _scrollOriginInitialized,
+            ref _scrollTween,
+            _contentParent);
 
         _backButton.onClick.AddListener(() => OnBackClicked?.Invoke());
         _collectRewardsButton?.onClick.AddListener(() => OnCollectRewardsClicked?.Invoke());
@@ -69,6 +74,8 @@ public class SightsWindow : BaseWindow
         _backButton.onClick.RemoveAllListeners();
         _collectRewardsButton?.onClick.RemoveAllListeners();
         ResetScrollViewImmediate();
+        UIListEntranceHelper.Kill(_contentParent);
+        UIListStatePresenter.HideFor(_contentParent);
         ClearSights();
     }
 
@@ -87,6 +94,9 @@ public class SightsWindow : BaseWindow
         if (_cachedSizeFitter == null)
             _cachedSizeFitter = _contentParent.GetComponent<ContentSizeFitter>();
 
+        if (_cachedLayoutGroup != null)  _cachedLayoutGroup.enabled  = true;
+        if (_cachedSizeFitter  != null)  _cachedSizeFitter.enabled   = true;
+
         if (_cachedLayoutGroup != null)  _cachedLayoutGroup.enabled  = false;
         if (_cachedSizeFitter  != null)  _cachedSizeFitter.enabled   = false;
     }
@@ -102,15 +112,13 @@ public class SightsWindow : BaseWindow
 
     public void PlayTabAnimation()
     {
-        if (_scrollViewRect == null) return;
-
-        _scrollTween?.Kill();
-
-        _scrollViewRect.anchoredPosition = _scrollViewOriginalPos + new Vector2(0, -_slideUpOffset);
-
-        _scrollTween = _scrollViewRect
-            .DOAnchorPos(_scrollViewOriginalPos, _animationDuration)
-            .SetEase(Ease.OutQuad);
+        _scrollTween = UIScrollListAnimations.PlaySlideUpWithStagger(
+            _scrollViewRect,
+            _scrollViewOriginalPos,
+            _slideUpOffset,
+            _animationDuration,
+            _contentParent,
+            _scrollTween);
     }
 
     private void ClearSights()
@@ -122,8 +130,11 @@ public class SightsWindow : BaseWindow
 
     private void ResetScrollViewImmediate()
     {
-        if (_scrollViewRect == null) return;
-        _scrollTween?.Kill();
-        _scrollViewRect.anchoredPosition = _scrollViewOriginalPos;
+        UIScrollListAnimations.PrepareForShow(
+            _scrollViewRect,
+            ref _scrollViewOriginalPos,
+            ref _scrollOriginInitialized,
+            ref _scrollTween,
+            _contentParent);
     }
 }

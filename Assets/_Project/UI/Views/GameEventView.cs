@@ -10,6 +10,7 @@ public class GameEventView : MonoBehaviour
     
     private IGameEvent _currentGame;
     private string _eventId;
+    private UIModalAnimator _modalAnimator;
     
     public event Action<string, GameEventResult> OnGameFinished;
     
@@ -18,10 +19,12 @@ public class GameEventView : MonoBehaviour
 
     private void Awake()
     {
+        _modalAnimator = GetComponent<UIModalAnimator>();
+        if (_modalAnimator == null)
+            _modalAnimator = gameObject.AddComponent<UIModalAnimator>();
+
         if (_closeButton != null)
-        {
             _closeButton.onClick.AddListener(Close);
-        }
     }
 
     public void Initialize(string eventId, IGameEvent game)
@@ -46,12 +49,22 @@ public class GameEventView : MonoBehaviour
 
     private void Close()
     {
+        if (_modalAnimator != null && _modalAnimator.IsClosing)
+            return;
+
         if (_currentGame != null)
         {
             _currentGame.OnGameFinished -= HandleGameFinished;
             _currentGame.Cleanup();
+            _currentGame = null;
         }
-        
+
+        if (_modalAnimator != null)
+        {
+            _modalAnimator.PlayHide(() => Destroy(gameObject));
+            return;
+        }
+
         Destroy(gameObject);
     }
 
@@ -61,16 +74,12 @@ public class GameEventView : MonoBehaviour
         {
             _currentGame.OnGameFinished -= HandleGameFinished;
             _currentGame.Cleanup();
+            _currentGame = null;
         }
         
         if (_closeButton != null)
-        {
             _closeButton.onClick.RemoveAllListeners();
-        }
     }
     
     public class Factory : PlaceholderFactory<GameEventView> { }
 }
-
-
-

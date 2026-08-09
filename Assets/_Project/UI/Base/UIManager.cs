@@ -59,7 +59,7 @@ public class UIManager : IInitializable, IDisposable
         {
             if (_openWindows.Count > 0)
             {
-                _openWindows.Peek().Hide();
+                _openWindows.Peek().PushToBackground();
             }
 
             window.Show();
@@ -82,7 +82,7 @@ public class UIManager : IInitializable, IDisposable
 
         if (_openWindows.Count > 0)
         {
-            _openWindows.Peek().Show();
+            _openWindows.Peek().PopFromBackground();
         }
     }
 

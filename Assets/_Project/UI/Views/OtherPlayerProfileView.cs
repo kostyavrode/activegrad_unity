@@ -1,5 +1,4 @@
 using System;
-using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,8 +6,6 @@ using Zenject;
 
 public class OtherPlayerProfileView : MonoBehaviour
 {
-    private const float AnimationDuration = 0.15f;
-
     [SerializeField] private TMP_Text _nickNameText;
     [SerializeField] private TMP_Text _firstNameText;
     [SerializeField] private TMP_Text _lastNameText;
@@ -28,13 +25,11 @@ public class OtherPlayerProfileView : MonoBehaviour
     [SerializeField] private Image _intelligenceBar;
     [SerializeField] private Image _agilityBar;
 
-    [SerializeField] private CanvasGroup _canvasGroup;
-
     [SerializeField] private Button _backButton;
     [SerializeField] private Button _sightsButton;
 
     private int[] _sightsID;
-    private Tween _tween;
+    private UIModalAnimator _modalAnimator;
 
     public event Action OnBackClicked;
     public event Action OnWindowOpened;
@@ -42,6 +37,10 @@ public class OtherPlayerProfileView : MonoBehaviour
 
     private void Awake()
     {
+        _modalAnimator = GetComponent<UIModalAnimator>();
+        if (_modalAnimator == null)
+            _modalAnimator = gameObject.AddComponent<UIModalAnimator>();
+
         _backButton.onClick.AddListener(Close);
         _sightsButton.onClick.AddListener(() => OnSightsButtonClicked?.Invoke(_sightsID));
         OnWindowOpened?.Invoke();
@@ -49,26 +48,32 @@ public class OtherPlayerProfileView : MonoBehaviour
         if (_strengthUpgradeBtn != null) _strengthUpgradeBtn.gameObject.SetActive(false);
         if (_intelligenceUpgradeBtn != null) _intelligenceUpgradeBtn.gameObject.SetActive(false);
         if (_agilityUpgradeBtn != null) _agilityUpgradeBtn.gameObject.SetActive(false);
-
-        _canvasGroup.alpha = 0;
-        _tween = _canvasGroup.DOFade(1f, AnimationDuration).SetUpdate(true);
     }
 
     private void OnDestroy()
     {
         _backButton.onClick.RemoveAllListeners();
         _sightsButton.onClick.RemoveAllListeners();
+
+        if (_strengthBar != null) UIProgressBarHelper.Kill(_strengthBar);
+        if (_intelligenceBar != null) UIProgressBarHelper.Kill(_intelligenceBar);
+        if (_agilityBar != null) UIProgressBarHelper.Kill(_agilityBar);
     }
 
     public void Close()
     {
-        // Сначала уведомляем сервис (чтобы он сбросил ссылку), затем делаем fade-out и уничтожаем
+        if (_modalAnimator != null && _modalAnimator.IsClosing)
+            return;
+
         OnBackClicked?.Invoke();
 
-        _tween?.Kill();
-        _tween = _canvasGroup.DOFade(0f, AnimationDuration)
-            .SetUpdate(true)
-            .OnComplete(() => Destroy(gameObject));
+        if (_modalAnimator != null)
+        {
+            _modalAnimator.PlayHide(() => Destroy(gameObject));
+            return;
+        }
+
+        Destroy(gameObject);
     }
 
     public void SetInfo(string[] userData, int[] sightIDs)
@@ -87,19 +92,19 @@ public class OtherPlayerProfileView : MonoBehaviour
         if (userData.Length > 7 && int.TryParse(userData[7], out int strength))
         {
             if (_strengthText != null) _strengthText.text = strength.ToString();
-            if (_strengthBar != null) _strengthBar.fillAmount = Mathf.Clamp01(strength / 10f);
+            if (_strengthBar != null) UIProgressBarHelper.SetFillAmount(_strengthBar, Mathf.Clamp01(strength / 10f));
         }
 
         if (userData.Length > 8 && int.TryParse(userData[8], out int intelligence))
         {
             if (_intelligenceText != null) _intelligenceText.text = intelligence.ToString();
-            if (_intelligenceBar != null) _intelligenceBar.fillAmount = Mathf.Clamp01(intelligence / 10f);
+            if (_intelligenceBar != null) UIProgressBarHelper.SetFillAmount(_intelligenceBar, Mathf.Clamp01(intelligence / 10f));
         }
 
         if (userData.Length > 9 && int.TryParse(userData[9], out int agility))
         {
             if (_agilityText != null) _agilityText.text = agility.ToString();
-            if (_agilityBar != null) _agilityBar.fillAmount = Mathf.Clamp01(agility / 10f);
+            if (_agilityBar != null) UIProgressBarHelper.SetFillAmount(_agilityBar, Mathf.Clamp01(agility / 10f));
         }
 
         _sightsID = sightIDs;

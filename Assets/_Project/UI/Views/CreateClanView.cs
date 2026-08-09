@@ -14,91 +14,75 @@ public class CreateClanView : MonoBehaviour
     
     private const int MAX_NAME_LENGTH = 20;
     private const string FORBIDDEN_CHARS = "<>\"'&/\\{}[]|*?%$#@!`";
+
+    private UIModalAnimator _modalAnimator;
     
     public event Action<string, string> OnCreateClicked;
     public event Action OnCancelClicked;
     
     private void Awake()
     {
+        _modalAnimator = GetComponent<UIModalAnimator>();
+        if (_modalAnimator == null)
+            _modalAnimator = gameObject.AddComponent<UIModalAnimator>();
+
         if (_createButton != null)
-        {
             _createButton.onClick.AddListener(HandleCreateClicked);
-        }
+
         if (_cancelButton != null)
-        {
             _cancelButton.onClick.AddListener(() => OnCancelClicked?.Invoke());
-        }
         
         if (_nameInputField != null)
-        {
             _nameInputField.onValueChanged.AddListener(ValidateInput);
-        }
+
         if (_descriptionInputField != null)
-        {
             _descriptionInputField.onValueChanged.AddListener(ValidateInput);
-        }
         
         if (_createButton != null)
-        {
             _createButton.interactable = false;
-        }
+
         ClearError();
     }
     
     private void OnDestroy()
     {
         if (_createButton != null)
-        {
             _createButton.onClick.RemoveAllListeners();
-        }
+
         if (_cancelButton != null)
-        {
             _cancelButton.onClick.RemoveAllListeners();
-        }
         
         if (_nameInputField != null)
-        {
             _nameInputField.onValueChanged.RemoveAllListeners();
-        }
+
         if (_descriptionInputField != null)
-        {
             _descriptionInputField.onValueChanged.RemoveAllListeners();
-        }
     }
     
     public void Reset()
     {
         if (_nameInputField != null)
-        {
             _nameInputField.text = "";
-        }
+
         if (_descriptionInputField != null)
-        {
             _descriptionInputField.text = "";
-        }
+
         ClearError();
+
         if (_createButton != null)
-        {
             _createButton.interactable = false;
-        }
     }
     
     private void ValidateInput(string value)
     {
         bool isValid = ValidateClanName(_nameInputField?.text ?? "");
         if (_createButton != null)
-        {
             _createButton.interactable = isValid;
-        }
         
         if (!isValid && !string.IsNullOrEmpty(_nameInputField?.text))
-        {
             ShowError("Название клана должно быть от 1 до 20 символов и не содержать запрещенные символы");
-        }
         else
-        {
             ClearError();
-        }
     }
     
     private bool ValidateClanName(string name)
@@ -124,13 +108,9 @@ public class CreateClanView : MonoBehaviour
         string description = _descriptionInputField?.text?.Trim() ?? "";
         
         if (ValidateClanName(name))
-        {
             OnCreateClicked?.Invoke(name, description);
-        }
         else
-        {
             ShowError("Пожалуйста, введите корректное название клана");
-        }
     }
     
     public void ShowError(string errorMessage)
@@ -162,9 +142,17 @@ public class CreateClanView : MonoBehaviour
     
     public void Close()
     {
+        if (_modalAnimator != null && _modalAnimator.IsClosing)
+            return;
+
+        if (_modalAnimator != null)
+        {
+            _modalAnimator.PlayHide(() => Destroy(gameObject));
+            return;
+        }
+
         Destroy(gameObject);
     }
     
     public class Factory : PlaceholderFactory<CreateClanView> { }
 }
-

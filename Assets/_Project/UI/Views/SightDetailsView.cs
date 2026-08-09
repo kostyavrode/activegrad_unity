@@ -1,5 +1,4 @@
 using System;
-using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -20,10 +19,8 @@ public class SightDetailsView : MonoBehaviour
     public Image CaptureProbabilityBar;
     public int SightID;
 
-    [SerializeField] private CanvasGroup _canvasGroup;
-
-    private const float AnimationDuration = 0.15f;
-    private Tween _tween;
+    private UIModalAnimator _modalAnimator;
+    private bool _isFirstProbabilitySet = true;
 
     public Action<int> OnCheckInClicked;
     public Action<int> OnCaptureClicked;
@@ -39,6 +36,10 @@ public class SightDetailsView : MonoBehaviour
 
     private void Awake()
     {
+        _modalAnimator = GetComponent<UIModalAnimator>();
+        if (_modalAnimator == null)
+            _modalAnimator = gameObject.AddComponent<UIModalAnimator>();
+
         if (CheckInButton != null)
         {
             CheckInButton.onClick.AddListener(() =>
@@ -63,29 +64,24 @@ public class SightDetailsView : MonoBehaviour
         if (CaptureButton != null)
             CaptureButton.interactable = false;
 
-        if (_canvasGroup != null)
-        {
-            _canvasGroup.alpha = 0f;
-            _tween = _canvasGroup.DOFade(1f, AnimationDuration).SetUpdate(true);
-        }
+        if (CaptureProbabilityBar != null)
+            UIProgressBarHelper.ResetFill(CaptureProbabilityBar);
     }
 
     public void Close()
     {
-        CloseButton.interactable = false;
-        _tween?.Kill();
+        if (_modalAnimator != null && _modalAnimator.IsClosing)
+            return;
 
-        if (_canvasGroup != null)
+        CloseButton.interactable = false;
+
+        if (_modalAnimator != null)
         {
-            _tween = _canvasGroup
-                .DOFade(0f, AnimationDuration)
-                .SetUpdate(true)
-                .OnComplete(() => Destroy(gameObject));
+            _modalAnimator.PlayHide(() => Destroy(gameObject));
+            return;
         }
-        else
-        {
-            Destroy(gameObject);
-        }
+
+        Destroy(gameObject);
     }
 
     private void OnDestroy()
@@ -95,6 +91,13 @@ public class SightDetailsView : MonoBehaviour
         if (CaptureButton != null)
             CaptureButton.onClick.RemoveAllListeners();
         CloseButton.onClick.RemoveAllListeners();
+
+        if (CaptureProbabilityBar != null)
+            UIProgressBarHelper.Kill(CaptureProbabilityBar);
+
+        if (CaptureButton != null)
+            UIButtonGlowEffect.Stop(CaptureButton);
+
         OnClosed?.Invoke();
     }
 
@@ -106,8 +109,15 @@ public class SightDetailsView : MonoBehaviour
 
     public void SetCaptureButtonState(bool canCapture)
     {
-        if (CaptureButton != null)
-            CaptureButton.interactable = canCapture;
+        if (CaptureButton == null)
+            return;
+
+        CaptureButton.interactable = canCapture;
+
+        if (canCapture)
+            UIButtonGlowEffect.SetActive(CaptureButton, true);
+        else
+            UIButtonGlowEffect.Stop(CaptureButton);
     }
 
     public void SetCaptureInfo(bool captured, string capturedByUsername, string capturedAt, string clanName,
@@ -150,8 +160,6 @@ public class SightDetailsView : MonoBehaviour
             };
             lines.Add($"Причина блокировки: {reasonText}");
         }
-
-        //CaptureNameText.text = string.Join("\n", lines);
     }
 
     public void SetCaptureProbability(int percent)
@@ -160,7 +168,13 @@ public class SightDetailsView : MonoBehaviour
             CaptureProbabilityText.text = $"{percent}%";
 
         if (CaptureProbabilityBar != null)
-            CaptureProbabilityBar.fillAmount = Mathf.Clamp01(percent / 100f);
+        {
+            UIProgressBarHelper.SetFillAmount(
+                CaptureProbabilityBar,
+                percent / 100f,
+                animateFromZero: _isFirstProbabilitySet);
+            _isFirstProbabilitySet = false;
+        }
     }
 
     private string ParseDate(string dateString)
@@ -170,11 +184,8 @@ public class SightDetailsView : MonoBehaviour
 
         try
         {
-            // Формат: "2024-01-01T12:00:00Z"
             if (DateTime.TryParse(dateString, out DateTime date))
-            {
                 return date.ToString("dd.MM.yyyy HH:mm");
-            }
         }
         catch { }
 

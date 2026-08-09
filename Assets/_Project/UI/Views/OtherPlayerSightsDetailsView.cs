@@ -1,25 +1,22 @@
-using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 using Zenject;
 
 public class OtherPlayerSightsDetailsView : MonoBehaviour
 {
-    private const float AnimationDuration = 0.15f;
-
     [SerializeField] private Button _closeButton;
-    [SerializeField] private CanvasGroup _canvasGroup;
 
     public Transform Content;
 
-    private Tween _tween;
+    private UIModalAnimator _modalAnimator;
 
     private void Awake()
     {
-        _closeButton.onClick.AddListener(Close);
+        _modalAnimator = GetComponent<UIModalAnimator>();
+        if (_modalAnimator == null)
+            _modalAnimator = gameObject.AddComponent<UIModalAnimator>();
 
-        _canvasGroup.alpha = 0;
-        _tween = _canvasGroup.DOFade(1f, AnimationDuration).SetUpdate(true);
+        _closeButton.onClick.AddListener(Close);
     }
 
     private void OnDestroy()
@@ -27,12 +24,18 @@ public class OtherPlayerSightsDetailsView : MonoBehaviour
         _closeButton.onClick.RemoveAllListeners();
     }
 
-    private void Close()
+    public void Close()
     {
-        _tween?.Kill();
-        _tween = _canvasGroup.DOFade(0f, AnimationDuration)
-            .SetUpdate(true)
-            .OnComplete(() => Destroy(gameObject));
+        if (_modalAnimator != null && _modalAnimator.IsClosing)
+            return;
+
+        if (_modalAnimator != null)
+        {
+            _modalAnimator.PlayHide(() => Destroy(gameObject));
+            return;
+        }
+
+        Destroy(gameObject);
     }
 
     public class Factory : PlaceholderFactory<OtherPlayerSightsDetailsView> { }
