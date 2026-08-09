@@ -78,6 +78,7 @@
 				var instance = Instantiate(_markerPrefab);
 				instance.transform.localPosition = _map.GeoToWorldPosition(location, true);
 				instance.transform.localScale = new Vector3(_spawnScale, _spawnScale, _spawnScale);
+				MapShadowHelper.EnableCastShadows(instance.transform);
 				allObjects.Add(instance);
 				SightObject so=instance.AddComponent<SightObject>();
 				so.SetPageID(pageIds[i]);
@@ -97,6 +98,7 @@
 				var instance = Instantiate(prefab);
 				instance.transform.localPosition = _map.GeoToWorldPosition(location, true);
 				instance.transform.localScale = new Vector3(_spawnScale, _spawnScale, _spawnScale);
+				MapShadowHelper.EnableCastShadows(instance.transform);
 				allObjects.Add(instance);
 
 				var storeObject = instance.AddComponent<PartnerStoreObject>();

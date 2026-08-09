@@ -45,6 +45,8 @@ public class CharacterService : IInitializable, ITickable
         
         var clothing = instance.GetComponent<ClothingApplier>();
         clothing.ApplyClothing(_userData.Data);
+
+        MapShadowHelper.EnableCastShadows(instance.transform);
         
         _lastCoords = _locationService.GetCoordinates();
     }

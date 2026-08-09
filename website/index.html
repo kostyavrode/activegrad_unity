@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ActiveGrad — location-based игра для исследования города. Станьте партнёрской точкой и привлекайте новых гостей через игровые чекины.">
+  <meta name="theme-color" content="#2E695B">
+  <title>ActiveGrad — Партнёрство</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Перейти к содержимому</a>
+
+  <header class="header" id="top">
+    <nav class="nav container" aria-label="Основная навигация">
+      <a class="logo" href="#top" aria-label="ActiveGrad — на главную">
+        <span class="logo__icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none"><path d="M16 4C11.6 4 8 7.6 8 12c0 6.4 8 16 8 16s8-9.6 8-16c0-4.4-3.6-8-8-8z" fill="currentColor"/><circle cx="16" cy="12" r="3" fill="#D1FFED"/></svg>
+        </span>
+        <span class="logo__text">ActiveGrad</span>
+      </a>
+      <button class="nav__toggle" type="button" aria-expanded="false" aria-controls="nav-menu" aria-label="Открыть меню">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav__menu" id="nav-menu">
+        <li><a href="#how">Как это работает</a></li>
+        <li><a href="#benefits">Преимущества</a></li>
+        <li><a href="#features">Игра</a></li>
+        <li><a class="nav__cta" href="#contact">Оставить заявку</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero__bg" aria-hidden="true">
+        <div class="hero__orb hero__orb--1"></div>
+        <div class="hero__orb hero__orb--2"></div>
+        <div class="hero__grid"></div>
+      </div>
+      <div class="container hero__inner">
+        <div class="hero__content">
+          <p class="eyebrow reveal">Партнёрская программа</p>
+          <h1 class="hero__title reveal" id="hero-title">
+            Привлекайте гостей<br>
+            <span class="text-gradient">через игру</span>
+          </h1>
+          <p class="hero__subtitle reveal">
+            ActiveGrad — location-based игра, где игроки исследуют город, отмечаются в достопримечательностях и партнёрских точках. Ваш бизнес — на карте, в квестах и в наградах.
+          </p>
+          <div class="hero__actions reveal">
+            <a class="btn btn--primary" href="#contact">Стать партнёром</a>
+            <a class="btn btn--ghost" href="#how">Узнать больше</a>
+          </div>
+          <ul class="hero__stats reveal" aria-label="Ключевые показатели">
+            <li><strong>600 м</strong><span>радиус чекина</span></li>
+            <li><strong>24/7</strong><span>присутствие на карте</span></li>
+            <li><strong>0 ₽</strong><span>старт для пилота</span></li>
+          </ul>
+        </div>
+        <div class="hero__visual reveal" aria-hidden="true">
+          <div class="phone-mock">
+            <div class="phone-mock__screen">
+              <div class="map-preview">
+                <div class="map-preview__pin map-preview__pin--store"></div>
+                <div class="map-preview__pin map-preview__pin--sight"></div>
+                <div class="map-preview__route"></div>
+              </div>
+              <div class="partner-card">
+                <div class="partner-card__badge">Новое</div>
+                <p class="partner-card__title">Партнёрская точка</p>
+                <p class="partner-card__desc">Отметьтесь при посещении, чтобы получить награду</p>
+                <div class="partner-card__btn">Отметиться</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="how" aria-labelledby="how-title">
+      <div class="container">
+        <div class="section__head reveal">
+          <p class="eyebrow">Как это работает</p>
+          <h2 id="how-title">Три шага до новых гостей</h2>
+        </div>
+        <ol class="steps">
+          <li class="step-card reveal">
+            <span class="step-card__num" aria-hidden="true">01</span>
+            <div class="step-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+            </div>
+            <h3>Игрок находит вас на карте</h3>
+            <p>Ваша точка отображается в ActiveGrad рядом с достопримечательностями и квестами — в момент, когда человек уже гуляет по району.</p>
+          </li>
+          <li class="step-card reveal">
+            <span class="step-card__num" aria-hidden="true">02</span>
+            <div class="step-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            </div>
+            <h3>Посещает и отмечается</h3>
+            <p>Гость заходит к вам, открывает приложение и нажимает «Отметиться» — gamified loyalty без пластиковых карт.</p>
+          </li>
+          <li class="step-card reveal">
+            <span class="step-card__num" aria-hidden="true">03</span>
+            <div class="step-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            </div>
+            <h3>Получает награду — вы получаете трафик</h3>
+            <p>Игрок забирает бонус в игре, а вы — нового клиента с позитивным первым опытом и поводом вернуться.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section section--muted" id="benefits" aria-labelledby="benefits-title">
+      <div class="container">
+        <div class="section__head reveal">
+          <p class="eyebrow">Для бизнеса</p>
+          <h2 id="benefits-title">Почему партнёрам выгодно</h2>
+        </div>
+        <div class="bento">
+          <article class="bento__item bento__item--wide reveal">
+            <div class="bento__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            </div>
+            <h3>Реальный foot traffic</h3>
+            <p>Игроки приходят физически — не просто кликают баннер. Location-based механика мотивирует зайти именно к вам.</p>
+          </article>
+          <article class="bento__item reveal">
+            <div class="bento__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>
+            </div>
+            <h3>Место на карте</h3>
+            <p>Ваша точка — часть игрового мира рядом с Wikipedia-достопримечательностями.</p>
+          </article>
+          <article class="bento__item reveal">
+            <div class="bento__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h3>Геймифицированная лояльность</h3>
+            <p>Чекин, награда, прогресс — привычный для Gen Z формат вместо скучной карты лояльности.</p>
+          </article>
+          <article class="bento__item reveal">
+            <div class="bento__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+            </div>
+            <h3>Квесты и акции</h3>
+            <p>Можно привязать промо, ивент или daily quest — гибкая интеграция под ваш формат.</p>
+          </article>
+          <article class="bento__item bento__item--accent reveal">
+            <p class="bento__quote">«Партнёрская точка ActiveGrad. Отметьтесь при посещении, чтобы получить награду.»</p>
+            <span class="bento__quote-source">— текст из игры</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features" aria-labelledby="features-title">
+      <div class="container">
+        <div class="section__head section__head--split reveal">
+          <div>
+            <p class="eyebrow">Об игре</p>
+            <h2 id="features-title">Что видят ваши будущие гости</h2>
+          </div>
+          <p class="section__lead">ActiveGrad объединяет карту реального города, шаги, квесты, кланы и мини-игры — и всё это вокруг живого urban exploration.</p>
+        </div>
+        <div class="features-grid">
+          <article class="feature reveal">
+            <span class="feature__icon" aria-hidden="true">🗺</span>
+            <h3>Карта города</h3>
+            <p>GPS-навигация по Mapbox с 3D-зданиями и ближайшими точками интереса.</p>
+          </article>
+          <article class="feature reveal">
+            <span class="feature__icon" aria-hidden="true">👟</span>
+            <h3>Шаги и активность</h3>
+            <p>Health Connect / HealthKit — ежедневные квесты за движение.</p>
+          </article>
+          <article class="feature reveal">
+            <span class="feature__icon" aria-hidden="true">🏛</span>
+            <h3>Достопримечательности</h3>
+            <p>Wikipedia-landmarks, capture-механика и ресурсы за исследование.</p>
+          </article>
+          <article class="feature reveal">
+            <span class="feature__icon" aria-hidden="true">🤝</span>
+            <h3>Кланы и друзья</h3>
+            <p>Социальный слой: лидерборды, совместные цели, поиск игроков.</p>
+          </article>
+          <article class="feature reveal">
+            <span class="feature__icon" aria-hidden="true">🎮</span>
+            <h3>Мини-игры</h3>
+            <p>Аркады на карте — от reaction до puzzle, пока игрок в движении.</p>
+          </article>
+          <article class="feature reveal">
+            <span class="feature__icon" aria-hidden="true">⚒</span>
+            <h3>Прогрессия</h3>
+            <p>XP, крафт, инвентарь и кастомизация персонажа.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--contact" id="contact" aria-labelledby="contact-title">
+      <div class="container contact-grid">
+        <div class="contact-info reveal">
+          <p class="eyebrow">Сотрудничество</p>
+          <h2 id="contact-title">Оставьте заявку</h2>
+          <p>Расскажите о вашем заведении — мы свяжемся, обсудим формат интеграции и запустим пилот в вашем районе.</p>
+          <ul class="contact-info__list">
+            <li>
+              <span class="contact-info__label">Формат</span>
+              Кафе, магазины, музеи, фитнес, коворкинги — любой офлайн-бизнес с адресом
+            </li>
+            <li>
+              <span class="contact-info__label">Ответ</span>
+              Обычно в течение 2–3 рабочих дней
+            </li>
+          </ul>
+        </div>
+
+        <!--
+          Настройка формы:
+          1. Зарегистрируйтесь на https://formspree.io или https://web3forms.com
+          2. Замените YOUR_FORM_ID в data-endpoint ниже на ваш ID
+          3. Либо укажите свой backend URL
+        -->
+        <form class="contact-form reveal" id="partnership-form" novalidate
+              data-endpoint="https://formspree.io/f/YOUR_FORM_ID">
+          <div class="form-row">
+            <div class="form-field">
+              <label for="name">Имя и фамилия <span aria-hidden="true">*</span></label>
+              <input type="text" id="name" name="name" autocomplete="name" required placeholder="Иван Иванов">
+              <span class="form-error" role="alert"></span>
+            </div>
+            <div class="form-field">
+              <label for="company">Название заведения <span aria-hidden="true">*</span></label>
+              <input type="text" id="company" name="company" autocomplete="organization" required placeholder="Кофейня «Grad»">
+              <span class="form-error" role="alert"></span>
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="address">Адрес <span aria-hidden="true">*</span></label>
+            <input type="text" id="address" name="address" autocomplete="street-address" required placeholder="г. Москва, ул. Примерная, 1">
+            <span class="form-error" role="alert"></span>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="email">Email <span aria-hidden="true">*</span></label>
+              <input type="email" id="email" name="email" autocomplete="email" required placeholder="hello@example.com">
+              <span class="form-error" role="alert"></span>
+            </div>
+            <div class="form-field">
+              <label for="phone">Телефон</label>
+              <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="+7 (999) 000-00-00">
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="business-type">Тип бизнеса</label>
+            <select id="business-type" name="business_type">
+              <option value="">Выберите категорию</option>
+              <option value="cafe">Кафе / ресторан</option>
+              <option value="retail">Магазин</option>
+              <option value="culture">Культура / музей</option>
+              <option value="fitness">Фитнес / спорт</option>
+              <option value="coworking">Коворкинг</option>
+              <option value="other">Другое</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="message">Сообщение</label>
+            <textarea id="message" name="message" rows="4" placeholder="Расскажите о формате сотрудничества, которого вы ожидаете"></textarea>
+          </div>
+          <div class="form-field form-field--checkbox">
+            <input type="checkbox" id="consent" name="consent" required>
+            <label for="consent">Согласен на обработку персональных данных для связи по заявке <span aria-hidden="true">*</span></label>
+            <span class="form-error" role="alert"></span>
+          </div>
+          <button class="btn btn--primary btn--full" type="submit" id="submit-btn">
+            <span class="btn__text">Отправить заявку</span>
+            <span class="btn__loader" aria-hidden="true"></span>
+          </button>
+          <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="footer__brand">
+        <span class="logo__text">ActiveGrad</span>
+        <p>Исследуй город. Отмечайся. Получай награды.</p>
+      </div>
+      <div class="footer__links">
+        <a href="#how">Как это работает</a>
+        <a href="#benefits">Преимущества</a>
+        <a href="#contact">Сотрудничество</a>
+      </div>
+      <p class="footer__copy">© 2026 ActiveGrad. Скоро в App Store и Google Play.</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js" defer></script>
+</body>
+</html>

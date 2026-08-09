@@ -199,6 +199,7 @@ public class GameEventService : IInitializable, IDisposable, ITickable
         instance.transform.SetParent(_map.transform, false);
         instance.transform.localPosition = worldPosition;
         instance.transform.localScale = Vector3.one;
+        MapShadowHelper.EnableCastShadows(instance.transform);
         
         GameEventObject eventObject = instance.GetComponent<GameEventObject>();
         if (eventObject == null)

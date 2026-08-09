@@ -8,7 +8,8 @@ using Zenject;
 public class MapBuildingOptimizationBootstrap : IInitializable, IDisposable
 {
     private readonly AbstractMap _map;
-    private MapMeshOptimizeModifier _optimizeModifier;
+    private MapMeshOptimizeModifier _buildingModifier;
+    private MapMeshOptimizeModifier _groundModifier;
 
     public MapBuildingOptimizationBootstrap(AbstractMap map)
     {
@@ -30,26 +31,39 @@ public class MapBuildingOptimizationBootstrap : IInitializable, IDisposable
         if (_map.VectorData == null)
             return;
 
+        _buildingModifier ??= CreateModifier(receiveShadows: false);
+        _groundModifier ??= CreateModifier(receiveShadows: true);
+
         foreach (var subLayer in _map.VectorData.GetAllFeatureSubLayers())
         {
-            if (subLayer.coreOptions.layerName != "building")
-                continue;
-
-            subLayer.Modeling.EnableCombiningMeshes(true);
-            subLayer.Modeling.ColliderOptions.SetFeatureCollider(ColliderType.None);
-            EnsureOptimizeModifier(subLayer);
+            var isBuilding = subLayer.coreOptions.layerName == "building";
+            if (isBuilding)
+            {
+                subLayer.Modeling.EnableCombiningMeshes(true);
+                subLayer.Modeling.ColliderOptions.SetFeatureCollider(ColliderType.None);
+                EnsureOptimizeModifier(subLayer, _buildingModifier);
+            }
+            else
+            {
+                EnsureOptimizeModifier(subLayer, _groundModifier);
+            }
         }
     }
 
-    private void EnsureOptimizeModifier(VectorSubLayerProperties subLayer)
+    private static MapMeshOptimizeModifier CreateModifier(bool receiveShadows)
     {
-        _optimizeModifier ??= ScriptableObject.CreateInstance<MapMeshOptimizeModifier>();
+        var modifier = ScriptableObject.CreateInstance<MapMeshOptimizeModifier>();
+        modifier.Configure(receiveShadows);
+        return modifier;
+    }
 
+    private void EnsureOptimizeModifier(VectorSubLayerProperties subLayer, MapMeshOptimizeModifier modifier)
+    {
         var alreadyAdded = subLayer.BehaviorModifiers
-            .GetGameObjectModifier(modifier => modifier is MapMeshOptimizeModifier)
+            .GetGameObjectModifier(existing => existing is MapMeshOptimizeModifier)
             .Any();
 
         if (!alreadyAdded)
-            subLayer.BehaviorModifiers.AddGameObjectModifier(_optimizeModifier);
+            subLayer.BehaviorModifiers.AddGameObjectModifier(modifier);
     }
 }
