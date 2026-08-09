@@ -8,6 +8,9 @@ public class ProjectInstaller : MonoInstaller
     [SerializeField] private SightDetailsView sightDetailsPrefab;
     [SerializeField] private PartnerStoreDetailsView partnerStoreDetailsPrefab;
     [SerializeField] private AudioSource _audioRootPrefab;
+    [SerializeField] private AudioClip _defaultUiClickClip;
+    [SerializeField] private AudioClip _defaultUiCloseClip;
+    [SerializeField] private SceneMusicConfig _sceneMusicConfig;
 
     public override void InstallBindings()
     {
@@ -49,12 +52,23 @@ public class ProjectInstaller : MonoInstaller
         Object.DontDestroyOnLoad(root);
 
         var sources = root.GetComponentsInChildren<AudioSource>();
+        if (sources.Length == 0)
+        {
+            Debug.LogError("[ProjectInstaller] AUDIO_ROOT must contain at least one AudioSource for music.");
+            return;
+        }
 
-        Container.BindInstance(sources[0]).WithId("Music").AsSingle();
-        if (sources.Length > 1)
-            //Container.BindInstance(sources[1]).WithId("Sfx").AsSingle();
+        Container.BindInstance(sources[0]).WithId("Music").AsCached();
+        Container.BindInstance(sources.Length > 1 ? sources[1] : sources[0]).WithId("Sfx").AsCached();
+        if (_defaultUiClickClip != null)
+            Container.BindInstance(_defaultUiClickClip).WithId("UiClick").AsCached();
+        if (_defaultUiCloseClip != null)
+            Container.BindInstance(_defaultUiCloseClip).WithId("UiClose").AsCached();
+        if (_sceneMusicConfig != null)
+            Container.BindInstance(_sceneMusicConfig).AsSingle();
 
         Container.Bind<AudioSettings>().AsSingle().NonLazy();
         Container.BindInterfacesAndSelfTo<AudioManager>().AsSingle().NonLazy();
+        Container.BindInterfacesAndSelfTo<UiClickSoundAutoBinder>().AsSingle().NonLazy();
     }
 }

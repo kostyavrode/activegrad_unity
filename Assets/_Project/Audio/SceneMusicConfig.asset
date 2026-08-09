@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fb8658d903afca4c9ed048366430d17, type: 3}
+  m_Name: SceneMusicConfig
+  m_EditorClassIdentifier: Assembly-CSharp::SceneMusicConfig
+  _tracks:
+  - SceneName: SampleScene
+    Clip: {fileID: 8300000, guid: 8a4a46e3f4118e1418fec51f60f99755, type: 3}
+  - SceneName: Loading
+    Clip: {fileID: 8300000, guid: 8a4a46e3f4118e1418fec51f60f99755, type: 3}

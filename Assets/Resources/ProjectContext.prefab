@@ -111,3 +111,6 @@ MonoBehaviour:
   sightDetailsPrefab: {fileID: 8274328014655493864, guid: 9ab5b93e46d0dd848b8bc8c6e08e07c2, type: 3}
   partnerStoreDetailsPrefab: {fileID: 3671371557737304914, guid: 1ba13c39f5014ca4c8deea726ec1e551, type: 3}
   _audioRootPrefab: {fileID: 7482777613926102680, guid: 2b48861d4fc7bcd459673208817b318a, type: 3}
+  _defaultUiClickClip: {fileID: 8300000, guid: 0d0231137bcea2a46b200b391c2d3ac4, type: 3}
+  _defaultUiCloseClip: {fileID: 8300000, guid: b46c49cdce1ecd947a233593574d0954, type: 3}
+  _sceneMusicConfig: {fileID: 11400000, guid: 6222f130b5fbae94980d05f0756f631f, type: 2}

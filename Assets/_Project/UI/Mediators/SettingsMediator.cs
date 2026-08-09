@@ -10,6 +10,7 @@ public class SettingsMediator : IInitializable, IDisposable
     private readonly APIService _apiService;
     private readonly UserDataService _userDataService;
     private readonly SceneLoader _sceneLoader;
+    private readonly Action _backHandler;
 
     public SettingsMediator(
         SettingsWindow window,
@@ -27,6 +28,7 @@ public class SettingsMediator : IInitializable, IDisposable
         _apiService = apiService;
         _userDataService = userDataService;
         _sceneLoader = sceneLoader;
+        _backHandler = HandleBackClicked;
     }
 
     public void Initialize()
@@ -34,7 +36,7 @@ public class SettingsMediator : IInitializable, IDisposable
         _settingsWindow.OnWindowOpened += OnOpened;
         _settingsWindow.OnMusicVolumeChanged += OnMusicChanged;
         _settingsWindow.OnSfxVolumeChanged += OnSfxChanged;
-        _settingsWindow.OnBackClicked += () => { _uiManager.Back(); };
+        _settingsWindow.OnBackClicked += _backHandler;
         _settingsWindow.OnLogoutClicked += OnLogoutClicked;
     }
 
@@ -43,7 +45,7 @@ public class SettingsMediator : IInitializable, IDisposable
         _settingsWindow.OnWindowOpened -= OnOpened;
         _settingsWindow.OnMusicVolumeChanged -= OnMusicChanged;
         _settingsWindow.OnSfxVolumeChanged -= OnSfxChanged;
-        _settingsWindow.OnBackClicked -= () => { _uiManager.Back(); };
+        _settingsWindow.OnBackClicked -= _backHandler;
         _settingsWindow.OnLogoutClicked -= OnLogoutClicked;
     }
 
@@ -55,14 +57,17 @@ public class SettingsMediator : IInitializable, IDisposable
 
     private void OnMusicChanged(float v)
     {
-        _settings.SetMusicVolume(v);
         _audioManager.SetMusicVolume(v);
     }
 
     private void OnSfxChanged(float v)
     {
-        _settings.SetSfxVolume(v);
         _audioManager.SetSfxVolume(v);
+    }
+
+    private void HandleBackClicked()
+    {
+        _uiManager.Back();
     }
 
     private void OnLogoutClicked()

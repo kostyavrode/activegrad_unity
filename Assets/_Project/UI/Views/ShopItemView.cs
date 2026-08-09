@@ -1,4 +1,3 @@
-using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,18 +9,6 @@ public class ShopItemView : MonoBehaviour
     public TMP_Text Price;
     public Image Image;
     public Button BuyButton;
-    
-    public Action OnBuyButtonClicked;
-
-    private void Awake()
-    {
-        BuyButton.onClick.AddListener(() => OnBuyButtonClicked?.Invoke());
-    }
-
-    private void OnDestroy()
-    {
-        BuyButton.onClick.RemoveAllListeners();
-    }
 
     public void Init(string header, string description, string price, Image image = null)
     {

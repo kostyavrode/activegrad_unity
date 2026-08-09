@@ -10,6 +10,7 @@ public class SightsMediator : IInitializable, IDisposable
     private readonly SightsWindow _sightsWindow;
     private readonly SightItemFactory _factory;
     private readonly IPopupService _popupService;
+    private readonly Action _backHandler;
 
     private List<SightItemView> _sightItemViews = new List<SightItemView>();
     private List<SightItemView> _partnerStoreItemViews = new List<SightItemView>();
@@ -26,12 +27,13 @@ public class SightsMediator : IInitializable, IDisposable
         _sightsWindow = sightsWindow;
         _factory = factory;
         _popupService = popupService;
+        _backHandler = HandleBackClicked;
     }
 
     public void Initialize()
     {
         _sightsWindow.OnWindowOpened += HandleWindowOpened;
-        _sightsWindow.OnBackClicked += () => _uiManager.Back();
+        _sightsWindow.OnBackClicked += _backHandler;
         _sightsWindow.OnCollectRewardsClicked += HandleCollectRewardsClicked;
 
         _sightsUpdater.OnImageLoaded += HandleImageLoaded;
@@ -42,6 +44,7 @@ public class SightsMediator : IInitializable, IDisposable
     public void Dispose()
     {
         _sightsWindow.OnWindowOpened -= HandleWindowOpened;
+        _sightsWindow.OnBackClicked -= _backHandler;
         _sightsWindow.OnCollectRewardsClicked -= HandleCollectRewardsClicked;
         _sightsUpdater.OnImageLoaded -= HandleImageLoaded;
         _sightsUpdater.OnSightsUpdated -= HandleSightsUpdated;
@@ -51,6 +54,11 @@ public class SightsMediator : IInitializable, IDisposable
     private async void HandleCollectRewardsClicked()
     {
         await _sightsUpdater.CollectCaptureRewardsAsync();
+    }
+
+    private void HandleBackClicked()
+    {
+        _uiManager.Back();
     }
 
     private void HandleWindowOpened() => LoadSights();
