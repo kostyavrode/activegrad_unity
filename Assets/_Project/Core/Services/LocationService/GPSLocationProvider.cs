@@ -16,6 +16,7 @@
         private float _updateInterval = 5f;
         private float _timer = 0f;
         private bool _isRunning = false;
+        private bool _gpsRequestInProgress = false;
 #if UNITY_EDITOR
         private bool _isTestMode = false;
 #endif
@@ -28,35 +29,59 @@
 
         public void Initialize()
         {
+            BeginGpsRequest();
+        }
+
+        private void BeginGpsRequest()
+        {
+            if (_gpsRequestInProgress)
+                return;
+
             _coroutineRunner.StartCoroutine(RequestAndStartGPS());
         }
 
         private IEnumerator RequestAndStartGPS()
         {
+            _gpsRequestInProgress = true;
+
     #if UNITY_ANDROID
             if (!Permission.HasUserAuthorizedPermission(Permission.FineLocation))
                 Permission.RequestUserPermission(Permission.FineLocation);
 
             while (!Permission.HasUserAuthorizedPermission(Permission.FineLocation))
                 yield return new WaitForSeconds(1f);
-
-            while (!Input.location.isEnabledByUser)
-                yield return new WaitForSeconds(2f);
     #endif
 
-            Input.location.Start(1f, 1f);
+    #if UNITY_ANDROID || UNITY_IOS
+            while (!Input.location.isEnabledByUser)
+                yield return new WaitForSeconds(2f);
 
-            int maxWait = 20;
-            while (Input.location.status == LocationServiceStatus.Initializing && maxWait > 0)
+            while (true)
             {
-                yield return new WaitForSeconds(1);
-                maxWait--;
+                Input.location.Stop();
+                Input.location.Start(1f, 1f);
+
+                int maxWait = 20;
+                while (Input.location.status == LocationServiceStatus.Initializing && maxWait > 0)
+                {
+                    yield return new WaitForSeconds(1);
+                    maxWait--;
+                }
+
+                if (Input.location.status == LocationServiceStatus.Running)
+                {
+                    _isRunning = true;
+                    _gpsRequestInProgress = false;
+                    yield break;
+                }
+
+                Input.location.Stop();
+                yield return new WaitForSeconds(2f);
             }
-
-            if (maxWait <= 0 || Input.location.status == LocationServiceStatus.Failed)
-                yield break;
-
-            _isRunning = true;
+    #else
+            _gpsRequestInProgress = false;
+            yield break;
+    #endif
         }
 
         public void Tick()
@@ -71,10 +96,12 @@
                     _lastCoordinates = new Vector2(data.longitude, data.latitude);
                 }
             }
-            else if (Input.location.status == LocationServiceStatus.Stopped)
+            else if (_isRunning && Input.location.status == LocationServiceStatus.Stopped)
             {
-                _lastCoordinates = GetRandomCoords();
                 _isRunning = false;
+                _lastCoordinates = Vector2.zero;
+                _gpsRequestInProgress = false;
+                BeginGpsRequest();
             }
     #else
             if (!Application.isEditor)
@@ -123,7 +150,6 @@
         {
             float lat = Random.Range(_minCoords.x, _maxCoords.x);
             float lon = Random.Range(_minCoords.y, _maxCoords.y);
-            //return new Vector2(59.875774f, 30.394770f);
             return new Vector2(30.394770f, 59.875774f);
         }
     }
