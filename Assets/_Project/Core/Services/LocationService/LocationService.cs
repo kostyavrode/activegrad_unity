@@ -21,4 +21,9 @@ public class LocationService : IDisposable
         var coords = _provider.GetCoordinates();
         return coords;
     }
+
+    public void GetCoordinatesPrecise(out double longitude, out double latitude)
+    {
+        _provider.GetCoordinatesPrecise(out longitude, out latitude);
+    }
 }

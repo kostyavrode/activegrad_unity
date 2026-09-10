@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class LoginWindow : BaseWindow
 {
+    protected override bool StayInBackground => false;
+
     [SerializeField] private TMP_InputField loginInput;
     [SerializeField] private TMP_InputField passwordInput;
     [SerializeField] private Button loginButton;

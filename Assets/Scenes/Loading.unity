@@ -3087,7 +3087,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Shadow
   m_EffectColor: {r: 0.16981131, g: 0.16981131, b: 0.16981131, a: 0.4117647}
   m_EffectDistance: {x: 5, y: -5}
-  m_UseGraphicAlpha: 0
+  m_UseGraphicAlpha: 1
 --- !u!1 &931564280
 GameObject:
   m_ObjectHideFlags: 0
@@ -5390,7 +5390,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Shadow
   m_EffectColor: {r: 0.16981131, g: 0.16981131, b: 0.16981131, a: 0.4117647}
   m_EffectDistance: {x: 5, y: -5}
-  m_UseGraphicAlpha: 0
+  m_UseGraphicAlpha: 1
 --- !u!1 &1553344554
 GameObject:
   m_ObjectHideFlags: 0
@@ -5663,7 +5663,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Shadow
   m_EffectColor: {r: 0.16981131, g: 0.16981131, b: 0.16981131, a: 0.4117647}
   m_EffectDistance: {x: 5, y: -5}
-  m_UseGraphicAlpha: 0
+  m_UseGraphicAlpha: 1
 --- !u!1 &1563267115
 GameObject:
   m_ObjectHideFlags: 0
@@ -5800,7 +5800,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Shadow
   m_EffectColor: {r: 0.16981131, g: 0.16981131, b: 0.16981131, a: 0.4117647}
   m_EffectDistance: {x: 5, y: -5}
-  m_UseGraphicAlpha: 0
+  m_UseGraphicAlpha: 1
 --- !u!1 &1578090195
 GameObject:
   m_ObjectHideFlags: 0
@@ -6818,7 +6818,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Shadow
   m_EffectColor: {r: 0.16981131, g: 0.16981131, b: 0.16981131, a: 0.4117647}
   m_EffectDistance: {x: 5, y: -5}
-  m_UseGraphicAlpha: 0
+  m_UseGraphicAlpha: 1
 --- !u!1 &1869755744
 GameObject:
   m_ObjectHideFlags: 0

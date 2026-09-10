@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class RegisterWindow : BaseWindow
 {
+    protected override bool StayInBackground => false;
+
     [SerializeField] private TMP_InputField loginInput;
     [SerializeField] private TMP_InputField passwordInput;
     [SerializeField] private TMP_InputField firstNameInput;

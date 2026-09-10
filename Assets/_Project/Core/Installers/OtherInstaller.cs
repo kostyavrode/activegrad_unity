@@ -150,10 +150,6 @@ public class OtherInstaller : MonoInstaller
         Container.BindFactory<ClanMemberView, ClanMemberView.Factory>().FromComponentInNewPrefab(_clanMemberViewPrefab).AsTransient();
         Container.BindFactory<CreateClanView, CreateClanView.Factory>().FromComponentInNewPrefab(_createClanViewPrefab).AsTransient();
         
-#if UNITY_EDITOR
-        Container.BindInterfacesAndSelfTo<EditorGPSTestController>().FromNewComponentOnNewGameObject().AsSingle().NonLazy();
-#endif
-        
         BindStepsService();
         BindQuests();
     }

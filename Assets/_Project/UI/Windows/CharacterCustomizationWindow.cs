@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class CharacterCustomizationWindow : BaseWindow
 {
+    protected override bool StayInBackground => false;
+
     [SerializeField] private Button genderButton;
     [SerializeField] private TextMeshProUGUI genderText;
 

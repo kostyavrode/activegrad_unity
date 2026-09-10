@@ -13,6 +13,8 @@ public abstract class BaseWindow : MonoBehaviour, IWindow
     private Tween _tween;
     private bool _isInBackground;
 
+    protected virtual bool StayInBackground => true;
+
     public bool IsVisible { get; private set; }
 
     private void Awake()
@@ -84,6 +86,13 @@ public abstract class BaseWindow : MonoBehaviour, IWindow
         IsVisible = false;
         canvasGroup.blocksRaycasts = false;
         canvasGroup.interactable = false;
+
+        if (!StayInBackground)
+        {
+            canvasGroup.alpha = 0f;
+            gameObject.SetActive(false);
+            return;
+        }
 
         _tween = canvasGroup
             .DOFade(BackgroundAlpha, BackgroundDuration)

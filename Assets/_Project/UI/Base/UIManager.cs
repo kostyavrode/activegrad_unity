@@ -57,6 +57,9 @@ public class UIManager : IInitializable, IDisposable
         var type = typeof(T);
         if (_windows.TryGetValue(type, out var window))
         {
+            if (_openWindows.Count > 0 && ReferenceEquals(_openWindows.Peek(), window))
+                return;
+
             if (_openWindows.Count > 0)
             {
                 _openWindows.Peek().PushToBackground();
@@ -64,8 +67,6 @@ public class UIManager : IInitializable, IDisposable
 
             window.Show();
             _openWindows.Push(window);
-
-            //Debug.Log($"Showing window {type.Name}");
         }
         else
         {
