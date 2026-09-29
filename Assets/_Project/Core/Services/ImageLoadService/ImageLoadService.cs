@@ -38,7 +38,7 @@ public class ImageLoadService : IImageLoadService
 
         if (request.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogError($"ImageLoader: Failed to load image: {url}");
+            Debug.LogWarning($"ImageLoader: Failed to load image: {url} (HTTP {request.responseCode}, {request.error})");
             return null;
         }
 

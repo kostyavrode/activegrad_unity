@@ -119,6 +119,8 @@ public class OtherInstaller : MonoInstaller
 
         Container.BindInterfacesAndSelfTo<MapBuildingOptimizationBootstrap>().AsSingle().NonLazy();
 
+        Container.BindInterfacesAndSelfTo<MapVectorLayersBootstrap>().AsSingle().NonLazy();
+
         Container.BindInterfacesAndSelfTo<SpawnOnMap>().FromComponentInHierarchy(_spawnOnMap).AsSingle();
         
         Container.Bind<Camera>().FromComponentInHierarchy(_mainCamera).AsSingle();
@@ -157,9 +159,9 @@ public class OtherInstaller : MonoInstaller
     private void BindStepsService()
     {
 #if UNITY_ANDROID && !UNITY_EDITOR
-        Container.Bind<IPlatformStepsProvider>().To<HealthConnectStepsProvider>().AsSingle();
+        Container.Bind<IPlatformStepsProvider>().To<AndroidStepCounterProvider>().AsSingle();
 #elif UNITY_IOS && !UNITY_EDITOR
-        Container.Bind<IPlatformStepsProvider>().To<HealthKitStepsProvider>().AsSingle();
+        Container.Bind<IPlatformStepsProvider>().To<IosPedometerProvider>().AsSingle();
 #else
         Container.Bind<IPlatformStepsProvider>().To<PlatformStepsProviderStub>().AsSingle();
 #endif

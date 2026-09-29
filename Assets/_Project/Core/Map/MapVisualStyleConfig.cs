@@ -20,4 +20,14 @@ public class MapVisualStyleConfig : ScriptableObject
     [Range(0f, 1f)] public float DayNightBlend;
     public bool ApplyBuildingMaterials = true;
     public bool ApplyGroundMaterials = true;
+
+    [Header("Vector Ground (MapVectorLayersBootstrap)")]
+    public bool AddVectorGroundLayers = true;
+    [Min(0.5f)] public float MajorRoadWidthMeters = 12f;
+    [Min(0.5f)] public float StreetWidthMeters = 7f;
+    [Min(0.5f)] public float PathWidthMeters = 2.5f;
+
+    [Header("Park Trees")]
+    public bool PlantParkTrees = true;
+    public Material TreeMaterial;
 }

@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
 using TMPro;
@@ -29,15 +28,18 @@ public class TapCircleController : MonoBehaviour
         new Color(0.72f, 0.22f, 1.00f),  // purple
     };
 
+    // Необязательный клип попадания: если задан — играется с повышением тона по комбо.
+    [SerializeField] private AudioClip _hitClip;
+
     // ── refs ─────────────────────────────────────────────────────────────────
     private TapCircleGameEvent _gameEvent;
     private UserDataService    _userDataService;
 
     // UI containers
     private RectTransform _gameAreaRect;
+    private RectTransform _gameScreenRect;
     private GameObject    _startScreen;
     private GameObject    _gameScreen;
-    private GameObject    _endScreen;
 
     // HUD
     private Image             _timerFill;
@@ -45,11 +47,12 @@ public class TapCircleController : MonoBehaviour
     private TextMeshProUGUI   _comboText;
     private TextMeshProUGUI   _timerText;
 
-    // End-screen
-    private TextMeshProUGUI   _endScoreText;
-    private TextMeshProUGUI   _endStatsText;
+    // End / countdown
+    private MiniGameResultPanel _resultPanel;
+    private MiniGameCountdown   _countdown;
 
     // ── state ─────────────────────────────────────────────────────────────────
+    // NB: имя Screen перекрывает UnityEngine.Screen внутри этого класса.
     private enum Screen { Start, Game, End }
 
     private float _timeRemaining;
@@ -62,6 +65,7 @@ public class TapCircleController : MonoBehaviour
     private float _nextSpawnTime;
     private bool  _isGameActive;
     private int   _finalScore;
+    private int   _lastTimerSecond;
 
     private readonly List<TapCircle> _activeCircles = new();
 
@@ -71,6 +75,7 @@ public class TapCircleController : MonoBehaviour
         _gameEvent       = gameEvent;
         _userDataService = userDataService;
         BuildUI();
+        _gameScreen.SetActive(false);
         ShowScreen(Screen.Start);
     }
 
@@ -80,83 +85,84 @@ public class TapCircleController : MonoBehaviour
     private void BuildUI()
     {
         // ── background ───────────────────────────────────────────────────────
-        var bg = MakeFullPanel(transform, "BG", new Color(0.05f, 0.05f, 0.13f));
+        MakeFullPanel(transform, "BG", MiniGameTheme.Background);
 
         // ── start screen ─────────────────────────────────────────────────────
         _startScreen = MakeFullPanel(transform, "StartScreen", new Color(0f, 0f, 0f, 0f)).gameObject;
         BuildStartScreen(_startScreen.transform);
 
         // ── game screen ──────────────────────────────────────────────────────
-        _gameScreen = MakeFullPanel(transform, "GameScreen", new Color(0f, 0f, 0f, 0f)).gameObject;
+        _gameScreenRect = MakeFullPanel(transform, "GameScreen", new Color(0f, 0f, 0f, 0f));
+        _gameScreen = _gameScreenRect.gameObject;
         BuildGameScreen(_gameScreen.transform);
-
-        // ── end screen ───────────────────────────────────────────────────────
-        _endScreen = MakeFullPanel(transform, "EndScreen", new Color(0f, 0f, 0f, 0.75f)).gameObject;
-        BuildEndScreen(_endScreen.transform);
     }
 
     private void BuildStartScreen(Transform parent)
     {
         // card
-        var card = MakePanel(parent, "Card",
-            new Color(0.10f, 0.10f, 0.22f),
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-        card.sizeDelta = new Vector2(300f, 390f);
+        var card = MiniGameTheme.CreateCard(parent, "Card", new Vector2(300f, 390f), out _, MiniGameTheme.Card, 26f);
 
         // title
-        var title = MakeText(card, "Title", "ТАП-РИТМ", 36, FontStyles.Bold,
-            new Color(0.00f, 0.90f, 1.00f), new Vector2(0f, 130f), new Vector2(280f, 60f));
+        MakeText(card, "Title", "ТАП-РИТМ", 36, FontStyles.Bold,
+            MiniGameTheme.Accent, new Vector2(0f, 130f), new Vector2(280f, 60f));
 
         // icon circles decorative row
-        var iconRow = MakePanel(card, "IconRow", Color.clear, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+        var iconRowGo = new GameObject("IconRow");
+        iconRowGo.transform.SetParent(card, false);
+        var iconRow = iconRowGo.AddComponent<RectTransform>();
         iconRow.sizeDelta = new Vector2(280f, 60f);
         iconRow.anchoredPosition = new Vector2(0f, 65f);
         float[] xs = { -90f, 0f, 90f };
         Color[] previewColors = { CircleColors[0], CircleColors[1], CircleColors[2] };
         for (int i = 0; i < 3; i++)
         {
-            var dot = MakePanel(iconRow, $"Dot{i}", previewColors[i],
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+            var dotImg = MiniGameTheme.MakeImage(iconRow, $"Dot{i}", previewColors[i]);
+            dotImg.sprite = MiniGameTheme.CircleSprite;
+            dotImg.raycastTarget = false;
+            var dot = dotImg.rectTransform;
+            dot.anchorMin = dot.anchorMax = new Vector2(0.5f, 0.5f);
             dot.sizeDelta = new Vector2(34f, 34f);
             dot.anchoredPosition = new Vector2(xs[i], 0f);
-            var dotImg = dot.GetComponent<Image>();
-            TapCircle.EnsureSprites();
+
+            // мягкое «дыхание» точек со сдвигом по фазе
+            dot.DOScale(1.18f, 0.7f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo)
+               .SetDelay(i * 0.23f).SetUpdate(true).SetLink(dot.gameObject);
         }
 
         // instructions
         MakeText(card, "Desc1", "Нажимай на кружки до того,", 15, FontStyles.Normal,
-            new Color(0.85f, 0.85f, 0.85f), new Vector2(0f, 5f), new Vector2(260f, 28f));
+            MiniGameTheme.TextSecondary, new Vector2(0f, 5f), new Vector2(260f, 28f));
         MakeText(card, "Desc2", "как сожмётся кольцо!", 15, FontStyles.Normal,
-            new Color(0.85f, 0.85f, 0.85f), new Vector2(0f, -22f), new Vector2(260f, 28f));
+            MiniGameTheme.TextSecondary, new Vector2(0f, -22f), new Vector2(260f, 28f));
 
         // score legend
         MakeText(card, "Leg1", "⬤  Рано  +300", 13, FontStyles.Normal,
-            new Color(0.20f, 1.00f, 0.40f), new Vector2(0f, -65f), new Vector2(240f, 24f));
+            MiniGameTheme.Success, new Vector2(0f, -65f), new Vector2(240f, 24f));
         MakeText(card, "Leg2", "⬤  Хорошо  +150", 13, FontStyles.Normal,
-            new Color(1.00f, 0.90f, 0.20f), new Vector2(0f, -90f), new Vector2(240f, 24f));
+            MiniGameTheme.Warning, new Vector2(0f, -90f), new Vector2(240f, 24f));
         MakeText(card, "Leg3", "⬤  Поздно  +50", 13, FontStyles.Normal,
-            new Color(1.00f, 0.50f, 0.20f), new Vector2(0f, -115f), new Vector2(240f, 24f));
+            new Color(1.00f, 0.55f, 0.25f), new Vector2(0f, -115f), new Vector2(240f, 24f));
 
         MakeText(card, "Dur", "⏱  30 секунд", 14, FontStyles.Normal,
-            new Color(0.70f, 0.70f, 0.70f), new Vector2(0f, -148f), new Vector2(240f, 26f));
+            new Color(0.62f, 0.66f, 0.76f), new Vector2(0f, -148f), new Vector2(240f, 26f));
 
         // start button
-        var startBtn = MakeButton(card, "StartBtn", "НАЧАТЬ",
-            new Color(0.00f, 0.75f, 1.00f), Color.white,
-            new Vector2(0f, -180f), new Vector2(200f, 50f));
+        var startBtn = MiniGameTheme.CreateButton(card, "StartBtn", "НАЧАТЬ", new Vector2(200f, 50f),
+            MiniGameTheme.Accent, MiniGameTheme.TextDark);
+        ((RectTransform)startBtn.transform).anchoredPosition = new Vector2(0f, -180f);
         startBtn.onClick.AddListener(StartGame);
 
         // close button
-        var closeBtn = MakeButton(card, "CloseBtn", "✕",
-            new Color(0.30f, 0.10f, 0.10f), new Color(1f, 0.5f, 0.5f),
-            new Vector2(120f, 175f), new Vector2(40f, 40f));
+        var closeBtn = MiniGameTheme.CreateButton(card, "CloseBtn", "✕", new Vector2(40f, 40f),
+            MiniGameTheme.Danger, Color.white, 20f, FeedbackType.Close);
+        ((RectTransform)closeBtn.transform).anchoredPosition = new Vector2(120f, 175f);
         closeBtn.onClick.AddListener(() => _gameEvent?.CloseGame());
     }
 
     private void BuildGameScreen(Transform parent)
     {
         // ── HUD bar ──────────────────────────────────────────────────────────
-        var hud = MakePanel(parent, "HUD", new Color(0.07f, 0.07f, 0.18f),
+        var hud = MakePanel(parent, "HUD", MiniGameTheme.Card,
             new Vector2(0f, 1f), new Vector2(1f, 1f));
         hud.anchoredPosition = Vector2.zero;
         hud.sizeDelta = new Vector2(0f, 72f);
@@ -166,7 +172,7 @@ public class TapCircleController : MonoBehaviour
         _scoreText.alignment = TextAlignmentOptions.Right;
 
         _comboText = MakeText(hud, "Combo", "", 18, FontStyles.Bold,
-            new Color(1f, 0.85f, 0f), new Vector2(10f, -18f), new Vector2(160f, 40f));
+            MiniGameTheme.Warning, new Vector2(10f, -18f), new Vector2(160f, 40f));
         _comboText.alignment = TextAlignmentOptions.Left;
 
         _timerText = MakeText(hud, "TimerNum", "30", 20, FontStyles.Bold,
@@ -174,7 +180,7 @@ public class TapCircleController : MonoBehaviour
         _timerText.alignment = TextAlignmentOptions.Center;
 
         // timer bar track
-        var timerTrack = MakePanel(hud, "TimerTrack", new Color(0.15f, 0.15f, 0.30f),
+        var timerTrack = MakePanel(hud, "TimerTrack", MiniGameTheme.CardLight,
             new Vector2(0f, 0f), new Vector2(1f, 0f));
         timerTrack.sizeDelta = new Vector2(0f, 7f);
         timerTrack.anchoredPosition = new Vector2(0f, 0f);
@@ -188,7 +194,10 @@ public class TapCircleController : MonoBehaviour
         fillRect.offsetMin = Vector2.zero;
         fillRect.offsetMax = Vector2.zero;
         _timerFill = timerFillGo.AddComponent<Image>();
-        _timerFill.color = new Color(0.00f, 0.89f, 1.00f);
+        _timerFill.color = MiniGameTheme.Accent;
+        _timerFill.type = Image.Type.Filled;
+        _timerFill.fillMethod = Image.FillMethod.Horizontal;
+        _timerFill.fillOrigin = 0;
 
         // ── game area (below HUD) ─────────────────────────────────────────────
         var gameArea = MakePanel(parent, "GameArea", Color.clear,
@@ -196,33 +205,6 @@ public class TapCircleController : MonoBehaviour
         gameArea.offsetMin = new Vector2(0f, 0f);
         gameArea.offsetMax = new Vector2(0f, -72f);
         _gameAreaRect = gameArea;
-    }
-
-    private void BuildEndScreen(Transform parent)
-    {
-        var card = MakePanel(parent, "Card",
-            new Color(0.08f, 0.08f, 0.20f),
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
-        card.sizeDelta = new Vector2(300f, 380f);
-
-        MakeText(card, "Title", "ИГРА ОКОНЧЕНА", 24, FontStyles.Bold,
-            new Color(0.00f, 0.90f, 1.00f), new Vector2(0f, 150f), new Vector2(280f, 40f));
-
-        _endScoreText = MakeText(card, "Score", "0", 72, FontStyles.Bold,
-            Color.white, new Vector2(0f, 60f), new Vector2(280f, 100f));
-        _endScoreText.alignment = TextAlignmentOptions.Center;
-
-        MakeText(card, "ScoreLbl", "очков", 16, FontStyles.Normal,
-            new Color(0.7f, 0.7f, 0.7f), new Vector2(0f, 10f), new Vector2(280f, 28f));
-
-        _endStatsText = MakeText(card, "Stats", "", 15, FontStyles.Normal,
-            new Color(0.85f, 0.85f, 0.85f), new Vector2(0f, -55f), new Vector2(260f, 90f));
-        _endStatsText.alignment = TextAlignmentOptions.Center;
-
-        var finishBtn = MakeButton(card, "FinishBtn", "ЗАВЕРШИТЬ",
-            new Color(0.00f, 0.75f, 1.00f), Color.white,
-            new Vector2(0f, -155f), new Vector2(210f, 50f));
-        finishBtn.onClick.AddListener(FinishGame);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -233,11 +215,20 @@ public class TapCircleController : MonoBehaviour
         _timeRemaining = GameDuration;
         _rawScore = _hits = _misses = _combo = _maxCombo = _circleNum = 0;
         _nextSpawnTime = 0f;
+        _lastTimerSecond = -1;
         _activeCircles.Clear();
-        _isGameActive = true;
+        _isGameActive = false;
 
         UpdateHUD();
         ShowScreen(Screen.Game);
+
+        if (_countdown != null) _countdown.Cancel();
+        _countdown = MiniGameCountdown.Play(_gameScreenRect, () =>
+        {
+            _countdown = null;
+            _nextSpawnTime = Time.time;
+            _isGameActive = true;
+        });
     }
 
     private void Update()
@@ -273,18 +264,23 @@ public class TapCircleController : MonoBehaviour
 
         // color: cyan → yellow → red
         _timerFill.color = frac > 0.5f
-            ? Color.Lerp(Color.yellow, new Color(0f, 0.9f, 1f), (frac - 0.5f) * 2f)
-            : Color.Lerp(new Color(1f, 0.2f, 0.2f), Color.yellow, frac * 2f);
+            ? Color.Lerp(MiniGameTheme.Warning, MiniGameTheme.Accent, (frac - 0.5f) * 2f)
+            : Color.Lerp(MiniGameTheme.Danger, MiniGameTheme.Warning, frac * 2f);
 
-        // use fillAmount to shrink the fill (need proper setup)
-        if (_timerFill.type != Image.Type.Filled)
+        int sec = Mathf.CeilToInt(_timeRemaining);
+        _timerText.text = sec.ToString();
+        if (_isGameActive && sec != _lastTimerSecond)
         {
-            _timerFill.type = Image.Type.Filled;
-            _timerFill.fillMethod = Image.FillMethod.Horizontal;
-            _timerFill.fillOrigin = 0;
+            if (_lastTimerSecond > 0 && sec <= 5 && sec > 0)
+            {
+                _timerText.color = MiniGameTheme.Danger;
+                MiniGameJuice.Punch(_timerText.transform, 0.3f, 0.25f);
+                MiniGameJuice.Feedback(FeedbackType.Tap);
+            }
+            _lastTimerSecond = sec;
         }
+        if (sec > 5) _timerText.color = Color.white;
 
-        _timerText.text = Mathf.CeilToInt(_timeRemaining).ToString();
         _scoreText.text = _rawScore.ToString();
         _comboText.text = _combo >= 3 ? $"x{_combo} COMBO" : "";
     }
@@ -345,11 +341,13 @@ public class TapCircleController : MonoBehaviour
         int baseScore;
         string label;
         Color popupColor;
+        bool perfect = false;
 
         // Чем ближе кольцо к кругу (меньше frac), тем больше очков
         if (frac < 0.30f)
         {
             baseScore = ScorePerfect; label = "PERFECT!"; popupColor = new Color(0.2f, 1f, 0.5f);
+            perfect = true;
         }
         else if (frac < 0.65f)
         {
@@ -367,19 +365,51 @@ public class TapCircleController : MonoBehaviour
         _rawScore += earned;
         _hits++;
 
-        SpawnScorePopup(circle, $"{label}\n+{earned}", popupColor);
+        // ── juice ────────────────────────────────────────────────────────────
+        var cr = circle.GetComponent<RectTransform>();
+        if (cr != null)
+            MiniGameJuice.Burst(_gameAreaRect, cr.anchoredPosition, circle.Color,
+                perfect ? 16 : 10, perfect ? 140f : 100f, perfect ? 24f : 18f);
+
+        if (_hitClip != null)
+            MiniGameJuice.Sfx(_hitClip, 0.02f, MiniGameJuice.ComboPitch(_combo));
+
+        if (perfect)
+        {
+            MiniGameJuice.Feedback(FeedbackType.Perfect);
+            MiniGameJuice.Shake(_gameScreenRect, 7f, 0.18f);
+        }
+        else if (_hitClip == null)
+        {
+            MiniGameJuice.Feedback(FeedbackType.Hit);
+        }
+
+        _scoreText.text = _rawScore.ToString();
+        MiniGameJuice.Punch(_scoreText.transform, 0.15f, 0.2f);
+        if (_combo >= 3)
+        {
+            _comboText.text = $"x{_combo} COMBO";
+            MiniGameJuice.Punch(_comboText.transform, 0.3f + Mathf.Min(_combo, 12) * 0.02f, 0.3f);
+        }
+
+        SpawnScorePopup(circle, $"{label}\n+{earned}", popupColor, perfect);
     }
 
     private void OnCircleExpired(TapCircle circle)
     {
         _activeCircles.Remove(circle);
         _misses++;
+        bool hadCombo = _combo >= 3;
         _combo = 0;
 
-        SpawnScorePopup(circle, "MISS", new Color(1f, 0.3f, 0.3f));
+        MiniGameJuice.Flash(_gameScreenRect, MiniGameTheme.Danger, 0.18f, 0.3f);
+        MiniGameJuice.Feedback(FeedbackType.Miss);
+        if (hadCombo) MiniGameJuice.Shake(_gameScreenRect, 5f, 0.2f);
+
+        SpawnScorePopup(circle, "MISS", new Color(1f, 0.3f, 0.3f), false);
     }
 
-    private void SpawnScorePopup(TapCircle circle, string text, Color color)
+    private void SpawnScorePopup(TapCircle circle, string text, Color color, bool big)
     {
         if (circle == null) return;
         var cr = circle.GetComponent<RectTransform>();
@@ -394,15 +424,17 @@ public class TapCircleController : MonoBehaviour
 
         var tmp = go.AddComponent<TextMeshProUGUI>();
         tmp.text = text;
-        tmp.fontSize = 22;
+        tmp.fontSize = big ? 26 : 22;
         tmp.fontStyle = FontStyles.Bold;
         tmp.color = color;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.raycastTarget = false;
 
         var cg = go.AddComponent<CanvasGroup>();
-        rect.DOAnchorPosY(pos.y + 70f, 0.75f).SetUpdate(true);
-        cg.DOFade(0f, 0.75f).SetDelay(0.25f).SetUpdate(true)
+        rect.localScale = Vector3.one * 0.5f;
+        rect.DOScale(1f, 0.25f).SetEase(Ease.OutBack, 2.5f).SetUpdate(true).SetLink(go);
+        rect.DOAnchorPosY(pos.y + 70f, 0.75f).SetEase(Ease.OutCubic).SetUpdate(true).SetLink(go);
+        cg.DOFade(0f, 0.75f).SetDelay(0.25f).SetUpdate(true).SetLink(go)
             .OnComplete(() => { if (go != null) Destroy(go); });
     }
 
@@ -420,22 +452,27 @@ public class TapCircleController : MonoBehaviour
         float accuracy = (_hits + _misses) > 0
             ? (_hits / (float)(_hits + _misses)) * 100f : 0f;
 
-        _endScoreText.text = "0";
-        _endStatsText.text =
-            $"Попаданий: {_hits}   Промахов: {_misses}\n" +
-            $"Точность: {accuracy:F0}%\n" +
-            $"Макс. комбо: x{_maxCombo}\n" +
-            $"Сырые очки: {_rawScore}";
-
         ShowScreen(Screen.End);
 
-        // Animate score count-up from 0
-        int displayScore = 0;
-        DOTween.To(() => displayScore, v =>
+        if (_resultPanel != null) Destroy(_resultPanel.gameObject);
+        _resultPanel = MiniGameResultPanel.Show((RectTransform)transform, new MiniGameResultPanel.Options
         {
-            displayScore = v;
-            _endScoreText.text = v.ToString();
-        }, _finalScore, 1.1f).SetEase(Ease.OutQuad).SetUpdate(true);
+            GameId         = "tapcircle",
+            Title          = "ИГРА ОКОНЧЕНА",
+            TitleColor     = MiniGameTheme.Accent,
+            Score          = _finalScore,
+            MaxScore       = 100,
+            StarThresholds = new[] { 0.3f, 0.6f, 0.85f },
+            ScoreCaption   = "очков",
+            StatLines      = new[]
+            {
+                $"Попаданий: {_hits}   Промахов: {_misses}",
+                $"Точность: {accuracy:F0}%",
+                $"Макс. комбо: x{_maxCombo}",
+            },
+            PrimaryLabel   = "ЗАВЕРШИТЬ",
+            OnPrimary      = FinishGame,
+        });
     }
 
     private void FinishGame()
@@ -448,9 +485,24 @@ public class TapCircleController : MonoBehaviour
     // ─────────────────────────────────────────────────────────────────────────
     private void ShowScreen(Screen screen)
     {
-        _startScreen.SetActive(screen == Screen.Start);
-        _gameScreen.SetActive(screen  == Screen.Game);
-        _endScreen.SetActive(screen   == Screen.End);
+        SetScreenVisible(_startScreen, screen == Screen.Start);
+        // На экране результата игровое поле остаётся под затемнённой панелью
+        SetScreenVisible(_gameScreen, screen == Screen.Game || screen == Screen.End);
+    }
+
+    private static void SetScreenVisible(GameObject go, bool visible)
+    {
+        if (go == null) return;
+        if (visible)
+        {
+            var cg = go.GetComponent<CanvasGroup>();
+            bool fadingOut = cg != null && !cg.blocksRaycasts;
+            if (!go.activeSelf || fadingOut) MiniGameJuice.FadeIn(go, 0.25f);
+        }
+        else
+        {
+            MiniGameJuice.FadeOut(go, 0.2f);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -462,11 +514,13 @@ public class TapCircleController : MonoBehaviour
         go.transform.SetParent(parent, false);
         var img = go.AddComponent<Image>();
         img.color = color;
+        img.raycastTarget = color.a > 0f;
         var rect = go.GetComponent<RectTransform>();
         rect.anchorMin = Vector2.zero;
         rect.anchorMax = Vector2.one;
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
+        go.AddComponent<CanvasGroup>();
         return rect;
     }
 
@@ -483,43 +537,6 @@ public class TapCircleController : MonoBehaviour
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
         return rect;
-    }
-
-    private static Button MakeButton(Transform parent, string name, string label,
-        Color bgColor, Color textColor, Vector2 pos, Vector2 size)
-    {
-        var go = new GameObject(name);
-        go.transform.SetParent(parent, false);
-        var img = go.AddComponent<Image>();
-        img.color = bgColor;
-        var rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = size;
-        rect.anchoredPosition = pos;
-
-        var btn = go.AddComponent<Button>();
-        btn.targetGraphic = img;
-        var cols = btn.colors;
-        cols.highlightedColor = bgColor * 1.2f;
-        cols.pressedColor = bgColor * 0.7f;
-        btn.colors = cols;
-
-        var lblGo = new GameObject("Label");
-        lblGo.transform.SetParent(go.transform, false);
-        var lblRect = lblGo.AddComponent<RectTransform>();
-        lblRect.anchorMin = Vector2.zero;
-        lblRect.anchorMax = Vector2.one;
-        lblRect.offsetMin = Vector2.zero;
-        lblRect.offsetMax = Vector2.zero;
-        var tmp = lblGo.AddComponent<TextMeshProUGUI>();
-        tmp.text = label;
-        tmp.color = textColor;
-        tmp.alignment = TextAlignmentOptions.Center;
-        tmp.fontSize = 20;
-        tmp.fontStyle = FontStyles.Bold;
-        tmp.raycastTarget = false;
-
-        return btn;
     }
 
     private static TextMeshProUGUI MakeText(Transform parent, string name, string text,
@@ -544,5 +561,6 @@ public class TapCircleController : MonoBehaviour
     private void OnDestroy()
     {
         DOTween.Kill(transform);
+        if (_countdown != null) _countdown.Cancel();
     }
 }

@@ -201,7 +201,7 @@ public class APIService
     {
         Debug.LogWarning("[APIService] Refresh токен истёк — принудительный выход");
         Logout();
-        SceneManager.LoadScene("Loading");
+        LoadingOverlay.LoadScene("Loading");
     }
 
     public async Task<(bool success, string message)> UpdateClothes(int boots, int pants, int tshirt, int cap, string gender)
@@ -314,21 +314,46 @@ public class APIService
     
     public int[] ParseExternalIds(string json)
     {
-        var data = JsonConvert.DeserializeObject<ResponseData>(json);
+        // Сервер может ответить HTML (404/502) — не роняем игру на парсинге
+        var data = TryDeserialize<ResponseData>(json);
 
-        if (data.external_ids == null)
-            return new int[0];
+        if (data?.external_ids == null)
+            return Array.Empty<int>();
 
         return data.external_ids
             .Where(x => !string.IsNullOrEmpty(x))
-            .Select(int.Parse)
+            .Select(x => int.TryParse(x, out var id) ? id : -1)
+            .Where(id => id >= 0)
             .ToArray();
     }
 
     public int[] ParsePartnerStoreIds(string json)
     {
-        var data = JsonConvert.DeserializeObject<PartnerStoresPlayerResponse>(json);
+        var data = TryDeserialize<PartnerStoresPlayerResponse>(json);
         return data?.store_ids ?? Array.Empty<int>();
+    }
+
+    private static T TryDeserialize<T>(string json) where T : class
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+
+        var trimmed = json.TrimStart();
+        if (trimmed.Length == 0 || (trimmed[0] != '{' && trimmed[0] != '['))
+        {
+            Debug.LogWarning($"[APIService] Ожидался JSON, получено: {trimmed.Substring(0, Mathf.Min(80, trimmed.Length))}");
+            return null;
+        }
+
+        try
+        {
+            return JsonConvert.DeserializeObject<T>(json);
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[APIService] Не удалось разобрать ответ как {typeof(T).Name}: {e.Message}");
+            return null;
+        }
     }
 
     public async Task<(bool success, PartnerStoresNearbyResponse response)> GetNearbyPartnerStores(float latitude, float longitude)

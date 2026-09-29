@@ -3,52 +3,61 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Zenject;
 
+/// <summary>
+/// Шаги за сегодня. Источник — шагомер устройства (Android TYPE_STEP_COUNTER / iOS CoreMotion),
+/// который считает шаги и когда игра закрыта. Последнее значение кэшируется и синхронизируется с сервером.
+/// </summary>
 public class StepsService : IInitializable, IDisposable, ITickable, IStepsService
 {
     private readonly IPlatformStepsProvider _platformProvider;
+    private readonly APIService _apiService;
 
     private const float UpdateIntervalSec = 3f;
+    private const float ServerSyncIntervalSec = 300f;
     private const string StepsPrefsKey = "StepsService_Steps";
     private const string StepsDateKey = "StepsService_Date";
 
     private int _stepsToday;
-    private int _stepsAtSessionStart;
-    private int _internalStepsThisSession;
-    private string _lastStoredDate;
+    private int _debugSteps;
+    private string _storedDate;
     private bool _isRunning;
-    private Task _updateTask;
-
-    // Accelerometer step detection
-    private float _accelMagnitudeLowPass;
-    private const float LowPassFactor = 0.8f;
-    private const float StepThreshold = 1.2f;
-    private const float StepCooldownSec = 0.4f;
-    private float _lastStepTime;
-    private bool _wasAboveThreshold;
-
     private bool _debugComboWasActive;
+    private StepsAccess _lastAccess = StepsAccess.NotDetermined;
+
+    private int _lastSyncedSteps = -1;
+    private float _lastSyncTime = float.MinValue;
+    private bool _isSyncing;
 
     public int StepsToday => _stepsToday;
-    public bool IsHealthConnected => _platformProvider?.IsConnected ?? false;
-    public event Action<int> OnStepsChanged;
+    public bool IsHealthConnected => _platformProvider.IsConnected;
+    public StepsAccess Access => _platformProvider.Access;
 
-    public StepsService(IPlatformStepsProvider platformProvider)
+    public event Action<int> OnStepsChanged;
+    public event Action<StepsAccess> OnAccessChanged;
+
+    public StepsService(IPlatformStepsProvider platformProvider, [InjectOptional] APIService apiService = null)
     {
         _platformProvider = platformProvider ?? new PlatformStepsProviderStub();
+        _apiService = apiService;
     }
 
     public void Initialize()
     {
         LoadStoredSteps();
         EnsureDailyReset();
+
         _isRunning = true;
+        Application.focusChanged += HandleFocusChanged;
+
         OnStepsChanged?.Invoke(_stepsToday);
-        _updateTask = RunUpdateLoop();
+        RequestAccess();
+        _ = RunUpdateLoop();
     }
 
     public void Dispose()
     {
         _isRunning = false;
+        Application.focusChanged -= HandleFocusChanged;
         SaveSteps();
     }
 
@@ -71,103 +80,150 @@ public class StepsService : IInitializable, IDisposable, ITickable, IStepsServic
         }
     }
 
+    public void RequestAccess()
+    {
+        _platformProvider.RequestAccess(access =>
+        {
+            NotifyAccess(access);
+            _ = UpdateSteps();
+        });
+    }
+
     public void AddDebugSteps(int amount)
     {
-        _internalStepsThisSession += amount;
-        _stepsToday = _stepsAtSessionStart + _internalStepsThisSession;
-        SaveSteps();
-        OnStepsChanged?.Invoke(_stepsToday);
+        _debugSteps += amount;
+        SetSteps(_stepsToday + amount);
     }
 
-    private void LoadStoredSteps()
+    private void HandleFocusChanged(bool hasFocus)
     {
-        _lastStoredDate = PlayerPrefs.GetString(StepsDateKey, "");
-        _internalStepsThisSession = 0;
-        _stepsAtSessionStart = PlayerPrefs.GetInt(StepsPrefsKey, 0);
-        _stepsToday = _stepsAtSessionStart;
-    }
+        if (!_isRunning)
+            return;
 
-    private void EnsureDailyReset()
-    {
-        string today = DateTime.Now.ToString("yyyy-MM-dd");
-        if (!string.IsNullOrEmpty(_lastStoredDate) && _lastStoredDate != today)
+        if (hasFocus)
         {
-            _stepsToday = 0;
-            _stepsAtSessionStart = 0;
-            _internalStepsThisSession = 0;
-            _lastStoredDate = today;
+            // Пока игра была свёрнута, шагомер продолжал считать — сразу подтягиваем свежие данные
+            _platformProvider.Refresh();
+            _ = UpdateSteps();
+        }
+        else
+        {
             SaveSteps();
-            Debug.Log("[StepsService] Daily reset - steps cleared");
+            _ = SyncWithServer(force: true);
         }
-        else if (string.IsNullOrEmpty(_lastStoredDate))
-        {
-            _lastStoredDate = today;
-        }
-    }
-
-    private void SaveSteps()
-    {
-        if (string.IsNullOrEmpty(_lastStoredDate)) return;
-        PlayerPrefs.SetInt(StepsPrefsKey, _stepsToday);
-        PlayerPrefs.SetString(StepsDateKey, _lastStoredDate);
-        PlayerPrefs.Save();
     }
 
     private async Task RunUpdateLoop()
     {
         while (_isRunning)
         {
-            await Task.Delay((int)(UpdateIntervalSec * 1000));
-            if (!_isRunning) break;
             await UpdateSteps();
+            await Task.Delay((int)(UpdateIntervalSec * 1000));
         }
     }
 
     private async Task UpdateSteps()
     {
+        if (!_isRunning)
+            return;
+
         EnsureDailyReset();
+        NotifyAccess(_platformProvider.Access);
 
-        int newSteps;
         var (connected, platformSteps) = await _platformProvider.TryGetStepsTodayAsync();
-
         if (connected)
         {
-            newSteps = platformSteps;
-        }
-        else
-        {
-            UpdateAccelerometerSteps();
-            newSteps = _stepsAtSessionStart + _internalStepsThisSession;
+            // Шагомер — главный источник; за день значение не должно уменьшаться
+            SetSteps(Mathf.Max(platformSteps + _debugSteps, _stepsToday));
         }
 
-        if (newSteps != _stepsToday)
+        _ = SyncWithServer(force: false);
+    }
+
+    private void SetSteps(int steps)
+    {
+        if (steps == _stepsToday)
+            return;
+
+        _stepsToday = steps;
+        SaveSteps();
+        OnStepsChanged?.Invoke(_stepsToday);
+    }
+
+    private void NotifyAccess(StepsAccess access)
+    {
+        if (access == _lastAccess)
+            return;
+
+        _lastAccess = access;
+        Debug.Log($"[StepsService] Step counter access: {access}");
+        OnAccessChanged?.Invoke(access);
+    }
+
+    private async Task SyncWithServer(bool force)
+    {
+        if (_apiService == null || !_apiService.IsLoggedIn || _isSyncing || _stepsToday == _lastSyncedSteps)
+            return;
+
+        if (!force && Time.realtimeSinceStartup - _lastSyncTime < ServerSyncIntervalSec)
+            return;
+
+        _isSyncing = true;
+        _lastSyncTime = Time.realtimeSinceStartup;
+        var steps = _stepsToday;
+
+        try
         {
-            _stepsToday = newSteps;
-            SaveSteps();
-            OnStepsChanged?.Invoke(_stepsToday);
+            var (ok, message) = await _apiService.UpdateDailySteps(steps);
+            if (ok)
+                _lastSyncedSteps = steps;
+            else
+                Debug.LogWarning($"[StepsService] Failed to sync steps: {message}");
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[StepsService] Steps sync error: {e.Message}");
+        }
+        finally
+        {
+            _isSyncing = false;
         }
     }
 
-    private void UpdateAccelerometerSteps()
+    private void LoadStoredSteps()
     {
-        Vector3 accel = Input.acceleration;
-        float magnitude = accel.magnitude;
+        _storedDate = PlayerPrefs.GetString(StepsDateKey, "");
+        _stepsToday = PlayerPrefs.GetInt(StepsPrefsKey, 0);
+    }
 
-        _accelMagnitudeLowPass = LowPassFactor * _accelMagnitudeLowPass + (1f - LowPassFactor) * magnitude;
+    private void EnsureDailyReset()
+    {
+        string today = DateTime.Now.ToString("yyyy-MM-dd");
+        if (_storedDate == today)
+            return;
 
-        float now = Time.realtimeSinceStartup;
-        if (_accelMagnitudeLowPass > StepThreshold)
+        bool wasEmpty = string.IsNullOrEmpty(_storedDate);
+        _storedDate = today;
+        _debugSteps = 0;
+        _lastSyncedSteps = -1;
+
+        if (!wasEmpty && _stepsToday != 0)
         {
-            if (!_wasAboveThreshold && (now - _lastStepTime) > StepCooldownSec)
-            {
-                _internalStepsThisSession++;
-                _lastStepTime = now;
-            }
-            _wasAboveThreshold = true;
+            _stepsToday = 0;
+            OnStepsChanged?.Invoke(_stepsToday);
+            Debug.Log("[StepsService] Daily reset - steps cleared");
         }
-        else
-        {
-            _wasAboveThreshold = false;
-        }
+
+        SaveSteps();
+    }
+
+    private void SaveSteps()
+    {
+        if (string.IsNullOrEmpty(_storedDate))
+            return;
+
+        PlayerPrefs.SetInt(StepsPrefsKey, _stepsToday);
+        PlayerPrefs.SetString(StepsDateKey, _storedDate);
+        PlayerPrefs.Save();
     }
 }

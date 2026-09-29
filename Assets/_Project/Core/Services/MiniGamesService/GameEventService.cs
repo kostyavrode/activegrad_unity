@@ -198,6 +198,7 @@ public class GameEventService : IInitializable, IDisposable, ITickable
         GameObject instance = UnityEngine.Object.Instantiate(_gameEventMarkerPrefab);
         instance.transform.SetParent(_map.transform, false);
         instance.transform.localPosition = worldPosition;
+        CurvedWorldController.Bend(instance.transform);
         instance.transform.localScale = Vector3.one;
         MapShadowHelper.EnableCastShadows(instance.transform);
         
@@ -236,6 +237,7 @@ public class GameEventService : IInitializable, IDisposable, ITickable
             Vector2d coords = new Vector2d(eventData.Coordinates.y, eventData.Coordinates.x);
             Vector3 worldPosition = _map.GeoToWorldPosition(coords, true);
             obj.transform.localPosition = worldPosition;
+            CurvedWorldController.Bend(obj.transform);
         }
     }
 

@@ -16,18 +16,13 @@ public class SceneLoader
 
     public void LoadScene(string sceneName)
     {
-        SceneManager.LoadScene(sceneName);
-        PlaySceneMusic(sceneName);
+        // Загрузка идёт через оверлей (асинхронно, корутина живёт на DontDestroyOnLoad-объекте).
+        LoadingOverlay.LoadScene(sceneName, () => PlaySceneMusic(sceneName));
     }
 
     public IEnumerator LoadSceneAsync(string sceneName)
     {
-        var operation = SceneManager.LoadSceneAsync(sceneName);
-
-        while (!operation.isDone)
-            yield return null;
-
-        PlaySceneMusic(sceneName);
+        yield return LoadingOverlay.LoadSceneWithOverlay(sceneName, () => PlaySceneMusic(sceneName));
     }
 
     private void PlaySceneMusic(string sceneName)

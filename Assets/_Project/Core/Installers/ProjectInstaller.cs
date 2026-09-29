@@ -11,6 +11,7 @@ public class ProjectInstaller : MonoInstaller
     [SerializeField] private AudioClip _defaultUiClickClip;
     [SerializeField] private AudioClip _defaultUiCloseClip;
     [SerializeField] private SceneMusicConfig _sceneMusicConfig;
+    [SerializeField] private FeedbackConfig _feedbackConfig;
 
     public override void InstallBindings()
     {
@@ -69,6 +70,11 @@ public class ProjectInstaller : MonoInstaller
 
         Container.Bind<AudioSettings>().AsSingle().NonLazy();
         Container.BindInterfacesAndSelfTo<AudioManager>().AsSingle().NonLazy();
+        if (_feedbackConfig != null)
+            Container.BindInstance(_feedbackConfig).AsSingle();
+        Container.Bind<HapticService>().AsSingle();
+        Container.BindInterfacesAndSelfTo<FeedbackService>().AsSingle();
+        Container.Bind<IRewardService>().To<RewardService>().AsSingle();
         Container.BindInterfacesAndSelfTo<UiClickSoundAutoBinder>().AsSingle().NonLazy();
     }
 }

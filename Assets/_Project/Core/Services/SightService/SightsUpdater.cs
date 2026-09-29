@@ -30,6 +30,7 @@ public class SightsUpdater : IInitializable, IDisposable
     private readonly APIService _apiService;
     private readonly UserDataService _userData;
     private readonly IInventoryService _inventoryService;
+    private readonly IRewardService _rewardService; // может быть null — тогда текстовые попапы
 
     private bool _isRunning;
     private bool _isLoadingImages;
@@ -44,8 +45,10 @@ public class SightsUpdater : IInitializable, IDisposable
     private bool _lastUpdateCoordsInitialized;
 
     public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory, PartnerStoreDetailsView.Factory partnerStoreDetailsViewFactory, IPopupService popupService, SpawnOnMap spawnOnMap,
-        APIService apiService, UserDataService userDataService, IInventoryService inventoryService)
+        APIService apiService, UserDataService userDataService, IInventoryService inventoryService,
+        [InjectOptional] IRewardService rewardService = null)
     {
+        _rewardService = rewardService;
         _sightService = sightService;
         _locationService = locationService;
         _sightDetailsViewFactory = sightDetailsViewFactory;
@@ -71,7 +74,7 @@ public class SightsUpdater : IInitializable, IDisposable
     public async void CreateSightDetailsPopup(int pageID, bool isOtherSights=false)
     {
         Transform canvasTransform = GameObject.FindGameObjectWithTag("Canvas").transform;
-        if (canvasTransform.childCount > 1)
+        if (CountBlockingCanvasChildren(canvasTransform) > 1)
         {
             Debug.LogError("[SightsUpdater] Canvas child count is more than 1]");
             return;
@@ -258,7 +261,11 @@ public class SightsUpdater : IInitializable, IDisposable
         
         await LoadAllImages();
         var (s, message) = await _apiService.GetSightsList(_userData.ID);
-        _userData.SetSights(_apiService.ParseExternalIds(message));
+        if (s)
+            _userData.SetSights(_apiService.ParseExternalIds(message));
+        else
+            Debug.LogWarning($"[SightsUpdater] Не удалось получить список отмеченных мест: {message}");
+
         OnSightsUpdated?.Invoke();
     }
 
@@ -499,6 +506,7 @@ public class SightsUpdater : IInitializable, IDisposable
         if (!success) return;
 
         _userData.AddSightToMarked(pageId);
+        SightMarkerFx.PlayDiscover(pageId);
 
         var (invSuccess, invResponse) = await _apiService.GetInventory();
         if (invSuccess && invResponse?.resources != null)
@@ -513,12 +521,27 @@ public class SightsUpdater : IInitializable, IDisposable
         var bonus = gained.first_visit_bonus;
         if (bonus != null && (bonus.metal > 0 || bonus.wood > 0 || bonus.blueprints > 0))
         {
+            if (_rewardService != null)
+            {
+                _rewardService.ShowResources("Первое посещение!",
+                    RewardEntry.FromResources(bonus.metal, bonus.wood, bonus.blueprints));
+                return;
+            }
+
             string resourceName;
             int amount;
             if (bonus.metal > 0)           { resourceName = "металл";  amount = bonus.metal; }
             else if (bonus.wood > 0)       { resourceName = "дерево";  amount = bonus.wood; }
             else                           { resourceName = "чертёж";  amount = bonus.blueprints; }
             _popupService.ShowSuccess($"Первое посещение! +{amount} {resourceName}");
+            return;
+        }
+
+        if (_rewardService != null)
+        {
+            var entries = RewardEntry.FromResources(gained.metal, gained.wood, gained.blueprints);
+            if (entries.Count > 0)
+                _rewardService.ShowResources("Вы получили", entries);
             return;
         }
 
@@ -567,6 +590,14 @@ public class SightsUpdater : IInitializable, IDisposable
         if (invSuccess && invResponse?.resources != null)
             _inventoryService.SetResources(invResponse.resources);
 
+        if (_rewardService != null)
+        {
+            var entries = RewardEntry.FromResources(resourcesGained.metal, resourcesGained.wood, resourcesGained.blueprints);
+            if (entries.Count > 0)
+                _rewardService.ShowResources("Вы получили", entries);
+            return;
+        }
+
         var parts = new List<string>();
         if (resourcesGained.metal > 0) parts.Add($"+{resourcesGained.metal} металл");
         if (resourcesGained.wood > 0) parts.Add($"+{resourcesGained.wood} дерево");
@@ -588,14 +619,23 @@ public class SightsUpdater : IInitializable, IDisposable
                 _inventoryService.SetResources(invResponse.resources);
 
             var reward = captureResponse.capture_reward;
-            string bonusPart = "";
-            if (reward != null)
+            if (_rewardService != null)
             {
-                if (reward.metal > 0)           bonusPart = $" +{reward.metal} металл";
-                else if (reward.wood > 0)       bonusPart = $" +{reward.wood} дерево";
-                else if (reward.blueprints > 0) bonusPart = $" +{reward.blueprints} чертёж";
+                _rewardService.ShowResources("Захвачено!", reward != null
+                    ? RewardEntry.FromResources(reward.metal, reward.wood, reward.blueprints)
+                    : new List<RewardEntry>());
             }
-            _popupService.ShowSuccess($"Захвачено!{bonusPart}");
+            else
+            {
+                string bonusPart = "";
+                if (reward != null)
+                {
+                    if (reward.metal > 0)           bonusPart = $" +{reward.metal} металл";
+                    else if (reward.wood > 0)       bonusPart = $" +{reward.wood} дерево";
+                    else if (reward.blueprints > 0) bonusPart = $" +{reward.blueprints} чертёж";
+                }
+                _popupService.ShowSuccess($"Захвачено!{bonusPart}");
+            }
 
             await RefreshCaptureInfoInPopup(pageId, captureResponse.capture);
         }
@@ -616,7 +656,15 @@ public class SightsUpdater : IInitializable, IDisposable
             return;
         }
 
-        var gained = response.resources_gained;
+        var gained = response.resources_gained ?? new APIService.ResourcesGained();
+
+        if (_rewardService != null)
+        {
+            _rewardService.ShowResources($"Награда за {response.total_hours} ч.",
+                RewardEntry.FromResources(gained.metal, gained.wood, gained.blueprints));
+            return;
+        }
+
         var parts = new List<string>();
         if (gained.metal > 0)      parts.Add($"+{gained.metal} металл");
         if (gained.wood > 0)       parts.Add($"+{gained.wood} дерево");
@@ -654,13 +702,25 @@ public class SightsUpdater : IInitializable, IDisposable
     }
     
 
+    // Экраны наград и летящие иконки не должны блокировать открытие попапов
+    private static int CountBlockingCanvasChildren(Transform canvasTransform)
+    {
+        int count = 0;
+        for (int i = 0; i < canvasTransform.childCount; i++)
+        {
+            if (!RewardUiFactory.IsRewardObject(canvasTransform.GetChild(i)))
+                count++;
+        }
+        return count;
+    }
+
     public bool TryGetImage(int pageId, out Sprite sprite)
         => ImageCache.TryGetValue(pageId, out sprite);
 
     public async void CreatePartnerStoreDetailsPopup(int storeId)
     {
         Transform canvasTransform = GameObject.FindGameObjectWithTag("Canvas").transform;
-        if (canvasTransform.childCount > 1)
+        if (CountBlockingCanvasChildren(canvasTransform) > 1)
         {
             Debug.LogError("[SightsUpdater] Canvas child count is more than 1");
             return;

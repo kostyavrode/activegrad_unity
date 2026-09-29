@@ -76,8 +76,17 @@ public class JumpController : MonoBehaviour
     private TextMeshProUGUI  _comboTxt;
     private GameObject       _startScreen;
     private GameObject       _gameScreen;
-    private GameObject       _endScreen;
-    private TextMeshProUGUI  _finalScoreTxt;
+    private RectTransform    _rootRect;
+    private RectTransform    _bgRect;
+
+    // ── juice / result ────────────────────────────────────────────────────────
+    private MiniGameResultPanel _resultPanel;
+    private MiniGameCountdown   _countdown;
+    private int              _maxCombo;
+    private int              _coinsCollected;
+    private int              _obstacleHits;
+    private int              _lastHudCombo;
+    private int              _lastTimerSecond = -1;
 
     // ── obstacles / coins ─────────────────────────────────────────────────────
     private struct Lane
@@ -121,10 +130,12 @@ public class JumpController : MonoBehaviour
     private void BuildUI()
     {
         var root = GetComponent<RectTransform>();
+        _rootRect = root;
 
-        var bg = MakePanel(root, "BG", _cfg != null ? _cfg.skyColor : new Color(0.06f, 0.07f, 0.12f, 1f));
+        var bg = MakePanel(root, "BG", _cfg != null ? _cfg.skyColor : MiniGameTheme.Background);
         bg.anchorMin = Vector2.zero; bg.anchorMax = Vector2.one;
         bg.offsetMin = Vector2.zero; bg.offsetMax = Vector2.zero;
+        _bgRect = bg;
 
         BuildBackground(bg);
 
@@ -157,7 +168,6 @@ public class JumpController : MonoBehaviour
         _gameScreen  = new GameObject("GameScreen");
         _gameScreen.transform.SetParent(bg, false);
         _gameScreen.AddComponent<RectTransform>();
-        _endScreen = BuildEndScreen(bg);
     }
 
     private void BuildBackground(RectTransform parent)
@@ -223,123 +233,38 @@ public class JumpController : MonoBehaviour
     private GameObject BuildStartScreen(RectTransform parent)
     {
         var screen = MakeFullPanel(parent, "StartScreen", new Color(0f, 0f, 0f, 0.78f));
+        var srt = screen.GetComponent<RectTransform>();
 
-        MakeText(screen.GetComponent<RectTransform>(), "Title", "ПРЫЖКИ", 52,
-            new Vector2(0, 80), TextAlignmentOptions.Center).fontStyle = FontStyles.Bold;
+        var card = MiniGameTheme.CreateCard(srt, "Card", new Vector2(400f, 450f), out _, MiniGameTheme.Card, 26f);
+        card.anchoredPosition = new Vector2(0f, -10f);
 
-        MakeText(screen.GetComponent<RectTransform>(), "Sub",
+        var title = MakeText(srt, "Title", "ПРЫЖКИ", 52, new Vector2(0, 140), TextAlignmentOptions.Center);
+        title.fontStyle = FontStyles.Bold;
+        title.color = MiniGameTheme.Accent;
+
+        var sub = MakeText(srt, "Sub",
             "Нажми — прыгнуть\nДважды — двойной прыжок\nСвайп вниз — удар о землю\nСобирай монеты, избегай препятствий",
-            20, new Vector2(0, -10), TextAlignmentOptions.Center);
+            20, new Vector2(0, 35), TextAlignmentOptions.Center);
+        sub.color = MiniGameTheme.TextSecondary;
 
-        var btn = MakeButton(screen.GetComponent<RectTransform>(), "Начать",
-            new Color(0.25f, 0.7f, 0.35f), new Vector2(0, -120), new Vector2(200, 56));
+        var btn = MakeButton(srt, "Начать",
+            MiniGameTheme.Success, new Vector2(0, -110), new Vector2(220, 56));
+        MiniGameTheme.StyleButton(btn, MiniGameTheme.Success, MiniGameTheme.TextDark);
         btn.onClick.AddListener(StartGame);
 
-        var closeBtn = MakeButton(screen.GetComponent<RectTransform>(), "✕",
-            new Color(0.6f, 0.15f, 0.15f), new Vector2(0, -190), new Vector2(200, 44));
+        var closeBtn = MakeButton(srt, "✕  Выйти",
+            MiniGameTheme.Danger, new Vector2(0, -180), new Vector2(220, 44));
+        MiniGameTheme.StyleButton(closeBtn, MiniGameTheme.Danger, Color.white, 19f, 16f, FeedbackType.Close);
         closeBtn.onClick.AddListener(() => _gameEvent?.CloseGame());
 
         return screen;
     }
 
-    // дополнительные поля экрана результатов
+    // поля экрана результатов (строятся в MiniGameResultPanel)
     private TextMeshProUGUI    _agilityBonusTxt;
     private TextMeshProUGUI    _rewardTxt;
-    private GameObject         _finishBtnGo;
     private BonusSliderComponent _bonusSlider;
     private int                _rawScore;
-
-    private GameObject BuildEndScreen(RectTransform parent)
-    {
-        var screen = MakeFullPanel(parent, "EndScreen", new Color(0f, 0f, 0f, 0.88f));
-        screen.SetActive(false);
-        var rt = screen.GetComponent<RectTransform>();
-
-        // ── заголовок ─────────────────────────────────────────────────────────
-        var title = MakeText(rt, "Title", "ИГРА ОКОНЧЕНА", 38, new Vector2(0, 195), TextAlignmentOptions.Center);
-        title.fontStyle = FontStyles.Bold;
-
-        // ── счёт ──────────────────────────────────────────────────────────────
-        _finalScoreTxt = MakeText(rt, "Score", "0", 76, new Vector2(0, 110), TextAlignmentOptions.Center);
-        _finalScoreTxt.color = new Color(1f, 0.85f, 0.25f);
-        _finalScoreTxt.fontStyle = FontStyles.Bold;
-
-        MakeText(rt, "ScoreLabel", "очков из 100", 19, new Vector2(0, 58), TextAlignmentOptions.Center)
-            .color = new Color(0.75f, 0.75f, 0.75f);
-
-        // ── ловкость ──────────────────────────────────────────────────────────
-        _agilityBonusTxt = MakeText(rt, "AgilityHint", "", 18, new Vector2(0, 24), TextAlignmentOptions.Center);
-        _agilityBonusTxt.color = new Color(0.45f, 1f, 0.68f);
-
-        // ── подписи ползунка ──────────────────────────────────────────────────
-        var leftLbl  = MakeText(rt, "SliderLabelL", "Ловкость",   15, new Vector2(-100, -14), TextAlignmentOptions.Center);
-        var rightLbl = MakeText(rt, "SliderLabelR", "% задания",  15, new Vector2( 100, -14), TextAlignmentOptions.Center);
-        leftLbl.color  = new Color(0.65f, 0.65f, 0.65f);
-        rightLbl.color = new Color(0.65f, 0.65f, 0.65f);
-        leftLbl.GetComponent<RectTransform>().sizeDelta  = new Vector2(140f, 28f);
-        rightLbl.GetComponent<RectTransform>().sizeDelta = new Vector2(140f, 28f);
-
-        // ── трек ползунка ─────────────────────────────────────────────────────
-        const float trackW = 300f, trackH = 28f;
-        var trackGo = new GameObject("SliderTrack");
-        trackGo.transform.SetParent(rt, false);
-        var trackRt = trackGo.AddComponent<RectTransform>();
-        trackRt.anchorMin = trackRt.anchorMax = new Vector2(0.5f, 0.5f);
-        trackRt.sizeDelta = new Vector2(trackW, trackH);
-        trackRt.anchoredPosition = new Vector2(0f, -50f);
-        var trackBg = trackGo.AddComponent<Image>();
-        trackBg.color = new Color(0.15f, 0.15f, 0.15f);
-
-        // Цветные зоны: красная | жёлтая | зелёная | жёлтая | красная
-        float hw = trackW * 0.5f;
-        (float from, float to, Color col)[] zones =
-        {
-            (-hw,       -hw*0.55f,  new Color(0.85f, 0.22f, 0.22f)),
-            (-hw*0.55f, -hw*0.22f,  new Color(0.90f, 0.74f, 0.18f)),
-            (-hw*0.22f,  hw*0.22f,  new Color(0.22f, 0.80f, 0.38f)),
-            ( hw*0.22f,  hw*0.55f,  new Color(0.90f, 0.74f, 0.18f)),
-            ( hw*0.55f,  hw,         new Color(0.85f, 0.22f, 0.22f)),
-        };
-        foreach (var (from, to, col) in zones)
-        {
-            float zw = to - from;
-            var zgo = new GameObject("Zone");
-            zgo.transform.SetParent(trackGo.transform, false);
-            var zrt = zgo.AddComponent<RectTransform>();
-            zrt.anchorMin = zrt.anchorMax = new Vector2(0.5f, 0.5f);
-            zrt.sizeDelta = new Vector2(zw - 1f, trackH - 4f);
-            zrt.anchoredPosition = new Vector2((from + to) * 0.5f, 0f);
-            zgo.AddComponent<Image>().color = col;
-        }
-
-        // Индикатор (белая вертикальная полоска)
-        var indGo = new GameObject("Indicator");
-        indGo.transform.SetParent(trackGo.transform, false);
-        var indRt = indGo.AddComponent<RectTransform>();
-        indRt.anchorMin = indRt.anchorMax = new Vector2(0.5f, 0.5f);
-        indRt.sizeDelta = new Vector2(5f, trackH + 10f);
-        indRt.anchoredPosition = Vector2.zero;
-        indGo.AddComponent<Image>().color = Color.white;
-
-        // BonusSliderComponent — хост-объект
-        var sliderHostGo = new GameObject("SliderHost");
-        sliderHostGo.transform.SetParent(rt, false);
-        sliderHostGo.AddComponent<RectTransform>();
-        _bonusSlider = sliderHostGo.AddComponent<BonusSliderComponent>();
-        _bonusSlider.Setup(trackRt, indRt, leftLbl, rightLbl, null);
-
-        // ── награда ───────────────────────────────────────────────────────────
-        _rewardTxt = MakeText(rt, "Reward", "", 20, new Vector2(0, -100), TextAlignmentOptions.Center);
-
-        // ── кнопка (скрыта — покажется после ползунка) ────────────────────────
-        var btn = MakeButton(rt, "Получить награду",
-            new Color(0.25f, 0.55f, 0.9f), new Vector2(0, -165), new Vector2(260, 58));
-        btn.onClick.AddListener(FinishGame);
-        _finishBtnGo = btn.gameObject;
-        _finishBtnGo.SetActive(false);
-
-        return screen;
-    }
 
     private void AddEyes(Transform playerT)
     {
@@ -364,18 +289,20 @@ public class JumpController : MonoBehaviour
 
     private void ShowStart()
     {
-        _startScreen.SetActive(true);
+        _startScreen.SetActive(false);
         _gameScreen.SetActive(false);
-        _endScreen.SetActive(false);
+        MiniGameJuice.FadeIn(_startScreen, 0.25f);
     }
 
     private void StartGame()
     {
-        _startScreen.SetActive(false);
-        _gameScreen.SetActive(true);
-        _endScreen.SetActive(false);
+        if (_countdown != null) return; // отсчёт уже идёт
 
-        _running       = true;
+        MiniGameJuice.FadeOut(_startScreen, 0.2f);
+        _gameScreen.SetActive(true);
+        if (_resultPanel != null) { Destroy(_resultPanel.gameObject); _resultPanel = null; }
+
+        _running       = false; // запуск — после отсчёта
         _timeLeft      = GameDuration;
         _elapsed       = 0f;
         _score         = 0;
@@ -398,7 +325,16 @@ public class JumpController : MonoBehaviour
             if (l.rect != null) Destroy(l.rect.gameObject);
         _lanes.Clear();
 
+        _maxCombo = _coinsCollected = _obstacleHits = 0;
+        _lastHudCombo = 0;
+        _lastTimerSecond = -1;
         UpdateHUD();
+
+        _countdown = MiniGameCountdown.Play(_rootRect, () =>
+        {
+            _countdown = null;
+            _running = true;
+        });
     }
 
     private void EndGame()
@@ -414,23 +350,39 @@ public class JumpController : MonoBehaviour
         _rawScore = Mathf.Clamp(_score / 8, 0, 100);
 
         // ── подпись ловкости ──────────────────────────────────────────────────
+        if (_resultPanel != null) Destroy(_resultPanel.gameObject);
+        _resultPanel = MiniGameResultPanel.Show(_rootRect, new MiniGameResultPanel.Options
+        {
+            GameId         = "jump",
+            Title          = "ИГРА ОКОНЧЕНА",
+            TitleColor     = MiniGameTheme.Accent,
+            Score          = _rawScore,
+            MaxScore       = 100,
+            StarThresholds = new[] { 0.35f, 0.65f, 0.9f },
+            ScoreCaption   = "очков из 100",
+            StatLines      = new[]
+            {
+                $"Очки забега: {_score}",
+                $"Монет: {_coinsCollected}   Столкновений: {_obstacleHits}",
+                $"Макс. комбо: x{_maxCombo}",
+            },
+            ExtraHeight    = 96f,
+            ShowInfoLine   = true,
+            PrimaryLabel   = "Получить награду",
+            OnPrimary      = FinishGame,
+            PrimaryVisibleImmediately = false,
+            CommitBestImmediately     = false,
+        });
+        _bonusSlider = _resultPanel.BuildBonusSlider("Ловкость", "% задания", out _agilityBonusTxt);
+        _rewardTxt   = _resultPanel.InfoText;
+
         _agilityBonusTxt.text = _agility > 1
             ? $"Ловкость {_agility} · влияет на точность ползунка"
             : "Ловкость не прокачана";
 
         // ── показываем экран ──────────────────────────────────────────────────
-        _finishBtnGo.SetActive(false);
         _rewardTxt.text = "";
-        _endScreen.SetActive(true);
-
-        // Анимация появления
-        var cg = _endScreen.GetComponent<CanvasGroup>();
-        if (cg != null) { cg.alpha = 0f; cg.DOFade(1f, 0.35f).SetUpdate(true); }
-
-        // Счёт анимирует до rawScore; после ползунка обновим до finalScore
-        _finalScoreTxt.text = "0";
-        DOTween.To(() => 0f, v => _finalScoreTxt.text = Mathf.RoundToInt(v).ToString(),
-            _rawScore, 0.9f).SetEase(Ease.OutCubic).SetUpdate(true);
+        // Счёт (count-up до rawScore) и звёзды анимирует MiniGameResultPanel; после ползунка — UpdateScore
 
         // ── запускаем ползунок ────────────────────────────────────────────────
         if (_bonusSlider != null)
@@ -448,9 +400,8 @@ public class JumpController : MonoBehaviour
                         : _rawScore;
                     _finalScore = Mathf.Clamp(boosted, 0, 100);
 
-                    // Обновляем счёт
-                    DOTween.To(() => (float)_rawScore, v => _finalScoreTxt.text = Mathf.RoundToInt(v).ToString(),
-                        _finalScore, 0.5f).SetEase(Ease.OutCubic).SetUpdate(true);
+                    // Обновляем счёт (+звёзды, +рекорд)
+                    if (_resultPanel != null) _resultPanel.UpdateScore(_finalScore);
 
                     // Показываем бонус ловкости
                     if (bonus > 1.05f)
@@ -466,7 +417,7 @@ public class JumpController : MonoBehaviour
                     Debug.Log($"[JumpGame] rawScore={_rawScore} bonus={bonus:F2} finalScore={_finalScore}");
 
                     // Показываем кнопку
-                    _finishBtnGo.SetActive(true);
+                    if (_resultPanel != null) _resultPanel.SetPrimaryVisible(true);
                 });
         }
         else
@@ -476,7 +427,11 @@ public class JumpController : MonoBehaviour
             _finalScore = Mathf.Clamp(_rawScore + agilityBonus, 0, 100);
             Debug.Log($"[JumpGame] rawScore={_rawScore} agilityBonus={agilityBonus} finalScore={_finalScore}");
             ApplyRewardDisplay(_finalScore);
-            _finishBtnGo.SetActive(true);
+            if (_resultPanel != null)
+            {
+                _resultPanel.UpdateScore(_finalScore);
+                _resultPanel.SetPrimaryVisible(true);
+            }
         }
     }
 
@@ -497,6 +452,9 @@ public class JumpController : MonoBehaviour
             _rewardTxt.text  = "Результат недостаточен — без награды";
             _rewardTxt.color = new Color(0.7f, 0.35f, 0.35f);
         }
+
+        MiniGameJuice.Punch(_rewardTxt.transform, 0.2f, 0.3f);
+        if (score >= 65) MiniGameJuice.Feedback(FeedbackType.Reward);
     }
 
     // Вызывается кнопкой «Получить награду» — только здесь стреляем ивент
@@ -850,6 +808,7 @@ public class JumpController : MonoBehaviour
                     AddScore(PointsClear, lane.rect.anchoredPosition + Vector2.up * 60f,
                         new Color(0.4f, 1f, 0.5f));
                     _combo++;
+                    OnComboStep(lane.rect.anchoredPosition + Vector2.up * 30f, new Color(0.4f, 1f, 0.5f), 6, false);
                 }
             }
 
@@ -914,6 +873,24 @@ public class JumpController : MonoBehaviour
         var l2 = _lanes[index]; l2.passed = true; _lanes[index] = l2;
         AddScore(PointsPerCoin, pos + Vector2.up * 20f, new Color(1f, 0.9f, 0.2f));
         _combo++;
+        _coinsCollected++;
+        OnComboStep(pos, MiniGameTheme.Warning, 12, true);
+    }
+
+    // Частицы + звук за успешное действие; каждые 5 комбо — «PERFECT»-акцент
+    private void OnComboStep(Vector2 pos, Color col, int particles, bool hitSound)
+    {
+        MiniGameJuice.Burst(_laneContainer, pos, col, particles, hitSound ? 80f : 55f, hitSound ? 16f : 11f, 0.45f);
+
+        if (_combo > 0 && _combo % 5 == 0)
+        {
+            MiniGameJuice.Feedback(FeedbackType.Perfect);
+            MiniGameJuice.Shake(_bgRect, 5f, 0.15f);
+        }
+        else if (hitSound)
+        {
+            MiniGameJuice.Feedback(FeedbackType.Hit);
+        }
     }
 
     private void HitObstacle(int index)
@@ -932,6 +909,11 @@ public class JumpController : MonoBehaviour
         _playerImg.DOColor(new Color(1f, 0.2f, 0.2f), 0.08f).SetUpdate(true)
             .OnComplete(() => _playerImg.DOColor(new Color(0.35f, 0.75f, 1f), 0.3f).SetUpdate(true));
         _playerRect.DOShakeAnchorPos(0.25f, 18f, 25).SetUpdate(true);
+
+        _obstacleHits++;
+        MiniGameJuice.Feedback(FeedbackType.Miss);
+        MiniGameJuice.Shake(_bgRect, 14f, 0.3f);
+        MiniGameJuice.Flash(_rootRect, MiniGameTheme.Danger, 0.25f, 0.35f);
 
         if (_onGround)
         {
@@ -989,15 +971,30 @@ public class JumpController : MonoBehaviour
         _timerTxt.text  = Mathf.CeilToInt(_timeLeft).ToString();
         _timerTxt.color = _timeLeft <= 5f ? new Color(1f, 0.3f, 0.3f) : Color.white;
 
+        _maxCombo = Mathf.Max(_maxCombo, _combo);
         if (_combo >= 2)
         {
             _comboTxt.text = $"x{_combo} COMBO!";
-            _comboTxt.transform.localScale = Vector3.one;
-            _comboTxt.transform.DOPunchScale(Vector3.one * 0.18f, 0.2f).SetUpdate(true);
+            // punch только при изменении комбо (раньше punch запускался каждый кадр)
+            if (_combo != _lastHudCombo)
+                MiniGameJuice.Punch(_comboTxt.transform, 0.25f, 0.25f);
         }
         else
         {
             _comboTxt.text = "";
+        }
+        _lastHudCombo = _combo;
+
+        // последние 5 секунд — тик таймера
+        int sec = Mathf.CeilToInt(_timeLeft);
+        if (_running && sec != _lastTimerSecond)
+        {
+            if (_lastTimerSecond > 0 && sec <= 5 && sec > 0)
+            {
+                MiniGameJuice.Punch(_timerTxt.transform, 0.3f, 0.25f);
+                MiniGameJuice.Feedback(FeedbackType.Tap);
+            }
+            _lastTimerSecond = sec;
         }
     }
 
@@ -1044,6 +1041,9 @@ public class JumpController : MonoBehaviour
         var cg = go.AddComponent<CanvasGroup>();
 
         rt.DOSizeDelta(new Vector2(180f, 14f), 0.2f).SetEase(Ease.OutCubic).SetUpdate(true);
+
+        MiniGameJuice.Shake(_bgRect, 6f, 0.15f);
+        MiniGameJuice.Haptic(HapticType.Medium);
         cg.DOFade(0f, 0.25f).SetUpdate(true)
             .OnComplete(() => { if (go != null) Destroy(go); });
     }

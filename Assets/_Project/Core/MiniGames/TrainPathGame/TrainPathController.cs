@@ -45,18 +45,19 @@ public class TrainPathController : MonoBehaviour
     private int   _finalScore;
 
     // ── UI refs ───────────────────────────────────────────────────────────────
+    private RectTransform      _rootRect;
     private GameObject         _startScreen;
     private GameObject         _gameScreen;
-    private GameObject         _endScreen;
+    private RectTransform      _gameScreenRect;
     private TextMeshProUGUI    _timerTxt;
     private Image              _timerBarFill;
     private TextMeshProUGUI    _cargoTxt;
-    private TextMeshProUGUI    _finalScoreTxt;
-    private TextMeshProUGUI    _resultTitleTxt;
     private TextMeshProUGUI    _intelligenceTxt;
     private TextMeshProUGUI    _rewardTxt;
     private BonusSliderComponent _bonusSlider;
-    private GameObject         _finishBtnGo;
+    private MiniGameResultPanel _resultPanel;
+    private MiniGameCountdown   _countdown;
+    private int                _lastTimerSecond = -1;
 
     // ── Visual constants ──────────────────────────────────────────────────────
     private static readonly Color ColBg        = new Color(0.04f, 0.06f, 0.12f);
@@ -92,6 +93,7 @@ public class TrainPathController : MonoBehaviour
     private void BuildUI()
     {
         var root = GetComponent<RectTransform>();
+        _rootRect = root;
 
         // Background
         var bgGo = new GameObject("BG");
@@ -103,7 +105,7 @@ public class TrainPathController : MonoBehaviour
 
         _startScreen = BuildStartScreen(root);
         _gameScreen  = BuildGameScreen(root);
-        _endScreen   = BuildEndScreen(root);
+        _gameScreenRect = _gameScreen.GetComponent<RectTransform>();
     }
 
     // ── Start screen ──────────────────────────────────────────────────────────
@@ -112,6 +114,9 @@ public class TrainPathController : MonoBehaviour
     {
         var screen = MakeOverlay(root, "StartScreen");
         var rt     = screen.GetComponent<RectTransform>();
+
+        var card = MiniGameTheme.CreateCard(rt, "Card", new Vector2(400f, 470f), out _, MiniGameTheme.Card, 26f);
+        card.anchoredPosition = new Vector2(0f, -10f);
 
         // Title
         var title = MakeText(rt, "Title", "ЖЕЛЕЗНАЯ\nДОРОГА", 46,
@@ -139,12 +144,14 @@ public class TrainPathController : MonoBehaviour
 
         // Start button
         var startBtn = MakeButton(rt, "НАЧАТЬ",
-            new Color(0.10f, 0.60f, 0.32f), new Vector2(0, -112), new Vector2(220, 56));
+            MiniGameTheme.Success, new Vector2(0, -112), new Vector2(220, 56));
+        MiniGameTheme.StyleButton(startBtn, MiniGameTheme.Success, MiniGameTheme.TextDark);
         startBtn.onClick.AddListener(StartGame);
 
         // Close button
         var closeBtn = MakeButton(rt, "✕  Выйти",
-            new Color(0.42f, 0.10f, 0.10f), new Vector2(0, -180), new Vector2(220, 44));
+            MiniGameTheme.Danger, new Vector2(0, -180), new Vector2(220, 44));
+        MiniGameTheme.StyleButton(closeBtn, MiniGameTheme.Danger, Color.white, 19f, 16f, FeedbackType.Close);
         closeBtn.onClick.AddListener(() => _gameEvent?.CloseGame());
 
         return screen;
@@ -226,110 +233,15 @@ public class TrainPathController : MonoBehaviour
         return screen;
     }
 
-    // ── End screen ────────────────────────────────────────────────────────────
-
-    private GameObject BuildEndScreen(RectTransform root)
-    {
-        var screen = MakeOverlay(root, "EndScreen", new Color(0f, 0f, 0f, 0.88f));
-        screen.SetActive(false);
-        var rt = screen.GetComponent<RectTransform>();
-
-        // Title
-        _resultTitleTxt = MakeText(rt, "Title", "ДОСТАВКА ЗАВЕРШЕНА!", 32,
-            new Vector2(0, 200), TextAlignmentOptions.Center);
-        _resultTitleTxt.fontStyle = FontStyles.Bold;
-
-        // Score counter
-        _finalScoreTxt = MakeText(rt, "Score", "0", 72, new Vector2(0, 115), TextAlignmentOptions.Center);
-        _finalScoreTxt.color     = new Color(1f, 0.85f, 0.25f);
-        _finalScoreTxt.fontStyle = FontStyles.Bold;
-
-        MakeText(rt, "ScoreLabel", "очков из 100", 16, new Vector2(0, 62), TextAlignmentOptions.Center)
-            .color = new Color(0.58f, 0.62f, 0.68f);
-
-        // Intelligence hint
-        _intelligenceTxt = MakeText(rt, "Intelligence", "", 15, new Vector2(0, 28), TextAlignmentOptions.Center);
-        _intelligenceTxt.color = new Color(0.40f, 1f, 0.65f);
-
-        // Slider labels
-        var leftLbl = MakeText(rt, "SliderL", "Интеллект", 14,
-            new Vector2(-105, -12), TextAlignmentOptions.Center);
-        var rightLbl = MakeText(rt, "SliderR", "% задания", 14,
-            new Vector2(105, -12), TextAlignmentOptions.Center);
-        leftLbl.color  = rightLbl.color = new Color(0.55f, 0.60f, 0.68f);
-        leftLbl.GetComponent<RectTransform>().sizeDelta  = new Vector2(130f, 24f);
-        rightLbl.GetComponent<RectTransform>().sizeDelta = new Vector2(130f, 24f);
-
-        // Slider track
-        const float TW = 280f, TH = 28f;
-        var trackGo = new GameObject("SliderTrack");
-        trackGo.transform.SetParent(rt, false);
-        var trackRt = trackGo.AddComponent<RectTransform>();
-        trackRt.anchorMin = trackRt.anchorMax = new Vector2(0.5f, 0.5f);
-        trackRt.sizeDelta        = new Vector2(TW, TH);
-        trackRt.anchoredPosition = new Vector2(0, -50f);
-        trackGo.AddComponent<Image>().color = new Color(0.10f, 0.13f, 0.18f);
-
-        float hw = TW * 0.5f;
-        (float from, float to, Color col)[] zones =
-        {
-            (-hw,       -hw * 0.55f, new Color(0.85f, 0.22f, 0.22f)),
-            (-hw * 0.55f, -hw * 0.22f, new Color(0.90f, 0.74f, 0.18f)),
-            (-hw * 0.22f,  hw * 0.22f, new Color(0.22f, 0.80f, 0.38f)),
-            ( hw * 0.22f,  hw * 0.55f, new Color(0.90f, 0.74f, 0.18f)),
-            ( hw * 0.55f,  hw,          new Color(0.85f, 0.22f, 0.22f)),
-        };
-        foreach (var (f, t, c) in zones)
-        {
-            var z = new GameObject("Zone");
-            z.transform.SetParent(trackGo.transform, false);
-            var zrt = z.AddComponent<RectTransform>();
-            zrt.anchorMin = zrt.anchorMax = new Vector2(0.5f, 0.5f);
-            zrt.sizeDelta        = new Vector2(t - f - 1f, TH - 4f);
-            zrt.anchoredPosition = new Vector2((f + t) * 0.5f, 0f);
-            z.AddComponent<Image>().color = c;
-        }
-
-        var indGo = new GameObject("Indicator");
-        indGo.transform.SetParent(trackGo.transform, false);
-        var indRt = indGo.AddComponent<RectTransform>();
-        indRt.anchorMin = indRt.anchorMax = new Vector2(0.5f, 0.5f);
-        indRt.sizeDelta = new Vector2(5f, TH + 10f);
-        indGo.AddComponent<Image>().color = Color.white;
-
-        var sliderHost = new GameObject("SliderHost");
-        sliderHost.transform.SetParent(rt, false);
-        sliderHost.AddComponent<RectTransform>();
-        _bonusSlider = sliderHost.AddComponent<BonusSliderComponent>();
-        _bonusSlider.Setup(trackRt, indRt, leftLbl, rightLbl, null);
-
-        // Reward text
-        _rewardTxt = MakeText(rt, "Reward", "", 18, new Vector2(0, -96), TextAlignmentOptions.Center);
-
-        // Finish button (shown after slider completes)
-        var finishBtn = MakeButton(rt, "Получить награду",
-            new Color(0.10f, 0.52f, 0.86f), new Vector2(0, -158), new Vector2(260, 56));
-        finishBtn.onClick.AddListener(OnFinishClicked);
-        _finishBtnGo = finishBtn.gameObject;
-        _finishBtnGo.SetActive(false);
-
-        // Restart button
-        var restartBtn = MakeButton(rt, "Ещё раз",
-            new Color(0.16f, 0.20f, 0.28f), new Vector2(0, -226), new Vector2(260, 44));
-        restartBtn.onClick.AddListener(RestartGame);
-
-        return screen;
-    }
-
     // ══════════════════════════════════════════════════════════════════════════
     // GAME FLOW
     // ══════════════════════════════════════════════════════════════════════════
 
     private void ShowStart()
     {
-        _startScreen.SetActive(true);
+        _startScreen.SetActive(false);
         _gameScreen.SetActive(false);
-        _endScreen.SetActive(false);
+        MiniGameJuice.FadeIn(_startScreen, 0.25f);
     }
 
     private void StartGame()
@@ -340,25 +252,32 @@ public class TrainPathController : MonoBehaviour
         _countdownTime = 90f + _totalCargo * 25f;
         _remainingTime = _countdownTime;
         _cargoCollected = 0;
-        _gameStarted   = true;
+        _gameStarted   = false; // true — после отсчёта
         _gameEnded     = false;
         _isMoving      = false;
         _currentStation = _startStation;
 
         PlaceTrainAt(_startStation);
 
-        _startScreen.SetActive(false);
+        MiniGameJuice.FadeOut(_startScreen, 0.2f);
         _gameScreen.SetActive(true);
-        _endScreen.SetActive(false);
+        if (_resultPanel != null) { Destroy(_resultPanel.gameObject); _resultPanel = null; }
+        _lastTimerSecond = -1;
 
         UpdateHUD();
         HighlightAvailable();
+
+        if (_countdown != null) _countdown.Cancel();
+        _countdown = MiniGameCountdown.Play(_gameScreenRect, () =>
+        {
+            _countdown = null;
+            _gameStarted = true;
+        });
     }
 
     private void RestartGame()
     {
         _gameStarted = _gameEnded = _isMoving = false;
-        _endScreen.SetActive(false);
         _gameScreen.SetActive(true);
         StartGame();
     }
@@ -438,6 +357,17 @@ public class TrainPathController : MonoBehaviour
         _gameStarted = false;
         _isMoving    = false;
 
+        if (isTimeout)
+        {
+            MiniGameJuice.Feedback(FeedbackType.Miss);
+            MiniGameJuice.Flash(_rootRect, MiniGameTheme.Danger, 0.3f, 0.4f);
+            MiniGameJuice.Shake(_gameScreenRect, 10f, 0.3f);
+        }
+        else if (_endStation != null)
+        {
+            MiniGameJuice.Burst(_mapContainer, _endStation.Position, MiniGameTheme.Success, 18, 120f, 20f);
+        }
+
         // Base score
         int baseScore = isTimeout
             ? Mathf.RoundToInt((_totalCargo > 0 ? (float)_cargoCollected / _totalCargo : 0f) * 50f)
@@ -445,28 +375,40 @@ public class TrainPathController : MonoBehaviour
 
         _rawScore = Mathf.Clamp(baseScore, 0, 100);
 
-        // Title / color
-        _resultTitleTxt.text  = isTimeout ? "ВРЕМЯ ВЫШЛО" : "ДОСТАВКА ЗАВЕРШЕНА!";
-        _resultTitleTxt.color = isTimeout
-            ? new Color(0.92f, 0.28f, 0.28f)
-            : new Color(0.22f, 0.90f, 0.52f);
+        // Result panel (count-up, звёзды, рекорд)
+        int remM = Mathf.FloorToInt(_remainingTime / 60f);
+        int remS = Mathf.FloorToInt(_remainingTime % 60f);
+        if (_resultPanel != null) Destroy(_resultPanel.gameObject);
+        _resultPanel = MiniGameResultPanel.Show(_rootRect, new MiniGameResultPanel.Options
+        {
+            GameId         = "trainpath",
+            Title          = isTimeout ? "ВРЕМЯ ВЫШЛО" : "ДОСТАВКА ЗАВЕРШЕНА!",
+            TitleColor     = isTimeout ? MiniGameTheme.Danger : MiniGameTheme.Success,
+            Score          = _rawScore,
+            MaxScore       = 100,
+            StarThresholds = new[] { 0.4f, 0.65f, 0.9f },
+            ScoreCaption   = "очков из 100",
+            StatLines      = new[]
+            {
+                $"Грузов доставлено: {_cargoCollected}/{_totalCargo}",
+                isTimeout ? "Время истекло" : $"Осталось времени: {remM}:{remS:00}",
+            },
+            ExtraHeight    = 96f,
+            ShowInfoLine   = true,
+            PrimaryLabel   = "Получить награду",
+            OnPrimary      = OnFinishClicked,
+            PrimaryVisibleImmediately = false,
+            SecondaryLabel = "Ещё раз",
+            OnSecondary    = RestartGame,
+            CommitBestImmediately     = false,
+        });
+        _bonusSlider = _resultPanel.BuildBonusSlider("Интеллект", "% задания", out _intelligenceTxt);
+        _rewardTxt   = _resultPanel.InfoText;
 
         _intelligenceTxt.text = _intelligence > 1
             ? $"Интеллект {_intelligence}  ·  влияет на точность ползунка"
             : "Интеллект не прокачан";
-
-        _finishBtnGo.SetActive(false);
         _rewardTxt.text = "";
-        _endScreen.SetActive(true);
-
-        // Fade in
-        var cg = _endScreen.GetComponent<CanvasGroup>();
-        if (cg != null) { cg.alpha = 0f; cg.DOFade(1f, 0.35f).SetUpdate(true); }
-
-        // Animate score counter to rawScore
-        _finalScoreTxt.text = "0";
-        DOTween.To(() => 0f, v => _finalScoreTxt.text = Mathf.RoundToInt(v).ToString(),
-            _rawScore, 0.9f).SetEase(Ease.OutCubic).SetUpdate(true);
 
         // Run bonus slider
         if (_bonusSlider != null)
@@ -478,7 +420,11 @@ public class TrainPathController : MonoBehaviour
         {
             _finalScore = _rawScore;
             ApplyRewardDisplay(_finalScore);
-            _finishBtnGo.SetActive(true);
+            if (_resultPanel != null)
+            {
+                _resultPanel.UpdateScore(_finalScore);
+                _resultPanel.SetPrimaryVisible(true);
+            }
         }
     }
 
@@ -488,16 +434,15 @@ public class TrainPathController : MonoBehaviour
         int boosted = bonus >= 1f ? Mathf.RoundToInt(_rawScore * bonus) : _rawScore;
         _finalScore = Mathf.Clamp(boosted, 0, 100);
 
-        // Animate counter from rawScore → finalScore
-        DOTween.To(() => (float)_rawScore, v => _finalScoreTxt.text = Mathf.RoundToInt(v).ToString(),
-            _finalScore, 0.5f).SetEase(Ease.OutCubic).SetUpdate(true);
+        // Animate counter from rawScore → finalScore (+звёзды, +рекорд)
+        if (_resultPanel != null) _resultPanel.UpdateScore(_finalScore);
 
         _intelligenceTxt.text = bonus > 1.05f
             ? $"Интеллект {_intelligence}  ·  бонус ×{bonus:F2} ✓"
             : (_intelligence > 1 ? $"Интеллект {_intelligence}  ·  без бонуса" : "Интеллект не прокачан");
 
         ApplyRewardDisplay(_finalScore);
-        _finishBtnGo.SetActive(true);
+        if (_resultPanel != null) _resultPanel.SetPrimaryVisible(true);
 
         Debug.Log($"[TrainPath] rawScore={_rawScore} bonus={bonus:F2} finalScore={_finalScore}");
     }
@@ -519,6 +464,9 @@ public class TrainPathController : MonoBehaviour
             _rewardTxt.text  = "Результат недостаточен — без награды";
             _rewardTxt.color = new Color(0.70f, 0.35f, 0.35f);
         }
+
+        MiniGameJuice.Punch(_rewardTxt.transform, 0.2f, 0.3f);
+        if (score >= 65) MiniGameJuice.Feedback(FeedbackType.Reward);
     }
 
     private void OnFinishClicked() => _gameEvent?.OnGameEndedWithFinalScore(_finalScore);
@@ -564,8 +512,19 @@ public class TrainPathController : MonoBehaviour
             _mapContainer, inputPos, canvas.worldCamera, out Vector2 local);
 
         Station clicked = _stations.FirstOrDefault(s => Vector2.Distance(local, s.Position) < 34f);
-        if (clicked != null && CanMoveTo(clicked))
+        if (clicked == null) return;
+
+        if (CanMoveTo(clicked))
+        {
+            MiniGameJuice.Feedback(FeedbackType.Tap);
             MoveToStation(clicked);
+        }
+        else if (clicked != _currentStation)
+        {
+            // недоступная станция — «нет» (punch, а не shake: позицию поезда не трогаем)
+            MiniGameJuice.Feedback(FeedbackType.Error);
+            if (_trainRect != null) MiniGameJuice.Punch(_trainRect, 0.25f, 0.2f);
+        }
     }
 
     // ── Movement ──────────────────────────────────────────────────────────────
@@ -622,6 +581,7 @@ public class TrainPathController : MonoBehaviour
 
         // Arrival "thud"
         _trainRect.DOPunchScale(Vector3.one * 0.28f, 0.18f, 5).SetUpdate(true);
+        MiniGameJuice.Burst(_mapContainer, endPos, ColTrain, 6, 40f, 10f, 0.4f);
 
         yield return new WaitForSeconds(target.WaitTime);
 
@@ -641,6 +601,18 @@ public class TrainPathController : MonoBehaviour
         station.CollectCargo();
         _cargoCollected++;
         UpdateHUD();
+
+        MiniGameJuice.Burst(_mapContainer, station.Position, new Color(1f, 0.62f, 0.15f), 14, 90f, 16f);
+        if (_cargoTxt != null) MiniGameJuice.Punch(_cargoTxt.transform, 0.3f, 0.3f);
+        if (_cargoCollected >= _totalCargo)
+        {
+            MiniGameJuice.Feedback(FeedbackType.Success);
+            MiniGameJuice.Flash(_gameScreenRect, MiniGameTheme.Success, 0.15f, 0.4f);
+        }
+        else
+        {
+            MiniGameJuice.Feedback(FeedbackType.Hit);
+        }
     }
 
     private void PlaceTrainAt(Station station)
@@ -667,6 +639,18 @@ public class TrainPathController : MonoBehaviour
             _timerTxt.color = _remainingTime < 20f ? new Color(1f, 0.25f, 0.25f)
                             : _remainingTime < 40f ? new Color(1f, 0.78f, 0.10f)
                             : Color.white;
+
+            // последние 10 секунд — тик таймера
+            int secLeft = Mathf.CeilToInt(_remainingTime);
+            if (_gameStarted && secLeft != _lastTimerSecond)
+            {
+                if (_lastTimerSecond > 0 && secLeft <= 10 && secLeft > 0)
+                {
+                    MiniGameJuice.Punch(_timerTxt.transform, 0.25f, 0.25f);
+                    MiniGameJuice.Feedback(FeedbackType.Tap);
+                }
+                _lastTimerSecond = secLeft;
+            }
         }
 
         if (_timerBarFill != null)

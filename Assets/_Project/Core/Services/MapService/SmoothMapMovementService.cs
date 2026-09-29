@@ -1,46 +1,62 @@
-using System.Collections;
 using Mapbox.Unity.Map;
 using Mapbox.Utils;
 using UnityEngine;
 using Zenject;
 
+/// <summary>
+/// Плавно ведёт центр карты за координатами игрока.
+/// Центр каждый кадр подтягивается к последней точке GPS, поэтому редкие обновления с телефона
+/// (раз в ~1 с, скачками в несколько метров) превращаются в ровное движение, а не в «телепорт».
+/// </summary>
 public class SmoothMapMovementService : IInitializable, ITickable
 {
     private readonly AbstractMap _map;
     private readonly LocationService _locationService;
-    private readonly CoroutineRunner _coroutineRunner;
-    
+
     private bool _isMapInitialized = false;
-    private bool _isLerping = false;
     private double _lastLongitude;
     private double _lastLatitude;
     private bool _lastCoordinatesInitialized = false;
     private const float COORDINATE_THRESHOLD = 0.00001f;
-    
-    private Vector2d _startLatLong;
-    private Vector2d _endLatLong;
-    private Vector3 _startPosition;
-    private Vector3 _endPosition;
-    private float _timeStartedLerping;
-    private float _lerpDuration = 1f;
-    private const float MIN_LERP_DURATION = 0.3f;
-    private const float MAX_LERP_DURATION = 2f;
-    private const float LERP_SPEED = 0.00005f;
-    
-    private Coroutine _lerpCoroutine;
+
+    // Следование за целью
+    private Vector2d _targetLatLong;
+    private bool _hasTarget;
+    private bool _isLerping;
+    private float _walkUntil;
     private Vector3 _currentMapDirection = Vector3.zero;
-    private bool _realtimeFollow;
-    private float _realtimeFollowUntil;
-    private const float RealtimeFollowMaxStep = 0.001f;
-    private const float RealtimeFollowStopDelay = 0.15f;
-    
+
+    // Чем больше, тем быстрее карта догоняет новую точку (при обновлении GPS раз в секунду — почти без отставания)
+    private const float FollowSharpness = 4f;
+    // Минимальная скорость подтягивания, чтобы не «ползти» бесконечно у самой цели
+    private const double MinFollowMetersPerSecond = 0.6;
+    private const double ArriveMeters = 0.05;
+    // Дальше этого — не анимируем, а сразу переносим (первый точный фикс GPS, возврат из фона)
+    private const double SnapMeters = 300.0;
+    // Ходьба не прерывается в паузах между обновлениями GPS: пауза подстраивается под их реальную частоту
+    private const float MinWalkGraceSeconds = 0.3f;
+    private const float MaxWalkGraceSeconds = 2.5f;
+    private const float WalkGraceIntervalFactor = 1.5f;
+    private float _lastTargetTime = -1f;
+    private float _targetInterval = 1f;
+
+    // Сглаженная интенсивность движения карты (только для визуала).
+    private Vector2d _speedLastCenter;
+    private bool _speedInitialized;
+    private float _currentSpeed01;
+    private const float SpeedFullMetersPerSecond = 2f;   // ~быстрый шаг => 1
+    private const float SpeedSmoothing = 3f;
+    private const double MetersPerDegree = 111320.0;
+
+    /// <summary>Нормализованная (0..1) сглаженная скорость смещения центра карты. Обычный шаг ~0.6-1.</summary>
+    public float CurrentSpeed01 => _currentSpeed01;
+
     public SmoothMapMovementService(AbstractMap map, LocationService locationService, CoroutineRunner coroutineRunner)
     {
         _map = map;
         _locationService = locationService;
-        _coroutineRunner = coroutineRunner;
     }
-    
+
     public void Initialize()
     {
         if (_map != null)
@@ -48,7 +64,7 @@ public class SmoothMapMovementService : IInitializable, ITickable
             _map.InitializeOnStart = false;
         }
     }
-    
+
     public void Tick()
     {
         _locationService.GetCoordinatesPrecise(out double longitude, out double latitude);
@@ -93,126 +109,130 @@ public class SmoothMapMovementService : IInitializable, ITickable
 
         if (coordinatesChanged)
         {
-            if (distance <= RealtimeFollowMaxStep)
-            {
-                FollowInRealtime(longitude, latitude);
-            }
-            else if (_isLerping && !_realtimeFollow)
-            {
-                _startLatLong = _map.CenterLatitudeLongitude;
-                _startPosition = _map.GeoToWorldPosition(_startLatLong, false);
-                _endLatLong = new Vector2d(latitude, longitude);
-                _endPosition = _map.GeoToWorldPosition(_endLatLong, false);
-                _currentMapDirection = (_endPosition - _startPosition).normalized;
-                _timeStartedLerping = Time.time;
-                float newDistance = Vector3.Distance(_startPosition, _endPosition);
-                _lerpDuration = Mathf.Clamp(newDistance / LERP_SPEED, MIN_LERP_DURATION, MAX_LERP_DURATION);
-            }
-            else
-            {
-                StartLerping(longitude, latitude);
-            }
+            SetTarget(new Vector2d(latitude, longitude));
             _lastLongitude = longitude;
             _lastLatitude = latitude;
         }
-        else if (_realtimeFollow && Time.time >= _realtimeFollowUntil)
+
+        FollowTarget();
+        UpdateSpeed();
+    }
+
+    private void SetTarget(Vector2d target)
+    {
+        var center = _map.CenterLatitudeLongitude;
+
+        if (MetersBetween(center, target) > SnapMeters)
         {
-            _realtimeFollow = false;
+            // Слишком далеко для анимации — переносим карту сразу, без ходьбы
+            _map.UpdateMap(target, _map.Zoom);
+            _hasTarget = false;
             _isLerping = false;
+            _currentMapDirection = Vector3.zero;
+            _speedInitialized = false;
+            return;
+        }
+
+        float now = Time.time;
+        if (_lastTargetTime >= 0f)
+        {
+            float interval = Mathf.Min(now - _lastTargetTime, MaxWalkGraceSeconds);
+            _targetInterval = Mathf.Lerp(_targetInterval, interval, 0.3f);
+        }
+        _lastTargetTime = now;
+
+        _targetLatLong = target;
+        _hasTarget = true;
+        _walkUntil = now + Mathf.Clamp(_targetInterval * WalkGraceIntervalFactor, MinWalkGraceSeconds, MaxWalkGraceSeconds);
+    }
+
+    private void FollowTarget()
+    {
+        if (!_hasTarget)
+        {
+            _isLerping = false;
+            return;
+        }
+
+        var center = _map.CenterLatitudeLongitude;
+        double remaining = MetersBetween(center, _targetLatLong);
+
+        if (remaining > ArriveMeters)
+        {
+            float dt = Time.deltaTime;
+            double step = System.Math.Max(remaining * (1.0 - System.Math.Exp(-FollowSharpness * dt)), MinFollowMetersPerSecond * dt);
+            double t = System.Math.Min(1.0, step / remaining);
+
+            var next = new Vector2d(
+                center.x + (_targetLatLong.x - center.x) * t,
+                center.y + (_targetLatLong.y - center.y) * t);
+
+            var from = _map.GeoToWorldPosition(center, false);
+            var to = _map.GeoToWorldPosition(_targetLatLong, false);
+            var dir = to - from;
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 1e-10f)
+                _currentMapDirection = dir.normalized;
+
+            _map.UpdateMap(next, _map.Zoom);
+        }
+        else if (remaining > 0.0)
+        {
+            _map.UpdateMap(_targetLatLong, _map.Zoom);
+        }
+
+        bool stillMoving = remaining > ArriveMeters;
+        _isLerping = stillMoving || Time.time < _walkUntil;
+
+        if (!_isLerping)
+        {
+            _hasTarget = false;
             _currentMapDirection = Vector3.zero;
         }
     }
 
-    private void FollowInRealtime(double longitude, double latitude)
+    private static double MetersBetween(Vector2d a, Vector2d b)
     {
-        if (_lerpCoroutine != null)
-        {
-            _coroutineRunner.StopCoroutine(_lerpCoroutine);
-            _lerpCoroutine = null;
-        }
-
-        var target = new Vector2d(latitude, longitude);
-        var from = _map.GeoToWorldPosition(_map.CenterLatitudeLongitude, false);
-        var to = _map.GeoToWorldPosition(target, false);
-        var dir = to - from;
-        if (dir.sqrMagnitude > 0.0000001f)
-            _currentMapDirection = dir.normalized;
-
-        _map.UpdateMap(target, _map.Zoom);
-        _realtimeFollow = true;
-        _isLerping = true;
-        _realtimeFollowUntil = Time.time + RealtimeFollowStopDelay;
+        double dLat = (b.x - a.x) * MetersPerDegree;
+        double dLon = (b.y - a.y) * MetersPerDegree * System.Math.Cos(a.x * System.Math.PI / 180.0);
+        return System.Math.Sqrt(dLat * dLat + dLon * dLon);
     }
 
-    private void StartLerping(double longitude, double latitude)
+    private void UpdateSpeed()
     {
-        if (_lerpCoroutine != null)
+        if (!_isMapInitialized || _map == null)
+            return;
+
+        var center = _map.CenterLatitudeLongitude;
+        if (!_speedInitialized)
         {
-            _coroutineRunner.StopCoroutine(_lerpCoroutine);
+            _speedLastCenter = center;
+            _speedInitialized = true;
+            return;
         }
 
-        _isLerping = true;
-        _realtimeFollow = false;
-        _timeStartedLerping = Time.time;
+        float dt = Time.deltaTime;
+        if (dt <= 0f)
+            return;
 
-        _startLatLong = _map.CenterLatitudeLongitude;
-        _endLatLong = new Vector2d(latitude, longitude);
+        float metersPerSecond = (float)(MetersBetween(_speedLastCenter, center) / dt);
+        _speedLastCenter = center;
 
-        _startPosition = _map.GeoToWorldPosition(_startLatLong, false);
-        _endPosition = _map.GeoToWorldPosition(_endLatLong, false);
+        float raw = Mathf.Clamp01(metersPerSecond / SpeedFullMetersPerSecond);
+        if (float.IsNaN(raw))
+            raw = 0f;
 
-        _currentMapDirection = (_endPosition - _startPosition).normalized;
-
-        float distance = Vector3.Distance(_startPosition, _endPosition);
-        _lerpDuration = Mathf.Clamp(distance / LERP_SPEED, MIN_LERP_DURATION, MAX_LERP_DURATION);
-
-        _lerpCoroutine = _coroutineRunner.StartCoroutine(LerpMapCoroutine());
+        float k = 1f - Mathf.Exp(-SpeedSmoothing * dt);
+        _currentSpeed01 = Mathf.Lerp(_currentSpeed01, raw, k);
     }
-    
-    private IEnumerator LerpMapCoroutine()
-    {
-        
-        int frameCount = 0;
-        while (_isLerping)
-        {
-            float timeSinceStarted = Time.time - _timeStartedLerping;
-            float percentageComplete = timeSinceStarted / _lerpDuration;
-            
-            _startPosition = _map.GeoToWorldPosition(_startLatLong, false);
-            _endPosition = _map.GeoToWorldPosition(_endLatLong, false);
-            
-            var position = Vector3.Lerp(_startPosition, _endPosition, percentageComplete);
-            var latLong = _map.WorldToGeoPosition(position);
-            _map.UpdateMap(latLong, _map.Zoom);
-            
-            _currentMapDirection = (_endPosition - _startPosition).normalized;
-            
-            if (frameCount % 30 == 0)
-            {
-                //Debug.Log($"[SmoothMapMovement] Lerping: percentage={percentageComplete:F2}, latLong=Lat={latLong.x}, Lon={latLong.y}");
-            }
-            frameCount++;
-            
-            if (percentageComplete >= 1.0f)
-            {
-                _isLerping = false;
-                break;
-            }
-            
-            yield return null;
-        }
 
-        _lerpCoroutine = null;
-    }
-    
     public Vector3 GetCurrentMapDirection()
     {
         return _currentMapDirection;
     }
-    
+
     public bool IsLerping()
     {
         return _isLerping;
     }
 }
-

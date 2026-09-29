@@ -11,6 +11,9 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
     private readonly UserDataService _userDataService;
     private readonly IPopupService _popupService;
     private readonly IStepsService _stepsService;
+    private readonly IRewardService _rewardService; // может быть не забинжен — тогда текстовые попапы
+    private readonly HashSet<int> _completingQuests = new HashSet<int>(); // идёт синхронизация с сервером
+    private readonly HashSet<int> _rewardShownQuests = new HashSet<int>(); // церемония уже показана
     private readonly Dictionary<string, Func<IQuestCondition>> _conditionFactories;
     private readonly Dictionary<int, QuestProgressTracker> _activeQuests = new Dictionary<int, QuestProgressTracker>();
     
@@ -25,12 +28,14 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
         APIService apiService,
         UserDataService userDataService,
         IPopupService popupService,
-        IStepsService stepsService)
+        IStepsService stepsService,
+        [InjectOptional] IRewardService rewardService = null)
     {
         _apiService = apiService;
         _userDataService = userDataService;
         _popupService = popupService;
         _stepsService = stepsService;
+        _rewardService = rewardService;
         _conditionFactories = new Dictionary<string, Func<IQuestCondition>>();
     }
     
@@ -203,27 +208,46 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
         
         if (!tracker.IsCompleted || tracker.IsRewardClaimed)
             return;
-        
-        Debug.Log($"[QuestService] Quest {questId} completed locally! Waiting for server sync...");
-        
-        await System.Threading.Tasks.Task.Delay(1000);
+
+        // Прогресс может меняться повторно, пока идёт запрос — не запускаем синхронизацию дважды
+        if (!_completingQuests.Add(questId))
+            return;
+
+        Debug.Log($"[QuestService] Quest {questId} completed locally! Showing reward, syncing with server in background...");
+
+        // Награду показываем сразу, не дожидаясь сервера
+        if (_rewardService != null && _rewardShownQuests.Add(questId))
+            _rewardService.ShowQuestComplete(tracker.QuestData.title,
+                BuildQuestRewards(tracker.QuestData.reward_type, tracker.QuestData.reward_amount));
 
         int stepsToSend = 0;
-        if (tracker.Condition.ConditionType == "steps")
+        bool success;
+        APIService.QuestCompleteResponse response;
+        try
         {
-            stepsToSend = _stepsService?.StepsToday ?? 0;
-            var (stepsOk, stepsMsg) = await _apiService.UpdateDailySteps(stepsToSend);
-            if (!stepsOk)
-                Debug.LogWarning($"[QuestService] Failed to sync steps: {stepsMsg}");
+            if (tracker.Condition.ConditionType == "steps")
+            {
+                stepsToSend = _stepsService?.StepsToday ?? 0;
+                var (stepsOk, stepsMsg) = await _apiService.UpdateDailySteps(stepsToSend);
+                if (!stepsOk)
+                    Debug.LogWarning($"[QuestService] Failed to sync steps: {stepsMsg}");
+            }
+
+            Debug.Log($"[QuestService] Sending completion to server for quest {questId}...");
+
+            (success, response) = await _apiService.CompleteQuest(questId, stepsToSend);
         }
-        
-        Debug.Log($"[QuestService] Sending completion to server for quest {questId}...");
-        
-        var (success, response) = await _apiService.CompleteQuest(questId, stepsToSend);
+        catch (Exception ex)
+        {
+            _completingQuests.Remove(questId);
+            Debug.LogError($"[QuestService] Error while completing quest {questId}: {ex}");
+            return;
+        }
 
         // Помечаем локально выполненным в любом случае — чтобы не слать повторные запросы
         tracker.MarkRewardClaimed();
         SaveQuestProgress();
+        _completingQuests.Remove(questId);
 
         if (!success || response == null)
         {
@@ -244,13 +268,24 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
         {
             var levelUpInfo = response.level_up_notification;
             int pointsGained = levelUpInfo.stat_upgrade_points_gained;
-            string levelMsg = pointsGained > 0 
-                ? $"Уровень повышен до {levelUpInfo.new_level}! +{pointsGained} очков прокачки"
-                : $"Уровень повышен до {levelUpInfo.new_level}!";
-            _popupService.ShowSuccess($"🎉 {message}\n{levelMsg}");
+            if (_rewardService != null)
+            {
+                // Старый уровень берём до UpdatePlayerStats (ниже)
+                int oldLevel = _userDataService.Level;
+                if (oldLevel <= 0 || oldLevel >= levelUpInfo.new_level)
+                    oldLevel = levelUpInfo.new_level - Mathf.Max(1, levelUpInfo.levels_gained);
+                _rewardService.ShowLevelUp(oldLevel, levelUpInfo.new_level, pointsGained);
+            }
+            else
+            {
+                string levelMsg = pointsGained > 0
+                    ? $"Уровень повышен до {levelUpInfo.new_level}! +{pointsGained} очков прокачки"
+                    : $"Уровень повышен до {levelUpInfo.new_level}!";
+                _popupService.ShowSuccess($"🎉 {message}\n{levelMsg}");
+            }
             Debug.Log($"[QuestService] Level up! New level: {levelUpInfo.new_level}, Stat points gained: {pointsGained}");
         }
-        else
+        else if (_rewardService == null)
         {
             _popupService.ShowSuccess($"Квест выполнен: {tracker.QuestData.title}");
         }
@@ -263,6 +298,30 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
         OnQuestCompleted?.Invoke(questId);
     }
     
+    private static List<RewardEntry> BuildQuestRewards(string rewardType, int amount)
+    {
+        var list = new List<RewardEntry>(1);
+        switch ((rewardType ?? "").ToLowerInvariant())
+        {
+            case "coins":
+            case "coin":
+                list.Add(RewardEntry.Coins(amount));
+                break;
+            case "experience":
+            case "exp":
+            case "xp":
+                list.Add(RewardEntry.Xp(amount));
+                break;
+            case "item":
+                list.Add(new RewardEntry("item", "Предмет", amount, RewardEntry.DefaultTint("item")));
+                break;
+            default:
+                list.Add(new RewardEntry("reward", "Награда", amount, RewardEntry.DefaultTint("reward")));
+                break;
+        }
+        return list;
+    }
+
     private void UpdatePlayerStats(APIService.PlayerStats stats)
     {
         _userDataService.SetProfile(

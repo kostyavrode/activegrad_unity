@@ -1,6 +1,7 @@
 using UnityEngine;
 using Zenject;
 using UnityEngine.SceneManagement;
+using System;
 using System.Threading.Tasks;
 
 public class AppLoader : MonoBehaviour
@@ -13,7 +14,7 @@ public class AppLoader : MonoBehaviour
     {
         Debug.Log("AppLoader: Starting initialization...");
 
-        Application.targetFrameRate = 90;
+        Application.targetFrameRate = GetTargetFrameRate();
         
         if (!_apiService.IsLoggedIn)
         {
@@ -54,8 +55,21 @@ public class AppLoader : MonoBehaviour
 
     private async Task LoadMainSceneAsync()
     {
-        var asyncOp = SceneManager.LoadSceneAsync("SampleScene");
-        while (!asyncOp.isDone)
-            await Task.Yield();
+        await LoadingOverlay.LoadSceneWithOverlayAsync("SampleScene");
+    }
+
+    private static int GetTargetFrameRate()
+    {
+        try
+        {
+            double hz = Screen.currentResolution.refreshRateRatio.value;
+            if (double.IsNaN(hz) || double.IsInfinity(hz) || hz <= 0)
+                return 60;
+            return Mathf.Clamp((int)Math.Round(hz), 60, 120);
+        }
+        catch
+        {
+            return 60;
+        }
     }
 }

@@ -7,9 +7,19 @@ public static class UIListEntranceHelper
 {
     private const float DefaultItemDelay = 0.04f;
     private const float DefaultDuration = 0.2f;
+    private const float StartOffsetY = -20f;
+    private const float StartScale = 0.96f;
+
+    private struct ChildState
+    {
+        public Transform Child;
+        public Vector3 LocalPosition;
+        public Vector3 LocalScale;
+    }
 
     private static readonly Dictionary<int, Sequence> ActiveSequences = new Dictionary<int, Sequence>();
     private static readonly Dictionary<int, LayoutGroup> TrackedLayoutGroups = new Dictionary<int, LayoutGroup>();
+    private static readonly Dictionary<int, List<ChildState>> OriginalChildStates = new Dictionary<int, List<ChildState>>();
 
     public static void PlayStaggeredEntrance(
         Transform content,
@@ -21,16 +31,25 @@ public static class UIListEntranceHelper
 
         Kill(content);
 
+        var contentId = content.GetInstanceID();
+
+        var contentRect = content as RectTransform;
+        if (contentRect != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(contentRect);
+
         var layoutGroup = content.GetComponent<LayoutGroup>();
         var hadLayoutEnabled = layoutGroup != null && layoutGroup.enabled;
         if (layoutGroup != null)
         {
             layoutGroup.enabled = false;
-            TrackedLayoutGroups[content.GetInstanceID()] = layoutGroup;
+            TrackedLayoutGroups[contentId] = layoutGroup;
         }
 
+        var states = new List<ChildState>(content.childCount);
+        OriginalChildStates[contentId] = states;
+
         var rootSequence = DOTween.Sequence().SetUpdate(true);
-        ActiveSequences[content.GetInstanceID()] = rootSequence;
+        ActiveSequences[contentId] = rootSequence;
 
         for (var i = 0; i < content.childCount; i++)
         {
@@ -38,17 +57,31 @@ public static class UIListEntranceHelper
             if (child == null)
                 continue;
 
+            var originalPosition = child.localPosition;
+            var originalScale = child.localScale;
+            states.Add(new ChildState
+            {
+                Child = child,
+                LocalPosition = originalPosition,
+                LocalScale = originalScale
+            });
+
             var canvasGroup = child.GetComponent<CanvasGroup>();
             if (canvasGroup == null)
                 canvasGroup = child.gameObject.AddComponent<CanvasGroup>();
 
             canvasGroup.alpha = 0f;
+            child.localPosition = originalPosition + new Vector3(0f, StartOffsetY, 0f);
+            child.localScale = originalScale * StartScale;
 
-            rootSequence.Insert(i * itemDelay, canvasGroup.DOFade(1f, duration).SetEase(Ease.OutQuad));
+            var delay = i * itemDelay;
+            rootSequence.Insert(delay, canvasGroup.DOFade(1f, duration).SetEase(Ease.OutQuad));
+            rootSequence.Insert(delay, child.DOLocalMove(originalPosition, duration).SetEase(Ease.OutCubic));
+            rootSequence.Insert(delay, child.DOScale(originalScale, duration).SetEase(Ease.OutCubic));
         }
 
-        rootSequence.OnKill(() => Finish(content.GetInstanceID(), hadLayoutEnabled));
-        rootSequence.OnComplete(() => Finish(content.GetInstanceID(), hadLayoutEnabled));
+        rootSequence.OnKill(() => Finish(contentId, hadLayoutEnabled));
+        rootSequence.OnComplete(() => Finish(contentId, hadLayoutEnabled));
     }
 
     public static void Kill(Transform content)
@@ -60,8 +93,8 @@ public static class UIListEntranceHelper
 
         if (ActiveSequences.TryGetValue(key, out var sequence))
         {
-            sequence.Kill();
             ActiveSequences.Remove(key);
+            sequence.Kill();
         }
 
         RestoreContentState(content);
@@ -72,6 +105,8 @@ public static class UIListEntranceHelper
     {
         ActiveSequences.Remove(contentId);
 
+        RestoreChildStates(contentId);
+
         if (!TrackedLayoutGroups.TryGetValue(contentId, out var layoutGroup))
             return;
 
@@ -81,8 +116,32 @@ public static class UIListEntranceHelper
         TrackedLayoutGroups.Remove(contentId);
     }
 
+    private static void RestoreChildStates(int contentId)
+    {
+        if (!OriginalChildStates.TryGetValue(contentId, out var states))
+            return;
+
+        OriginalChildStates.Remove(contentId);
+
+        for (var i = 0; i < states.Count; i++)
+        {
+            var state = states[i];
+            if (state.Child == null)
+                continue;
+
+            state.Child.localPosition = state.LocalPosition;
+            state.Child.localScale = state.LocalScale;
+
+            var canvasGroup = state.Child.GetComponent<CanvasGroup>();
+            if (canvasGroup != null)
+                canvasGroup.alpha = 1f;
+        }
+    }
+
     private static void RestoreContentState(Transform content)
     {
+        RestoreChildStates(content.GetInstanceID());
+
         var layoutGroup = content.GetComponent<LayoutGroup>();
         if (layoutGroup != null)
             layoutGroup.enabled = true;
@@ -96,8 +155,6 @@ public static class UIListEntranceHelper
             var canvasGroup = child.GetComponent<CanvasGroup>();
             if (canvasGroup != null)
                 canvasGroup.alpha = 1f;
-
-            child.localScale = Vector3.one;
         }
     }
 }

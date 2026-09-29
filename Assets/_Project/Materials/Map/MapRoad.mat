@@ -8,31 +8,69 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: MapRoad
-  m_Shader: {fileID: 4800000, guid: c7e1a2b34d5f6789012345678abcdef2, type: 3}
+  m_Shader: {fileID: 4800000, guid: c3af29694b644a5f9319911a89be49f8, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
-  m_EnableInstancingVariants: 1
+  m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
+  m_CustomRenderQueue: 3010
+  stringTagMap:
+    RenderType: Transparent
   disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs: []
+    m_TexEnvs:
+    - _BaseMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MatcapTex:
+        m_Texture: {fileID: 2800000, guid: d1667492e2a947f6b8ae53a00fb08f15, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ReflectTex:
+        m_Texture: {fileID: 2800000, guid: 81af4490b65e439484d9678e02e1a279, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _FadeRange: 35
-    - _FadeStart: 90
-    - _LanduseMode: 0
-    - _NoiseScale: 0.35
-    - _NoiseStrength: 0.12
+    - _ColorVariation: 0
+    - _Cull: 2
+    - _DstBlend: 10
+    - _FogIntensity: 1
+    - _GradientHeight: 6
+    - _GradientIntensity: 0
+    - _GradientOffset: 0
+    - _GradientPower: 0.7
+    - _GradientWorldSpace: 0
+    - _LightInfluence: 0.15
+    - _MatcapBrightness: 1.12
+    - _MatcapIntensity: 0
+    - _OffsetFactor: -2
+    - _OffsetUnits: -2
+    - _ReflectFresnel: 0.6
+    - _ReflectFresnelPower: 3
+    - _ReflectIntensity: 0
+    - _ShadowStrength: 0.5
+    - _SrcBlend: 5
+    - _StencilComp: 6
+    - _StencilPass: 2
+    - _StencilRef: 8
+    - _TintIntensity: 0
+    - _TintLightness: 0.07
+    - _TintWarmth: 0.08
+    - _VertexColorIntensity: 0
+    - _ZWrite: 0
     m_Colors:
-    - _AccentColor: {r: 0.36, g: 0.38, b: 0.42, a: 1}
-    - _BaseColor: {r: 0.28, g: 0.3, b: 0.34, a: 1}
-    - _LanduseGreen: {r: 0.34, g: 0.52, b: 0.3, a: 1}
+    - _BaseColor: {r: 0.98, g: 0.97, b: 0.95, a: 0.55}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _GradientBottomColor: {r: 0.62, g: 0.64, b: 0.74, a: 1}
+    - _GradientTopColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ReflectColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ShadowColor: {r: 0.55, g: 0.6, b: 0.78, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -30,7 +30,15 @@ public class UiClickSoundAutoBinder : ITickable
             if (button == null)
                 continue;
 
-            if (button.gameObject.GetComponent<UiClickSound>() != null)
+            var go = button.gameObject;
+
+            // Пружинка нажатия — только если нет своего Animator (иначе будет конфликт по scale)
+            if (go.GetComponent<UIPressable>() == null && go.GetComponent<Animator>() == null
+                && go.GetComponent<UIButtonAttentionPulse>() == null
+                && UIPressable.IsSuitable(go.transform as RectTransform))
+                go.AddComponent<UIPressable>();
+
+            if (go.GetComponent<UiClickSound>() != null)
                 continue;
 
             var clickSound = button.gameObject.AddComponent<UiClickSound>();

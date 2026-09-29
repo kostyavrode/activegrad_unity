@@ -15,16 +15,16 @@ RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 10
   m_Fog: 1
-  m_FogColor: {r: 0.55, g: 0.72, b: 0.88, a: 1}
+  m_FogColor: {r: 0.8, g: 0.87, b: 0.95, a: 1}
   m_FogMode: 3
   m_FogDensity: 0.003
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.45, g: 0.62, b: 0.95, a: 1}
-  m_AmbientEquatorColor: {r: 0.55, g: 0.72, b: 0.88, a: 1}
-  m_AmbientGroundColor: {r: 0.08, g: 0.1, b: 0.18, a: 1}
+  m_AmbientSkyColor: {r: 0.74, g: 0.8, b: 0.94, a: 1}
+  m_AmbientEquatorColor: {r: 0.78, g: 0.8, b: 0.84, a: 1}
+  m_AmbientGroundColor: {r: 0.52, g: 0.52, b: 0.56, a: 1}
   m_AmbientIntensity: 1.15
-  m_AmbientMode: 0
+  m_AmbientMode: 1
   m_SubtractiveShadowColor: {r: 0.35, g: 0.42, b: 0.55, a: 1}
   m_SkyboxMaterial: {fileID: 2100000, guid: 60dd2e7b10f2ce74e9c4478520e3f06a, type: 2}
   m_HaloStrength: 0.5
@@ -748,6 +748,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SightsWindow
   canvasGroup: {fileID: 60630585}
+  _content: {fileID: 0}
   _contentParent: {fileID: 205650114}
   _headerText: {fileID: 152947865}
   _backButton: {fileID: 1205843813}
@@ -4366,6 +4367,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShopWindow
   canvasGroup: {fileID: 237914008}
+  _content: {fileID: 0}
   _contentParent: {fileID: 2104389331}
   _backButton: {fileID: 1967099349}
   _coinsText: {fileID: 30543669}
@@ -7663,6 +7665,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   canvasGroup: {fileID: 532815396}
+  _content: {fileID: 0}
   _nickNameText: {fileID: 1933346993}
   _firstNameText: {fileID: 208396077}
   _lastNameText: {fileID: 324344154}
@@ -13978,6 +13981,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   canvasGroup: {fileID: 856341355}
+  _content: {fileID: 0}
   _musicSlider: {fileID: 722184752}
   _sfxSlider: {fileID: 61520344}
   _musicPercentText: {fileID: 78694016}
@@ -17942,6 +17946,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   canvasGroup: {fileID: 1069679590}
+  _content: {fileID: 0}
   _settingsButton: {fileID: 2048546814}
   _profileButton: {fileID: 1727593411}
   _questButton: {fileID: 96209938}
@@ -23465,6 +23470,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FriendsWindow
   canvasGroup: {fileID: 1462800400}
+  _content: {fileID: 1077519047}
   _backButton: {fileID: 1357982891}
   _content: {fileID: 1077519047}
   _tabSelector: {fileID: 1462800402}
@@ -23524,6 +23530,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 114478715909612932, guid: e6b749c6d877f4c19a5a5c3c0783d53b, type: 3}
+      propertyPath: _options.tileMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 8e7c079a14684388abc2a3c808594c20, type: 2}
     - target: {fileID: 1257486800756004, guid: e6b749c6d877f4c19a5a5c3c0783d53b, type: 3}
       propertyPath: m_Name
       value: Map
@@ -23919,11 +23929,11 @@ PrefabInstance:
     - target: {fileID: 114478715909612932, guid: e6b749c6d877f4c19a5a5c3c0783d53b, type: 3}
       propertyPath: '_vectorData._layerProperty.vectorSubLayers.Array.data[0].materialOptions.materials.Array.data[0].Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 1730269485}
+      objectReference: {fileID: 2100000, guid: d1e1a2b34d5f6789012345678abcdef1, type: 2}
     - target: {fileID: 114478715909612932, guid: e6b749c6d877f4c19a5a5c3c0783d53b, type: 3}
       propertyPath: '_vectorData._layerProperty.vectorSubLayers.Array.data[0].materialOptions.materials.Array.data[1].Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 840329558}
+      objectReference: {fileID: 2100000, guid: d1e1a2b34d5f6789012345678abcdef2, type: 2}
     - target: {fileID: 114478715909612932, guid: e6b749c6d877f4c19a5a5c3c0783d53b, type: 3}
       propertyPath: _vectorData._layerProperty.vectorSubLayers.Array.data[0].materialOptions.customStyleOptions.materials.Array.data[0].Materials.Array.size
       value: 1
@@ -23935,11 +23945,11 @@ PrefabInstance:
     - target: {fileID: 114478715909612932, guid: e6b749c6d877f4c19a5a5c3c0783d53b, type: 3}
       propertyPath: '_vectorData._layerProperty.vectorSubLayers.Array.data[0].materialOptions.customStyleOptions.materials.Array.data[0].Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 1249691000}
+      objectReference: {fileID: 2100000, guid: d1e1a2b34d5f6789012345678abcdef1, type: 2}
     - target: {fileID: 114478715909612932, guid: e6b749c6d877f4c19a5a5c3c0783d53b, type: 3}
       propertyPath: '_vectorData._layerProperty.vectorSubLayers.Array.data[0].materialOptions.customStyleOptions.materials.Array.data[1].Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 635534702}
+      objectReference: {fileID: 2100000, guid: d1e1a2b34d5f6789012345678abcdef2, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -24009,6 +24019,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   canvasGroup: {fileID: 1468170174}
+  _content: {fileID: 0}
   _questFields:
   - {fileID: 610879230}
   - {fileID: 950287427}
@@ -27246,6 +27257,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ClansWindow
   canvasGroup: {fileID: 1754733704}
+  _content: {fileID: 2129975531}
   _backButton: {fileID: 685452632}
   _content: {fileID: 2129975531}
   _topClansTabButton: {fileID: 619381840}
@@ -29530,6 +29542,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PromoCodesWindow
   canvasGroup: {fileID: 1897157300}
+  _content: {fileID: 663232141}
   _backButton: {fileID: 1757525383}
   _content: {fileID: 663232141}
   _scrollViewRect: {fileID: 145181005}
@@ -30979,6 +30992,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SelectWindow
   canvasGroup: {fileID: 1958800602}
+  _content: {fileID: 0}
   _backButton: {fileID: 94833120}
   _playerSearchButton: {fileID: 771853769}
   _shopButton: {fileID: 1171819832}
@@ -31182,6 +31196,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InventoryWindow
   canvasGroup: {fileID: 1984841575}
+  _content: {fileID: 0}
   _resourcesContainer: {fileID: 1524361203}
   _itemsContainer: {fileID: 276652959}
   _craftRecipesContainer: {fileID: 65586793}
@@ -31871,6 +31886,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSearchWindow
   canvasGroup: {fileID: 2037556239}
+  _content: {fileID: 0}
   _inputField: {fileID: 1367225937}
   _searchButton: {fileID: 208230670}
   _backButton: {fileID: 2029043463}

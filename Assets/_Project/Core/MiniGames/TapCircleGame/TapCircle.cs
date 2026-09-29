@@ -19,6 +19,7 @@ public class TapCircle : MonoBehaviour
     private bool _isDone;
 
     public float RemainingFraction { get; private set; } = 1f;
+    public Color Color { get; private set; } = Color.white;
 
     // ── static sprite cache ──────────────────────────────────────────────────
     private static Sprite _circleSprite;
@@ -107,10 +108,15 @@ public class TapCircle : MonoBehaviour
     {
         _label.text = number.ToString();
         _bodyImage.color = color;
+        Color = color;
 
-        // spawn pop-in
+        // spawn pop-in: упругий OutBack + лёгкий доворот
         transform.localScale = Vector3.zero;
-        transform.DOScale(Vector3.one, 0.20f).SetEase(Ease.OutBack).SetUpdate(true);
+        transform.localRotation = Quaternion.Euler(0f, 0f, -20f);
+        transform.DOScale(Vector3.one, 0.32f).SetEase(Ease.OutBack, 2.2f).SetUpdate(true);
+        transform.DOLocalRotate(Vector3.zero, 0.32f).SetEase(Ease.OutCubic).SetUpdate(true);
+        _canvasGroup.alpha = 0f;
+        _canvasGroup.DOFade(1f, 0.15f).SetUpdate(true).SetLink(gameObject);
 
         // ring starts at 2.2x and shrinks to 1x
         _ringImage.transform.localScale = Vector3.one * 2.2f;
@@ -165,13 +171,44 @@ public class TapCircle : MonoBehaviour
     {
         _ringImage.gameObject.SetActive(false);
         DOTween.Kill(transform);
+        _canvasGroup.DOKill();
+        _canvasGroup.alpha = 1f;
+        transform.localRotation = Quaternion.identity;
 
-        // burst scale → fade out
-        transform.DOScale(1.45f, 0.08f).SetUpdate(true).OnComplete(() =>
+        SpawnShockwave();
+
+        // вспышка к белому + pop → fade out
+        _bodyImage.color = Color.Lerp(Color, Color.white, 0.65f);
+        _bodyImage.DOColor(Color, 0.12f).SetUpdate(true).SetLink(gameObject);
+        _label.transform.DOPunchScale(Vector3.one * 0.35f, 0.18f, 6).SetUpdate(true).SetLink(gameObject);
+
+        transform.DOScale(1.45f, 0.09f).SetEase(Ease.OutQuad).SetUpdate(true).OnComplete(() =>
         {
+            if (this == null) return;
             _canvasGroup.DOFade(0f, 0.13f).SetUpdate(true)
                 .OnComplete(() => { if (this != null) Destroy(gameObject); });
         });
+    }
+
+    // Расходящееся кольцо в родителе (переживает уничтожение кружка)
+    private void SpawnShockwave()
+    {
+        var parent = transform.parent;
+        if (parent == null) return;
+
+        var go = new GameObject("TapShockwave");
+        go.transform.SetParent(parent, false);
+        var rt = go.AddComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(110f, 110f);
+        rt.anchoredPosition = ((RectTransform)transform).anchoredPosition;
+        var img = go.AddComponent<Image>();
+        img.sprite = _ringSprite;
+        img.color = new Color(Color.r, Color.g, Color.b, 0.9f);
+        img.raycastTarget = false;
+
+        rt.DOScale(2.0f, 0.35f).SetEase(Ease.OutCubic).SetUpdate(true).SetLink(go);
+        img.DOFade(0f, 0.35f).SetEase(Ease.OutQuad).SetUpdate(true).SetLink(go)
+            .OnComplete(() => { if (go != null) Destroy(go); });
     }
 
     private void PlayMiss()
@@ -223,6 +260,10 @@ public class TapCircle : MonoBehaviour
     private void OnDestroy()
     {
         _ringTween?.Kill();
+        DOTween.Kill(transform);
+        if (_canvasGroup != null) _canvasGroup.DOKill();
+        if (_bodyImage != null) _bodyImage.DOKill();
+        if (_ringImage != null) { _ringImage.DOKill(); _ringImage.transform.DOKill(); }
         _button?.onClick.RemoveAllListeners();
     }
 }

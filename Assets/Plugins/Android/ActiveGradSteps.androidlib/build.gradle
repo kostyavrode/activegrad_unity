@@ -1,0 +1,24 @@
+apply plugin: 'com.android.library'
+
+android {
+    namespace "com.activegrad.steps"
+    compileSdk 36
+    // Та же версия, что использует Unity (в SDK Unity установлена только она)
+    buildToolsVersion = "36.0.0"
+
+    defaultConfig {
+        minSdk 26
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['java']
+        }
+    }
+}

@@ -59,6 +59,10 @@ public class QuestWindow : BaseWindow
 
     public void ClearQuests()
     {
+        // При выгрузке сцены окно может быть уничтожено раньше медиатора
+        if (this == null || _contentParent == null)
+            return;
+
         QuestItemView[] quests = _contentParent.GetComponentsInChildren<QuestItemView>();
         foreach (var quest in quests)
             Destroy(quest.gameObject);

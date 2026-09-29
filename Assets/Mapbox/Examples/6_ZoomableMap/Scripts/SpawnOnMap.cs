@@ -77,6 +77,7 @@
 				allLocations.Add(location);
 				var instance = Instantiate(_markerPrefab);
 				instance.transform.localPosition = _map.GeoToWorldPosition(location, true);
+				CurvedWorldController.Bend(instance.transform);
 				instance.transform.localScale = new Vector3(_spawnScale, _spawnScale, _spawnScale);
 				MapShadowHelper.EnableCastShadows(instance.transform);
 				allObjects.Add(instance);
@@ -97,6 +98,7 @@
 				var prefab = _partnerStoreMarkerPrefab != null ? _partnerStoreMarkerPrefab : _markerPrefab;
 				var instance = Instantiate(prefab);
 				instance.transform.localPosition = _map.GeoToWorldPosition(location, true);
+				CurvedWorldController.Bend(instance.transform);
 				instance.transform.localScale = new Vector3(_spawnScale, _spawnScale, _spawnScale);
 				MapShadowHelper.EnableCastShadows(instance.transform);
 				allObjects.Add(instance);
@@ -121,6 +123,8 @@
 				var spawnedObject = _spawnedObjects[i];
 				var location = _locations[i];
 				spawnedObject.transform.localPosition = _map.GeoToWorldPosition(location, true);
+				// Маркер опускается вместе с «загнутой» картой (шейдер StylizedMatcap), иначе висит в воздухе.
+				CurvedWorldController.Bend(spawnedObject.transform);
 				spawnedObject.transform.localScale = new Vector3(_spawnScale, _spawnScale, _spawnScale);
 			}
 		}

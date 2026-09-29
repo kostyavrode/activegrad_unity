@@ -58,6 +58,21 @@ public class FlappyBirdController : MonoBehaviour
     }
     private readonly List<PipePair> _pipes = new List<PipePair>();
 
+    // ── Juice / результат ───────────────────────────────────────────
+    private MiniGameResultPanel _resultPanel;
+    private MiniGameCountdown   _countdown;
+
+    private RectTransform Root
+    {
+        get
+        {
+            if (_ui == null) return null;
+            var rt = _ui.transform as RectTransform;
+            if (rt == null && _ui.PipesContainer != null) rt = _ui.PipesContainer.parent as RectTransform;
+            return rt;
+        }
+    }
+
     // ════════════════════════════════════════════════════════════════
     public void Initialize(FlappyBirdGameEvent gameEvent, FlappyBirdUI ui, UserDataService userDataService)
     {
@@ -70,6 +85,9 @@ public class FlappyBirdController : MonoBehaviour
         _ui.CloseButton?.onClick.AddListener(() => _gameEvent?.CloseGame());
         _ui.RestartButton?.onClick.AddListener(RestartGame);
         _ui.FinishButton?.onClick.AddListener(FinishGame);
+
+        AddPress(_ui.StartButton, FeedbackType.Tap);
+        AddPress(_ui.CloseButton, FeedbackType.Close);
 
         int agility = _userDataService?.Agility ?? 1;
         _ui.SetSkillInfo("Ловкость", agility);
@@ -87,7 +105,7 @@ public class FlappyBirdController : MonoBehaviour
         ResetState();
         BuildGround();
         _ui.ShowScreen(FlappyBirdScreen.Game);
-        StartCoroutine(CountdownRoutine());
+        StartCountdown();
     }
 
     private void RestartGame()
@@ -95,7 +113,16 @@ public class FlappyBirdController : MonoBehaviour
         StopAllCoroutines();
         Time.timeScale = 1f;
         ClearPipes();
+        if (_resultPanel != null) { Destroy(_resultPanel.gameObject); _resultPanel = null; }
         OnStartClicked();
+    }
+
+    // Press-эффект и фидбек для кнопок из префаба (визуал префаба не меняем)
+    private static void AddPress(Button b, FeedbackType fb)
+    {
+        if (b == null) return;
+        if (b.GetComponent<MiniGamePress>() == null) b.gameObject.AddComponent<MiniGamePress>();
+        b.onClick.AddListener(() => MiniGameJuice.Feedback(fb));
     }
 
     private void ResetState()
@@ -120,28 +147,22 @@ public class FlappyBirdController : MonoBehaviour
     }
 
     // ── Обратный отсчёт ─────────────────────────────────────────────
-    private IEnumerator CountdownRoutine()
+    private void StartCountdown()
     {
         _state = State.Countdown;
-
-        var steps = new[] { "3", "2", "1", "GO!" };
-        var waits = new[] { 0.65f, 0.65f, 0.65f, 0.35f };
-
-        for (int i = 0; i < steps.Length; i++)
-        {
-            _ui.SetCountdown(steps[i]);
-            if (_ui.CountdownText)
-                StartCoroutine(PulseScale(_ui.CountdownText.transform, 1.5f, 0.18f));
-            yield return new WaitForSecondsRealtime(waits[i]);
-
-            // Птица слегка подпрыгивает при каждом числе
-            if (i < 3) _birdVelocity = 180f;
-            yield return null;
-        }
-
         _ui.SetCountdown("");
-        _state = State.Playing;
-        _pipeTimer = 1.0f; // первая труба чуть позже
+
+        if (_countdown != null) _countdown.Cancel();
+        _countdown = MiniGameCountdown.Play(Root, () =>
+        {
+            _countdown = null;
+            _state = State.Playing;
+            _pipeTimer = 1.0f; // первая труба чуть позже
+        }, step =>
+        {
+            // Птица слегка подпрыгивает при каждом числе
+            if (step > 0) _birdVelocity = 180f;
+        });
     }
 
     // ── Update ──────────────────────────────────────────────────────
@@ -260,7 +281,9 @@ public class FlappyBirdController : MonoBehaviour
                 _ui.SetScore(_score);
                 StartCoroutine(PulseScale(_ui.ScoreText.transform, 1.35f, 0.13f));
                 SpawnScorePopup(nx);
+                int prevLevel = _diffLevel;
                 UpdateDifficulty();
+                OnPipeScored(_diffLevel > prevLevel);
             }
 
             if (nx < -halfW - PipeWidth)
@@ -269,6 +292,22 @@ public class FlappyBirdController : MonoBehaviour
                 Destroy(pair.bottom.gameObject);
                 _pipes.RemoveAt(i);
             }
+        }
+    }
+
+    private void OnPipeScored(bool levelUp)
+    {
+        var scoreRt = _ui.ScoreText != null ? _ui.ScoreText.rectTransform : null;
+        if (levelUp)
+        {
+            MiniGameJuice.Feedback(FeedbackType.Perfect);
+            if (scoreRt != null) MiniGameJuice.Burst(scoreRt, Vector2.zero, MiniGameTheme.Warning, 14, 90f, 16f);
+            MiniGameJuice.Flash(Root, MiniGameTheme.Warning, 0.12f, 0.3f);
+        }
+        else
+        {
+            MiniGameJuice.Feedback(FeedbackType.Hit);
+            if (scoreRt != null) MiniGameJuice.Burst(scoreRt, Vector2.zero, new Color(1f, 0.95f, 0.5f), 6, 50f, 10f, 0.4f);
         }
     }
 
@@ -409,6 +448,7 @@ public class FlappyBirdController : MonoBehaviour
         if (_state == State.Dying || _state == State.Dead) return;
         _state        = State.Dying;
         _birdVelocity = 220f; // подброс перед падением
+        MiniGameJuice.Feedback(FeedbackType.Miss);
         StartCoroutine(DeathSequence());
     }
 
@@ -439,7 +479,11 @@ public class FlappyBirdController : MonoBehaviour
     // ── Flash ───────────────────────────────────────────────────────
     private IEnumerator Flash(Color c)
     {
-        if (!_ui.FlashOverlay) yield break;
+        if (!_ui.FlashOverlay)
+        {
+            MiniGameJuice.Flash(Root, c, c.a, 0.35f); // фолбэк, если в префабе нет оверлея
+            yield break;
+        }
         _ui.FlashOverlay.color = c;
         float t = 0f;
         while (t < 0.35f)
@@ -522,6 +566,10 @@ public class FlappyBirdController : MonoBehaviour
         _ui.SetResult(_score, baseScore);
         _ui.SetBestScore(_bestScore);
         _ui.SetMedal(Medal(_score));
+
+        // Новый экран результата поверх игрового поля (старый End-экран префаба — фолбэк)
+        if (Root != null && ShowResultPanel(baseScore)) return;
+
         _ui.ShowScreen(FlappyBirdScreen.End);
 
         var slider = _ui.BonusSliderComponent;
@@ -537,10 +585,74 @@ public class FlappyBirdController : MonoBehaviour
         }
     }
 
+    private bool ShowResultPanel(int baseScore)
+    {
+        _finalScore = baseScore;
+
+        if (_resultPanel != null) Destroy(_resultPanel.gameObject);
+        _resultPanel = MiniGameResultPanel.Show(Root, new MiniGameResultPanel.Options
+        {
+            GameId         = "flappy",
+            Title          = "ИГРА ОКОНЧЕНА",
+            TitleColor     = MiniGameTheme.Accent,
+            Score          = baseScore,
+            MaxScore       = 100,
+            StarThresholds = new[] { 0.33f, 0.66f, 0.99f }, // 5 / 10 / 15 труб
+            ScoreCaption   = "очков из 100",
+            StatLines      = new[]
+            {
+                $"Пролетел: {_score} труб",
+                $"Медаль: {Medal(_score)}",
+                $"Рекорд: {_bestScore} труб",
+            },
+            ExtraHeight    = 96f,
+            PrimaryLabel   = "Завершить",
+            OnPrimary      = FinishGame,
+            PrimaryVisibleImmediately = false,
+            SecondaryLabel = "Ещё раз",
+            OnSecondary    = RestartGame,
+            CommitBestImmediately     = false,
+        });
+        if (_resultPanel == null) return false;
+
+        int agility = _userDataService != null ? _userDataService.Agility : 1;
+        var slider = _resultPanel.BuildBonusSlider("Ловкость", "% задания", out var hint);
+        if (hint != null)
+            hint.text = agility > 1 ? $"Ловкость {agility} · влияет на точность ползунка" : "Ловкость не прокачана";
+
+        if (slider != null)
+        {
+            // та же формула, что и для слайдера из префаба
+            float lvl = Mathf.Clamp01((_userDataService != null ? _userDataService.Agility : 1) - 1) / 9f;
+            slider.Run(() => lvl, baseScore, (fs, _) =>
+            {
+                _finalScore = fs;
+                _ui.SetResult(_score, fs);
+                if (_resultPanel != null)
+                {
+                    _resultPanel.UpdateScore(fs);
+                    _resultPanel.SetPrimaryVisible(true);
+                }
+            });
+        }
+        else
+        {
+            _resultPanel.CommitBest(baseScore);
+            _resultPanel.SetPrimaryVisible(true);
+        }
+        return true;
+    }
+
     private static string Medal(int p) =>
         p >= 20 ? "🥇 Золото" : p >= 10 ? "🥈 Серебро" : p >= 5 ? "🥉 Бронза" : "—";
 
     private void FinishGame() => _gameEvent?.OnGameEnded(_finalScore);
+
+    // Если игру скрыли посреди замедления смерти — корутина остановится, время нужно вернуть
+    private void OnDisable()
+    {
+        Time.timeScale = 1f;
+    }
 
     private void OnDestroy()
     {

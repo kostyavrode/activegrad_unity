@@ -3,19 +3,34 @@ using System;
 public interface IStepsService
 {
     /// <summary>
-    /// Текущее количество шагов за сегодня
+    /// Текущее количество шагов за сегодня (локальные сутки)
     /// </summary>
     int StepsToday { get; }
-    
+
     /// <summary>
-    /// true если шаги берутся из HealthConnect (Android) или HealthKit (iOS)
+    /// true, если шаги берутся с шагомера устройства
     /// </summary>
     bool IsHealthConnected { get; }
-    
+
     /// <summary>
-    /// Вызывается при обновлении количества шагов (каждые ~3 сек)
+    /// Состояние доступа к шагомеру
+    /// </summary>
+    StepsAccess Access { get; }
+
+    /// <summary>
+    /// Вызывается при обновлении количества шагов
     /// </summary>
     event Action<int> OnStepsChanged;
+
+    /// <summary>
+    /// Вызывается при изменении доступа к шагомеру
+    /// </summary>
+    event Action<StepsAccess> OnAccessChanged;
+
+    /// <summary>
+    /// Запросить доступ к шагомеру (например, по кнопке в квесте)
+    /// </summary>
+    void RequestAccess();
 
     /// <summary>
     /// Добавить шаги для отладки (Up+N)

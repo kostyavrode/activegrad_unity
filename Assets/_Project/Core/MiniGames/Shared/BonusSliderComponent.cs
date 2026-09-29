@@ -116,6 +116,11 @@ namespace ActiveGrad.MiniGames
             float bonus = 0.5f + (1f - normalizedDistance);
             int finalScore = Mathf.RoundToInt(baseScore * bonus);
 
+            // Juice: индикатор «встаёт» с толчком, звук зависит от попадания в зону
+            _indicator.localScale = Vector3.one;
+            MiniGameJuice.Punch(_indicator, 0.35f, 0.3f);
+            MiniGameJuice.Feedback(bonus >= 1.2f ? FeedbackType.Perfect : bonus >= 1f ? FeedbackType.Hit : FeedbackType.Miss);
+
             if (_finishButtonContainer != null)
                 _finishButtonContainer.SetActive(true);
 

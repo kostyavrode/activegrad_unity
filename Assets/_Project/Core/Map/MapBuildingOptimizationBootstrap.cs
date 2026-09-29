@@ -20,6 +20,7 @@ public class MapBuildingOptimizationBootstrap : IInitializable, IDisposable
     private MapMeshOptimizeModifier _groundModifier;
     private MapBuildingFootprintChamferModifier _chamferModifier;
     private MapBuildingRoofSoftenerModifier _roofSoftenerModifier;
+    private MapBuildingTintModifier _tintModifier;
     private bool _buildingMeshStyleApplied;
 
     public MapBuildingOptimizationBootstrap(AbstractMap map, CoroutineRunner coroutineRunner)
@@ -32,6 +33,7 @@ public class MapBuildingOptimizationBootstrap : IInitializable, IDisposable
     {
         _chamferModifier ??= CreateChamferModifier();
         _roofSoftenerModifier ??= CreateRoofSoftenerModifier();
+        _tintModifier ??= ScriptableObject.CreateInstance<MapBuildingTintModifier>();
         _map.OnInitialized += OnMapInitialized;
         _coroutineRunner.StartCoroutine(ApplyBuildingChamferWhenReady());
     }
@@ -96,12 +98,16 @@ public class MapBuildingOptimizationBootstrap : IInitializable, IDisposable
 
         var stack = visualizer.DefaultModifierStack.MeshModifiers;
         var hadStyle = stack.Any(modifier => modifier is MapBuildingFootprintChamferModifier)
-                       && stack.Any(modifier => modifier is MapBuildingRoofSoftenerModifier);
+                       && stack.Any(modifier => modifier is MapBuildingRoofSoftenerModifier)
+                       && stack.Any(modifier => modifier is MapBuildingTintModifier);
 
         stack.RemoveAll(modifier => modifier is MapBuildingFootprintChamferModifier
-                                    || modifier is MapBuildingRoofSoftenerModifier);
+                                    || modifier is MapBuildingRoofSoftenerModifier
+                                    || modifier is MapBuildingTintModifier);
         stack.Insert(0, _chamferModifier);
         stack.Add(_roofSoftenerModifier);
+        // Последним: оттенок пишется в UV1 уже для финального набора вершин.
+        stack.Add(_tintModifier);
 
         _buildingMeshStyleApplied = true;
 

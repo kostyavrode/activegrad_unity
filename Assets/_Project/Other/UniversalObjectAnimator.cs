@@ -50,6 +50,8 @@ public class UniversalObjectAnimator : MonoBehaviour
     [SerializeField] private Vector2 startDelayRange = new Vector2(0f, 0.5f);
     
     // Приватные переменные
+    // Позиция/вращение — локальные: объект обычно дочерний у маркера, который двигается
+    // (SpawnOnMap каждый кадр, изгиб мира CurvedWorldController). Мировые значения «замораживали» бы его на старом месте.
     private Vector3 originalPosition;
     private Vector3 originalScale;
     private Quaternion originalRotation;
@@ -63,6 +65,13 @@ public class UniversalObjectAnimator : MonoBehaviour
     private float currentRotationSpeed;
     private float currentLevitationSpeed;
     private float currentScaleSpeed;
+
+    // Левитация — смещение поверх текущей позиции (в LateUpdate), а не твин абсолютной высоты:
+    // так объект следует за тем, кто его двигает (SpawnOnMap, GameEventService, изгиб мира).
+    private float levitationOffset;
+    private Vector3 levitationBase;
+    private Vector3 lastAppliedPosition;
+    private bool levitationApplied;
     
     private void Start()
     {
@@ -79,9 +88,9 @@ public class UniversalObjectAnimator : MonoBehaviour
     
     private void InitializeOriginalValues()
     {
-        originalPosition = transform.position;
+        originalPosition = transform.localPosition;
         originalScale = transform.localScale;
-        originalRotation = transform.rotation;
+        originalRotation = transform.localRotation;
         
         if (enableColorPulse && targetRenderers.Count > 0)
         {
@@ -134,9 +143,11 @@ public class UniversalObjectAnimator : MonoBehaviour
         pathTween?.Kill();
         
         // Возвращаем в исходное состояние
-        transform.position = originalPosition;
+        levitationOffset = 0f;
+        levitationApplied = false;
+        transform.localPosition = originalPosition;
         transform.localScale = originalScale;
-        transform.rotation = originalRotation;
+        transform.localRotation = originalRotation;
         
         if (originalColors != null)
         {
@@ -167,7 +178,7 @@ public class UniversalObjectAnimator : MonoBehaviour
         
         if (rotationAxis == Vector3.zero) return;
         
-        rotationTween = transform.DORotate(
+        rotationTween = transform.DOLocalRotate(
             rotationAxis * 360f, 
             360f / currentRotationSpeed, 
             rotateMode
@@ -180,11 +191,32 @@ public class UniversalObjectAnimator : MonoBehaviour
         
         float height = Random.Range(levitationHeightRange.x, levitationHeightRange.y);
         float duration = 1f / currentLevitationSpeed;
-        
-        levitationTween = transform.DOMoveY(
-            originalPosition.y + height, 
-            duration
-        ).SetLoops(-1, LoopType.Yoyo).SetEase(levitationEase).SetRelative(false);
+
+        // Высота задана в мировых единицах — переводим в локальные с учётом масштаба родителя.
+        float parentScaleY = transform.parent != null ? Mathf.Abs(transform.parent.lossyScale.y) : 1f;
+        float localHeight = height / Mathf.Max(parentScaleY, 0.0001f);
+
+        levitationTween = DOTween.To(() => levitationOffset, value => levitationOffset = value, localHeight, duration)
+            .SetLoops(-1, LoopType.Yoyo)
+            .SetEase(levitationEase)
+            .SetTarget(this);
+    }
+
+    private void LateUpdate()
+    {
+        if (levitationTween == null || !levitationTween.IsActive())
+            return;
+
+        var position = transform.localPosition;
+
+        // Если позицию в этом кадре никто не перезаписал — берём прошлую базу, чтобы смещение не накапливалось.
+        if (levitationApplied && position == lastAppliedPosition)
+            position = levitationBase;
+
+        levitationBase = position;
+        lastAppliedPosition = position + Vector3.up * levitationOffset;
+        transform.localPosition = lastAppliedPosition;
+        levitationApplied = true;
     }
     
     private void StartScaleAnimation()
@@ -289,12 +321,15 @@ public class UniversalObjectAnimator : MonoBehaviour
         if (enableLevitation)
         {
             Gizmos.color = Color.cyan;
-            float maxHeight = originalPosition.y + levitationHeightRange.y;
-            float minHeight = originalPosition.y + levitationHeightRange.x;
-            Gizmos.DrawWireSphere(new Vector3(originalPosition.x, maxHeight, originalPosition.z), 0.1f);
-            Gizmos.DrawWireSphere(new Vector3(originalPosition.x, minHeight, originalPosition.z), 0.1f);
-            Gizmos.DrawLine(new Vector3(originalPosition.x, minHeight, originalPosition.z), 
-                           new Vector3(originalPosition.x, maxHeight, originalPosition.z));
+            var basePosition = Application.isPlaying && transform.parent != null
+                ? transform.parent.TransformPoint(originalPosition)
+                : (Application.isPlaying ? originalPosition : transform.position);
+            float maxHeight = basePosition.y + levitationHeightRange.y;
+            float minHeight = basePosition.y + levitationHeightRange.x;
+            Gizmos.DrawWireSphere(new Vector3(basePosition.x, maxHeight, basePosition.z), 0.1f);
+            Gizmos.DrawWireSphere(new Vector3(basePosition.x, minHeight, basePosition.z), 0.1f);
+            Gizmos.DrawLine(new Vector3(basePosition.x, minHeight, basePosition.z), 
+                           new Vector3(basePosition.x, maxHeight, basePosition.z));
         }
     }
     
