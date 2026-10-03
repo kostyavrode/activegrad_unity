@@ -138,8 +138,8 @@ public class TapCircle : MonoBehaviour
 
         // white → yellow → red as ring closes
         Color c = pct < 0.5f
-            ? Color.Lerp(Color.white, Color.yellow, pct * 2f)
-            : Color.Lerp(Color.yellow, new Color(1f, 0.25f, 0.25f), (pct - 0.5f) * 2f);
+            ? Color.Lerp(MiniGameTheme.Accent, MiniGameTheme.Warning, pct * 2f)
+            : Color.Lerp(MiniGameTheme.Warning, new Color(1f, 0.25f, 0.25f), (pct - 0.5f) * 2f);
         _ringImage.color = new Color(c.r, c.g, c.b, 0.9f);
     }
 

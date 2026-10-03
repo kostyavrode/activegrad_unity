@@ -20,10 +20,10 @@ public class JumpGameConfig : ScriptableObject
     public Color  coinColor   = new Color(1f, 0.85f, 0.1f);
 
     [Header("Background")]
-    public Color skyColor     = new Color(0.06f, 0.07f, 0.12f);
-    public Color groundColor  = new Color(0.20f, 0.55f, 0.25f);
+    public Color skyColor     = new Color(0.804f, 0.847f, 0.769f);
+    public Color groundColor  = new Color(0.42f, 0.62f, 0.45f);
     public Sprite bgHillSprite;
-    public Color bgLayer0Color = new Color(0.12f, 0.14f, 0.22f);
-    public Color bgLayer1Color = new Color(0.10f, 0.18f, 0.18f);
-    public Color bgLayer2Color = new Color(0.08f, 0.22f, 0.14f);
+    public Color bgLayer0Color = new Color(0.74f, 0.82f, 0.74f);
+    public Color bgLayer1Color = new Color(0.67f, 0.78f, 0.68f);
+    public Color bgLayer2Color = new Color(0.60f, 0.74f, 0.61f);
 }

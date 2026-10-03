@@ -236,7 +236,8 @@ public class PartnerStoreDetailsView : MonoBehaviour
         distanceRect.anchorMax = addressRect.anchorMax;
         distanceRect.pivot = addressRect.pivot;
         distanceRect.sizeDelta = new Vector2(addressRect.sizeDelta.x, 48f);
-        distanceRect.anchoredPosition = addressRect.anchoredPosition + new Vector2(0f, 56f);
+        // под адресом (раньше строка вставала над ним и наезжала на заголовок)
+        distanceRect.anchoredPosition = addressRect.anchoredPosition + new Vector2(0f, -66f);
 
         DistanceText = distanceObject.GetComponent<TextMeshProUGUI>();
         DistanceText.font = AddressText.font;

@@ -54,9 +54,9 @@ public class CharacterCustomizationWindow : BaseWindow
         genderText.text = isMale ? "М" : "Ж";
     }
 
-    public void SetClothesValue(int category, int value)
+    public void SetClothesValue(int category, int value, int count)
     {
         if (category < 0 || category >= valuesText.Length) return;
-        valuesText[category].text = value.ToString();
+        valuesText[category].text = $"{value + 1} / {count}";
     }
 }

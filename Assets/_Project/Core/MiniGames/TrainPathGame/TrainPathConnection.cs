@@ -58,7 +58,7 @@ public class TrainPathConnection : MonoBehaviour
         {
             label.text     = $"{_travelTime:F1}s";
             label.fontSize = config?.PathTimeFontSize ?? 10;
-            label.color    = new Color(lineColor.r * 1.3f, lineColor.g * 1.3f, lineColor.b * 1.3f, 1f);
+            label.color    = new Color(lineColor.r * 0.55f, lineColor.g * 0.55f, lineColor.b * 0.55f, 1f);
         }
     }
 

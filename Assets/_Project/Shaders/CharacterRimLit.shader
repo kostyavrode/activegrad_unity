@@ -26,6 +26,15 @@ Shader "ActiveGrad/CharacterRimLit"
             Cull Back
             ZWrite On
 
+            // Бит 64 = «здесь персонаж»: слой надписей (MapLabelsOverlay) поверх него не рисуется.
+            Stencil
+            {
+                Ref 64
+                WriteMask 64
+                Comp Always
+                Pass Replace
+            }
+
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag

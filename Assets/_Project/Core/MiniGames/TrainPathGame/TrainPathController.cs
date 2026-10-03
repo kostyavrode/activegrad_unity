@@ -60,12 +60,12 @@ public class TrainPathController : MonoBehaviour
     private int                _lastTimerSecond = -1;
 
     // ── Visual constants ──────────────────────────────────────────────────────
-    private static readonly Color ColBg        = new Color(0.04f, 0.06f, 0.12f);
-    private static readonly Color ColMapBg     = new Color(0.06f, 0.09f, 0.18f);
-    private static readonly Color ColMapBorder = new Color(0.12f, 0.20f, 0.38f);
-    private static readonly Color ColHeader    = new Color(0.05f, 0.08f, 0.16f, 0.96f);
-    private static readonly Color ColTrain     = new Color(0.10f, 0.88f, 0.96f);
-    private static readonly Color ColTrainGlow = new Color(0.10f, 0.88f, 0.96f, 0.22f);
+    private static readonly Color ColBg        = MiniGameTheme.Background;
+    private static readonly Color ColMapBg     = new Color(0.94f, 0.97f, 0.93f);
+    private static readonly Color ColMapBorder = new Color(0.745f, 0.851f, 0.706f);
+    private static readonly Color ColHeader    = new Color(1f, 1f, 1f, 0.96f);
+    private static readonly Color ColTrain     = new Color(0.184f, 0.310f, 0.310f);
+    private static readonly Color ColTrainGlow = new Color(0.184f, 0.310f, 0.310f, 0.22f);
 
     // ── Shared sprites ────────────────────────────────────────────────────────
     private static Sprite _whiteSquare;
@@ -113,7 +113,7 @@ public class TrainPathController : MonoBehaviour
     private GameObject BuildStartScreen(RectTransform root)
     {
         var screen = MakeOverlay(root, "StartScreen");
-        var rt     = screen.GetComponent<RectTransform>();
+        var rt     = MiniGameTheme.CreateScaledContent(screen.GetComponent<RectTransform>(), new Vector2(400f, 470f));
 
         var card = MiniGameTheme.CreateCard(rt, "Card", new Vector2(400f, 470f), out _, MiniGameTheme.Card, 26f);
         card.anchoredPosition = new Vector2(0f, -10f);
@@ -122,36 +122,36 @@ public class TrainPathController : MonoBehaviour
         var title = MakeText(rt, "Title", "ЖЕЛЕЗНАЯ\nДОРОГА", 46,
             new Vector2(0, 145), TextAlignmentOptions.Center);
         title.fontStyle = FontStyles.Bold;
-        title.color     = new Color(0.18f, 0.84f, 0.96f);
+        title.color     = MiniGameTheme.Accent;
 
         // Subtitle
         var sub = MakeText(rt, "Sub",
             "Собери все грузы и отвези их на финальную станцию\nЧем быстрее — тем больше очков",
             17, new Vector2(0, 50), TextAlignmentOptions.Center);
-        sub.color = new Color(0.60f, 0.72f, 0.85f);
+        sub.color = MiniGameTheme.TextSecondary;
 
         // Legend row
         var leg = MakeText(rt, "Legend",
             "🟢 Старт   🔴 Финиш   🟠 Груз   🟡 Доступна",
             14, new Vector2(0, -5), TextAlignmentOptions.Center);
-        leg.color = new Color(0.50f, 0.60f, 0.70f);
+        leg.color = MiniGameTheme.TextSecondary;
 
         // Intelligence badge
         var badge = MakeText(rt, "Intelligence",
             $"Интеллект {_intelligence}  ·  влияет на ползунок",
             15, new Vector2(0, -48), TextAlignmentOptions.Center);
-        badge.color = new Color(0.40f, 1f, 0.65f);
+        badge.color = MiniGameTheme.Success;
 
         // Start button
         var startBtn = MakeButton(rt, "НАЧАТЬ",
-            MiniGameTheme.Success, new Vector2(0, -112), new Vector2(220, 56));
-        MiniGameTheme.StyleButton(startBtn, MiniGameTheme.Success, MiniGameTheme.TextDark);
+            MiniGameTheme.Accent, new Vector2(0, -112), new Vector2(220, 56));
+        MiniGameTheme.StyleButton(startBtn, MiniGameTheme.Accent, MiniGameTheme.TextOnAccent);
         startBtn.onClick.AddListener(StartGame);
 
         // Close button
         var closeBtn = MakeButton(rt, "✕  Выйти",
-            MiniGameTheme.Danger, new Vector2(0, -180), new Vector2(220, 44));
-        MiniGameTheme.StyleButton(closeBtn, MiniGameTheme.Danger, Color.white, 19f, 16f, FeedbackType.Close);
+            MiniGameTheme.CardLight, new Vector2(0, -180), new Vector2(220, 44));
+        MiniGameTheme.StyleButton(closeBtn, MiniGameTheme.CardLight, MiniGameTheme.TextPrimary, 19f, 16f, FeedbackType.Close);
         closeBtn.onClick.AddListener(() => _gameEvent?.CloseGame());
 
         return screen;
@@ -186,7 +186,7 @@ public class TrainPathController : MonoBehaviour
         barBgRt.anchorMin = new Vector2(0.05f, 0); barBgRt.anchorMax = new Vector2(0.95f, 0);
         barBgRt.sizeDelta        = new Vector2(0, 5);
         barBgRt.anchoredPosition = new Vector2(0, 9);
-        barBg.AddComponent<Image>().color = new Color(0.12f, 0.18f, 0.28f);
+        barBg.AddComponent<Image>().color = MiniGameTheme.CardLight;
 
         var barFillGo = new GameObject("BarFill");
         barFillGo.transform.SetParent(barBg.transform, false);
@@ -203,7 +203,7 @@ public class TrainPathController : MonoBehaviour
 
         // Cargo counter
         _cargoTxt = MakeText(hdrRt, "Cargo", "📦 0/0", 16, new Vector2(0, -20), TextAlignmentOptions.Center);
-        _cargoTxt.color = new Color(0.95f, 0.80f, 0.28f);
+        _cargoTxt.color = new Color(0.80f, 0.52f, 0.05f);
 
         // Map border — растягивается на весь экран под хедером (68px)
         var borderGo = new GameObject("MapBorder");
@@ -452,12 +452,12 @@ public class TrainPathController : MonoBehaviour
         if (score >= 90)
         {
             _rewardTxt.text  = "🎁  2 случайных ресурса";
-            _rewardTxt.color = new Color(1f, 0.85f, 0.25f);
+            _rewardTxt.color = MiniGameTheme.Warning;
         }
         else if (score >= 65)
         {
             _rewardTxt.text  = "🎁  1 случайный ресурс";
-            _rewardTxt.color = new Color(0.75f, 0.95f, 0.45f);
+            _rewardTxt.color = MiniGameTheme.Success;
         }
         else
         {
@@ -638,7 +638,7 @@ public class TrainPathController : MonoBehaviour
             _timerTxt.text  = $"{m}:{s:00}";
             _timerTxt.color = _remainingTime < 20f ? new Color(1f, 0.25f, 0.25f)
                             : _remainingTime < 40f ? new Color(1f, 0.78f, 0.10f)
-                            : Color.white;
+                            : MiniGameTheme.TextPrimary;
 
             // последние 10 секунд — тик таймера
             int secLeft = Mathf.CeilToInt(_remainingTime);
@@ -688,7 +688,7 @@ public class TrainPathController : MonoBehaviour
         tmp.text      = text;
         tmp.fontSize  = size;
         tmp.alignment = align;
-        tmp.color     = Color.white;
+        tmp.color     = MiniGameTheme.TextPrimary;
         tmp.raycastTarget = false;
         return tmp;
     }

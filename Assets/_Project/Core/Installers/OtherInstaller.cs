@@ -121,6 +121,8 @@ public class OtherInstaller : MonoInstaller
 
         Container.BindInterfacesAndSelfTo<MapVectorLayersBootstrap>().AsSingle().NonLazy();
 
+        Container.BindInterfacesAndSelfTo<MapLabelsOverlay>().AsSingle().NonLazy();
+
         Container.BindInterfacesAndSelfTo<SpawnOnMap>().FromComponentInHierarchy(_spawnOnMap).AsSingle();
         
         Container.Bind<Camera>().FromComponentInHierarchy(_mainCamera).AsSingle();

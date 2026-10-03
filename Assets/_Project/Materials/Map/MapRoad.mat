@@ -19,7 +19,8 @@ Material:
   m_CustomRenderQueue: 3010
   stringTagMap:
     RenderType: Transparent
-  disabledShaderPasses: []
+  disabledShaderPasses:
+  - SRPDefaultUnlit
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3

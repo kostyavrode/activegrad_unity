@@ -34,6 +34,8 @@ public static class UIButtonGlowEffect
             baseColor.a);
 
         graphic.color = baseColor;
+        // Бесконечное мерцание цвета — в свой Canvas, иначе каждый кадр перестраивается весь UI.
+        UICanvasIsolation.Ensure(graphic.gameObject);
         ActiveTweens[key] = graphic
             .DOColor(glowColor, 0.55f)
             .SetEase(Ease.InOutSine)

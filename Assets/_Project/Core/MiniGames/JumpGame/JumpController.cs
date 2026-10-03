@@ -139,10 +139,18 @@ public class JumpController : MonoBehaviour
 
         BuildBackground(bg);
 
-        var ground = MakePanel(bg, "Ground", _cfg != null ? _cfg.groundColor : new Color(0.2f, 0.55f, 0.25f, 1f));
-        ground.anchorMin = new Vector2(0, 0); ground.anchorMax = new Vector2(1, 0);
-        ground.sizeDelta = new Vector2(0, 28f);
-        ground.anchoredPosition = new Vector2(0, GroundY + PlayerH * 0.5f - 14f);
+        // Земля: от линии ног игрока до низа экрана
+        var ground = MakePanel(bg, "Ground", _cfg != null ? _cfg.groundColor : new Color(0.42f, 0.62f, 0.45f, 1f));
+        ground.anchorMin = new Vector2(0, 0); ground.anchorMax = new Vector2(1, 0.5f);
+        ground.offsetMin = Vector2.zero;
+        ground.offsetMax = new Vector2(0, GroundY - PlayerH * 0.5f);
+
+        var groundColor = ground.GetComponent<Image>().color;
+        var grass = MakePanel(ground, "Grass", Color.Lerp(groundColor, Color.black, 0.18f));
+        grass.anchorMin = new Vector2(0, 1); grass.anchorMax = new Vector2(1, 1);
+        grass.pivot = new Vector2(0.5f, 1f);
+        grass.sizeDelta = new Vector2(0, 14f);
+        grass.anchoredPosition = Vector2.zero;
 
         var laneGo = new GameObject("Lanes");
         laneGo.transform.SetParent(bg, false);
@@ -172,15 +180,19 @@ public class JumpController : MonoBehaviour
 
     private void BuildBackground(RectTransform parent)
     {
+        // Три слоя холмов-силуэтов. Центры холмов лежат на линии земли: нижнюю половину закрывает Ground.
+        const float layerWidth = 1200f;
+        const int hillsPerLayer = 5;
         _bgLayers = new RectTransform[3];
         _bgSpeeds = new float[] { 0.15f, 0.35f, 0.6f };
         _bgWidths = new float[3];
 
         Color[] cols = _cfg != null
             ? new[] { _cfg.bgLayer0Color, _cfg.bgLayer1Color, _cfg.bgLayer2Color }
-            : new[] { new Color(0.12f, 0.14f, 0.22f), new Color(0.10f, 0.18f, 0.18f), new Color(0.08f, 0.22f, 0.14f) };
-        float[] heights = { 160f, 110f, 60f };
-        float[] yPos    = { -60f, -100f, -160f };
+            : new[] { new Color(0.74f, 0.82f, 0.74f), new Color(0.67f, 0.78f, 0.68f), new Color(0.60f, 0.74f, 0.61f) };
+        Vector2[] widths  = { new Vector2(380f, 520f), new Vector2(260f, 380f), new Vector2(160f, 260f) };
+        Vector2[] heights = { new Vector2(300f, 420f), new Vector2(200f, 280f), new Vector2(110f, 170f) };
+        float groundTop = GroundY - PlayerH * 0.5f;
 
         for (int i = 0; i < 3; i++)
         {
@@ -188,52 +200,74 @@ public class JumpController : MonoBehaviour
             go.transform.SetParent(parent, false);
             var rt = go.AddComponent<RectTransform>();
             rt.anchorMin = new Vector2(0.5f, 0.5f); rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(1200f, heights[i]);
-            rt.anchoredPosition = new Vector2(0, yPos[i]);
-            var img = go.AddComponent<Image>();
-            img.color = cols[i];
+            rt.sizeDelta = new Vector2(layerWidth, 10f);
+            rt.anchoredPosition = new Vector2(0, groundTop);
             _bgLayers[i] = rt;
-            _bgWidths[i] = 1200f;
+            _bgWidths[i] = layerWidth;
 
-            for (int b = 0; b < 5; b++)
+            for (int b = 0; b < hillsPerLayer; b++)
             {
-                float bx = -500f + b * 240f + Random.Range(-40f, 40f);
-                float bw = Random.Range(120f, 220f);
-                float bh = Random.Range(40f, heights[i] * 0.7f);
-                var bump = new GameObject($"Hill{b}");
-                bump.transform.SetParent(go.transform, false);
-                var brt = bump.AddComponent<RectTransform>();
-                brt.anchorMin = brt.anchorMax = new Vector2(0.5f, 0f);
-                brt.sizeDelta = new Vector2(bw, bh);
-                brt.anchoredPosition = new Vector2(bx, heights[i] * 0.5f);
-                var bimg = bump.AddComponent<Image>();
-                bimg.sprite = (_cfg != null && _cfg.bgHillSprite != null) ? _cfg.bgHillSprite : _circleSprite;
-                bimg.color = new Color(cols[i].r * 0.85f, cols[i].g * 0.85f, cols[i].b * 0.85f);
+                float bx = -layerWidth * 0.5f + (b + 0.5f) * (layerWidth / hillsPerLayer) + Random.Range(-40f, 40f);
+                float bw = Random.Range(widths[i].x, widths[i].y);
+                float bh = Random.Range(heights[i].x, heights[i].y);
+
+                // копии на ±ширину слоя — чтобы прокрутка зацикливалась без разрывов
+                for (int k = -1; k <= 1; k++)
+                {
+                    var bump = new GameObject($"Hill{b}");
+                    bump.transform.SetParent(go.transform, false);
+                    var brt = bump.AddComponent<RectTransform>();
+                    brt.anchorMin = brt.anchorMax = new Vector2(0.5f, 0.5f);
+                    brt.sizeDelta = new Vector2(bw, bh);
+                    brt.anchoredPosition = new Vector2(bx + k * layerWidth, 0f);
+                    var bimg = bump.AddComponent<Image>();
+                    bimg.sprite = (_cfg != null && _cfg.bgHillSprite != null) ? _cfg.bgHillSprite : _circleSprite;
+                    bimg.color = cols[i];
+                    bimg.raycastTarget = false;
+                }
             }
         }
     }
 
     private void BuildHUD(RectTransform parent)
     {
-        _scoreTxt = MakeText(parent, "Score", "0", 28, new Vector2(-10, -30), TextAlignmentOptions.TopRight);
-        _scoreTxt.GetComponent<RectTransform>().anchorMin = new Vector2(1, 1);
-        _scoreTxt.GetComponent<RectTransform>().anchorMax = new Vector2(1, 1);
+        // Белая плашка сверху: комбо слева, таймер по центру, счёт справа
+        var bar = MakePanel(parent, "HUD", MiniGameTheme.Card);
+        bar.anchorMin = new Vector2(0, 1); bar.anchorMax = new Vector2(1, 1);
+        bar.pivot = new Vector2(0.5f, 1f);
+        bar.sizeDelta = new Vector2(-48f, 150f);
+        bar.anchoredPosition = new Vector2(0, -60f);
+        var barImg = bar.GetComponent<Image>();
+        MiniGameTheme.ApplyRounded(barImg, 40f);
+        barImg.raycastTarget = false;
 
-        _timerTxt = MakeText(parent, "Timer", "30", 36, new Vector2(0, -20), TextAlignmentOptions.Top);
-        _timerTxt.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 1);
-        _timerTxt.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 1);
+        _scoreTxt = MakeText(bar, "Score", "0", 60, Vector2.zero, TextAlignmentOptions.MidlineRight);
+        _scoreTxt.fontStyle = FontStyles.Bold;
+        PlaceHudText(_scoreTxt, 1f, new Vector2(-40f, 0f), new Vector2(360f, 110f));
+
+        _timerTxt = MakeText(bar, "Timer", "30", 84, Vector2.zero, TextAlignmentOptions.Center);
         _timerTxt.fontStyle = FontStyles.Bold;
+        PlaceHudText(_timerTxt, 0.5f, Vector2.zero, new Vector2(260f, 130f));
 
-        _comboTxt = MakeText(parent, "Combo", "", 22, new Vector2(20, -30), TextAlignmentOptions.TopLeft);
-        _comboTxt.GetComponent<RectTransform>().anchorMin = new Vector2(0, 1);
-        _comboTxt.GetComponent<RectTransform>().anchorMax = new Vector2(0, 1);
-        _comboTxt.color = new Color(1f, 0.85f, 0.2f);
+        _comboTxt = MakeText(bar, "Combo", "", 38, Vector2.zero, TextAlignmentOptions.MidlineLeft);
+        _comboTxt.fontStyle = FontStyles.Bold;
+        _comboTxt.color = MiniGameTheme.Warning;
+        PlaceHudText(_comboTxt, 0f, new Vector2(40f, 0f), new Vector2(360f, 110f));
+    }
+
+    private static void PlaceHudText(TextMeshProUGUI txt, float anchorX, Vector2 pos, Vector2 size)
+    {
+        var rt = txt.rectTransform;
+        rt.anchorMin = rt.anchorMax = new Vector2(anchorX, 0.5f);
+        rt.pivot = new Vector2(anchorX, 0.5f);
+        rt.sizeDelta = size;
+        rt.anchoredPosition = pos;
     }
 
     private GameObject BuildStartScreen(RectTransform parent)
     {
-        var screen = MakeFullPanel(parent, "StartScreen", new Color(0f, 0f, 0f, 0.78f));
-        var srt = screen.GetComponent<RectTransform>();
+        var screen = MakeFullPanel(parent, "StartScreen", new Color(MiniGameTheme.Background.r, MiniGameTheme.Background.g, MiniGameTheme.Background.b, 0.92f));
+        var srt = MiniGameTheme.CreateScaledContent(screen.GetComponent<RectTransform>(), new Vector2(400f, 450f));
 
         var card = MiniGameTheme.CreateCard(srt, "Card", new Vector2(400f, 450f), out _, MiniGameTheme.Card, 26f);
         card.anchoredPosition = new Vector2(0f, -10f);
@@ -248,13 +282,13 @@ public class JumpController : MonoBehaviour
         sub.color = MiniGameTheme.TextSecondary;
 
         var btn = MakeButton(srt, "Начать",
-            MiniGameTheme.Success, new Vector2(0, -110), new Vector2(220, 56));
-        MiniGameTheme.StyleButton(btn, MiniGameTheme.Success, MiniGameTheme.TextDark);
+            MiniGameTheme.Accent, new Vector2(0, -110), new Vector2(220, 56));
+        MiniGameTheme.StyleButton(btn, MiniGameTheme.Accent, MiniGameTheme.TextOnAccent);
         btn.onClick.AddListener(StartGame);
 
         var closeBtn = MakeButton(srt, "✕  Выйти",
-            MiniGameTheme.Danger, new Vector2(0, -180), new Vector2(220, 44));
-        MiniGameTheme.StyleButton(closeBtn, MiniGameTheme.Danger, Color.white, 19f, 16f, FeedbackType.Close);
+            MiniGameTheme.CardLight, new Vector2(0, -180), new Vector2(220, 44));
+        MiniGameTheme.StyleButton(closeBtn, MiniGameTheme.CardLight, MiniGameTheme.TextPrimary, 19f, 16f, FeedbackType.Close);
         closeBtn.onClick.AddListener(() => _gameEvent?.CloseGame());
 
         return screen;
@@ -440,12 +474,12 @@ public class JumpController : MonoBehaviour
         if (score >= 90)
         {
             _rewardTxt.text  = "🎁  2 случайных ресурса";
-            _rewardTxt.color = new Color(1f, 0.85f, 0.25f);
+            _rewardTxt.color = MiniGameTheme.Warning;
         }
         else if (score >= 65)
         {
             _rewardTxt.text  = "🎁  1 случайный ресурс";
-            _rewardTxt.color = new Color(0.75f, 0.95f, 0.45f);
+            _rewardTxt.color = MiniGameTheme.Success;
         }
         else
         {
@@ -714,6 +748,19 @@ public class JumpController : MonoBehaviour
 
         AddStripe(go.transform, w, h);
 
+        // Визуально дотягиваем камень до земли (на хитбокс не влияет)
+        var footGo = new GameObject("Foot");
+        footGo.transform.SetParent(go.transform, false);
+        var foot = footGo.AddComponent<RectTransform>();
+        foot.anchorMin = new Vector2(0, 0); foot.anchorMax = new Vector2(1, 0);
+        foot.pivot = new Vector2(0.5f, 1f);
+        foot.sizeDelta = new Vector2(0, PlayerH * 0.5f);
+        foot.anchoredPosition = Vector2.zero;
+        var footImg = footGo.AddComponent<Image>();
+        footImg.sprite = img.sprite;
+        footImg.color = img.color;
+        footImg.raycastTarget = false;
+
         _lanes.Add(new Lane { rect = rt, isCoin = false, isCeiling = false, passed = false, wasHit = false });
     }
 
@@ -806,9 +853,9 @@ public class JumpController : MonoBehaviour
                 {
                     // Успешно обошли — плюс очки
                     AddScore(PointsClear, lane.rect.anchoredPosition + Vector2.up * 60f,
-                        new Color(0.4f, 1f, 0.5f));
+                        MiniGameTheme.Success);
                     _combo++;
-                    OnComboStep(lane.rect.anchoredPosition + Vector2.up * 30f, new Color(0.4f, 1f, 0.5f), 6, false);
+                    OnComboStep(lane.rect.anchoredPosition + Vector2.up * 30f, MiniGameTheme.Success, 6, false);
                 }
             }
 
@@ -871,7 +918,7 @@ public class JumpController : MonoBehaviour
         DOTween.Kill(lane.rect);
         Destroy(lane.rect.gameObject);
         var l2 = _lanes[index]; l2.passed = true; _lanes[index] = l2;
-        AddScore(PointsPerCoin, pos + Vector2.up * 20f, new Color(1f, 0.9f, 0.2f));
+        AddScore(PointsPerCoin, pos + Vector2.up * 20f, MiniGameTheme.Warning);
         _combo++;
         _coinsCollected++;
         OnComboStep(pos, MiniGameTheme.Warning, 12, true);
@@ -969,7 +1016,7 @@ public class JumpController : MonoBehaviour
     {
         _scoreTxt.text  = _score.ToString();
         _timerTxt.text  = Mathf.CeilToInt(_timeLeft).ToString();
-        _timerTxt.color = _timeLeft <= 5f ? new Color(1f, 0.3f, 0.3f) : Color.white;
+        _timerTxt.color = _timeLeft <= 5f ? new Color(1f, 0.3f, 0.3f) : MiniGameTheme.TextPrimary;
 
         _maxCombo = Mathf.Max(_maxCombo, _combo);
         if (_combo >= 2)
@@ -1078,7 +1125,7 @@ public class JumpController : MonoBehaviour
         tmp.text      = text;
         tmp.fontSize  = size;
         tmp.alignment = align;
-        tmp.color     = Color.white;
+        tmp.color     = MiniGameTheme.TextPrimary;
         tmp.raycastTarget = false;
         return tmp;
     }

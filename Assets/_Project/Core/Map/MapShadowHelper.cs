@@ -15,6 +15,14 @@ public static class MapShadowHelper
             if (renderer == null)
                 continue;
 
+            // Частицы и следы в карте теней почти не видны, но на телефоне дорого рендерятся второй раз.
+            if (renderer is ParticleSystemRenderer || renderer is TrailRenderer || renderer is LineRenderer)
+            {
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                continue;
+            }
+
             renderer.shadowCastingMode = ShadowCastingMode.On;
             renderer.receiveShadows = true;
         }

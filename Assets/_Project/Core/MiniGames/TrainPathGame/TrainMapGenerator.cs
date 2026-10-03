@@ -381,7 +381,7 @@ public class TrainMapGenerator
         labelObj.transform.SetParent(pathObj.transform, false);
         var label = labelObj.AddComponent<TextMeshProUGUI>();
         label.fontSize      = _config?.PathTimeFontSize ?? 10;
-        label.color         = Color.white;
+        label.color         = MiniGameTheme.TextPrimary;
         label.alignment     = TextAlignmentOptions.Center;
         label.raycastTarget = false;
 

@@ -17,7 +17,11 @@ public class UIButtonAttentionPulse : MonoBehaviour
             _target = transform as RectTransform;
 
         if (_target != null)
+        {
             _initialScale = _target.localScale;
+            // Бесконечная пульсация — в свой Canvas, иначе каждый кадр перестраивается весь UI.
+            UICanvasIsolation.Ensure(_target.gameObject);
+        }
     }
 
     private void OnEnable()

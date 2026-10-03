@@ -9,18 +9,19 @@ using UnityEngine.UI;
 public static class MiniGameTheme
 {
     // ── palette ──────────────────────────────────────────────────────────────
-    // Фирменная зелёно-салатовая палитра проекта
-    public static readonly Color Background    = new Color(0.047f, 0.157f, 0.086f);
-    public static readonly Color Card          = new Color(0.086f, 0.259f, 0.141f);
-    public static readonly Color CardLight     = new Color(0.141f, 0.357f, 0.200f);
-    public static readonly Color Accent        = new Color(0.60f, 0.90f, 0.25f);
-    public static readonly Color Success       = new Color(0.22f, 0.88f, 0.47f);
-    public static readonly Color Warning       = new Color(1.00f, 0.82f, 0.20f);
-    public static readonly Color Danger        = new Color(0.95f, 0.28f, 0.30f);
-    public static readonly Color TextPrimary   = Color.white;
-    public static readonly Color TextSecondary = new Color(0.74f, 0.88f, 0.74f);
-    public static readonly Color TextDark      = new Color(0.04f, 0.13f, 0.06f);
-    public static readonly Color ShadowColor   = new Color(0f, 0f, 0f, 0.38f);
+    // Светлая палитра приложения: мятный фон, белые карточки, тёмно-бирюзовый акцент
+    public static readonly Color Background    = new Color(0.804f, 0.847f, 0.769f);
+    public static readonly Color Card          = Color.white;
+    public static readonly Color CardLight     = new Color(0.90f, 0.94f, 0.89f);
+    public static readonly Color Accent        = new Color(0.184f, 0.310f, 0.310f);
+    public static readonly Color Success       = new Color(0.20f, 0.62f, 0.40f);
+    public static readonly Color Warning       = new Color(0.93f, 0.66f, 0.10f);
+    public static readonly Color Danger        = new Color(0.84f, 0.30f, 0.30f);
+    public static readonly Color TextPrimary   = new Color(0.184f, 0.310f, 0.310f);
+    public static readonly Color TextSecondary = new Color(0.243f, 0.373f, 0.290f);
+    public static readonly Color TextDark      = new Color(0.184f, 0.310f, 0.310f);
+    public static readonly Color TextOnAccent  = Color.white;
+    public static readonly Color ShadowColor   = new Color(0.184f, 0.310f, 0.310f, 0.18f);
 
     public const float DefaultRadius = 18f;
 
@@ -100,7 +101,7 @@ public static class MiniGameTheme
         {
             lbl.fontSize  = labelSize;
             lbl.fontStyle = FontStyles.Bold;
-            lbl.color     = labelColor ?? TextPrimary;
+            lbl.color     = labelColor ?? TextOnAccent;
         }
 
         if (btn.GetComponent<MiniGamePress>() == null)
@@ -193,7 +194,7 @@ public static class MiniGameTheme
         var btn = img.gameObject.AddComponent<Button>();
         btn.targetGraphic = img;
 
-        var lbl = CreateText(img.transform, "Label", label, labelSize, labelColor ?? TextPrimary, FontStyles.Bold);
+        var lbl = CreateText(img.transform, "Label", label, labelSize, labelColor ?? TextOnAccent, FontStyles.Bold);
         Stretch(lbl.rectTransform);
 
         StyleButton(btn, color ?? Accent, labelColor, labelSize, Mathf.Min(16f, size.y * 0.35f), clickFeedback);
@@ -217,6 +218,30 @@ public static class MiniGameTheme
         tmp.alignment = align;
         tmp.raycastTarget = false;
         return tmp;
+    }
+
+    /// <summary>
+    /// Масштаб, при котором блок designSize занимает ~86% ширины reference (UI игр свёрстан под ~480 единиц,
+    /// а канвас приложения — 1080).
+    /// </summary>
+    public static float UiScale(RectTransform reference, Vector2 designSize)
+    {
+        if (reference == null) return 1f;
+        var r = reference.rect;
+        if (r.width < 10f || r.height < 10f) return 1f;
+        return Mathf.Clamp(Mathf.Min(r.width * 0.86f / designSize.x, r.height * 0.8f / designSize.y), 1f, 3f);
+    }
+
+    /// <summary>Контейнер по центру parent, увеличенный под размер экрана (см. UiScale).</summary>
+    public static RectTransform CreateScaledContent(RectTransform parent, Vector2 designSize, string name = "Content")
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        var rt = go.AddComponent<RectTransform>();
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = designSize;
+        rt.localScale = Vector3.one * UiScale(parent, designSize);
+        return rt;
     }
 
     public static Image MakeImage(Transform parent, string name, Color color)

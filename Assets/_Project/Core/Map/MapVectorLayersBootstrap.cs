@@ -101,6 +101,9 @@ public class MapVectorLayersBootstrap : IInitializable
         layer.coreOptions.snapToTerrain = true;
         layer.buildingsWithUniqueIds = false;
         layer.colliderOptions.colliderType = ColliderType.None;
+        // Слои из кода не получают performanceOptions (они есть только у сериализованных) —
+        // без этого весь тайл строится за один кадр и даёт рывок при подгрузке во время ходьбы.
+        layer.performanceOptions = new LayerPerformanceOptions { isEnabled = true, entityPerCoroutine = 10 };
 
         layer.extrusionOptions.extrusionType = ExtrusionType.AbsoluteHeight;
         layer.extrusionOptions.extrusionGeometryType = ExtrusionGeometryType.RoofOnly;

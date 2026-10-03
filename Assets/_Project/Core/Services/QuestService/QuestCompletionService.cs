@@ -450,14 +450,19 @@ public class QuestCompletionService : IInitializable, IDisposable, ITickable
     
     private bool _isLoadingQuests = false;
     
+    private float _nextDailyResetCheck;
+    private const float DailyResetCheckInterval = 5f;
+
     public void Tick()
     {
-        // Проверяем ежедневный сброс, но не слишком часто
+        // Проверяем ежедневный сброс раз в несколько секунд: форматирование даты каждый кадр
+        // давало лишние аллокации (и сборки мусора) на телефонах.
         // Проверяем только если не идет загрузка квестов
-        if (!_isLoadingQuests)
-        {
-            CheckDailyReset();
-        }
+        if (_isLoadingQuests || Time.unscaledTime < _nextDailyResetCheck)
+            return;
+
+        _nextDailyResetCheck = Time.unscaledTime + DailyResetCheckInterval;
+        CheckDailyReset();
     }
     
     public void Dispose()

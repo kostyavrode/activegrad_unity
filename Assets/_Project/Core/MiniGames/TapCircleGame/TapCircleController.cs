@@ -101,6 +101,7 @@ public class TapCircleController : MonoBehaviour
     {
         // card
         var card = MiniGameTheme.CreateCard(parent, "Card", new Vector2(300f, 390f), out _, MiniGameTheme.Card, 26f);
+        card.localScale = Vector3.one * MiniGameTheme.UiScale(parent as RectTransform, new Vector2(300f, 390f));
 
         // title
         MakeText(card, "Title", "ТАП-РИТМ", 36, FontStyles.Bold,
@@ -144,17 +145,17 @@ public class TapCircleController : MonoBehaviour
             new Color(1.00f, 0.55f, 0.25f), new Vector2(0f, -115f), new Vector2(240f, 24f));
 
         MakeText(card, "Dur", "⏱  30 секунд", 14, FontStyles.Normal,
-            new Color(0.62f, 0.66f, 0.76f), new Vector2(0f, -148f), new Vector2(240f, 26f));
+            MiniGameTheme.TextSecondary, new Vector2(0f, -148f), new Vector2(240f, 26f));
 
         // start button
         var startBtn = MiniGameTheme.CreateButton(card, "StartBtn", "НАЧАТЬ", new Vector2(200f, 50f),
-            MiniGameTheme.Accent, MiniGameTheme.TextDark);
+            MiniGameTheme.Accent, MiniGameTheme.TextOnAccent);
         ((RectTransform)startBtn.transform).anchoredPosition = new Vector2(0f, -180f);
         startBtn.onClick.AddListener(StartGame);
 
         // close button
         var closeBtn = MiniGameTheme.CreateButton(card, "CloseBtn", "✕", new Vector2(40f, 40f),
-            MiniGameTheme.Danger, Color.white, 20f, FeedbackType.Close);
+            MiniGameTheme.CardLight, MiniGameTheme.TextPrimary, 20f, FeedbackType.Close);
         ((RectTransform)closeBtn.transform).anchoredPosition = new Vector2(120f, 175f);
         closeBtn.onClick.AddListener(() => _gameEvent?.CloseGame());
     }
@@ -168,7 +169,7 @@ public class TapCircleController : MonoBehaviour
         hud.sizeDelta = new Vector2(0f, 72f);
 
         _scoreText = MakeText(hud, "Score", "0", 26, FontStyles.Bold,
-            Color.white, new Vector2(-10f, -18f), new Vector2(160f, 40f));
+            MiniGameTheme.TextPrimary, new Vector2(-10f, -18f), new Vector2(160f, 40f));
         _scoreText.alignment = TextAlignmentOptions.Right;
 
         _comboText = MakeText(hud, "Combo", "", 18, FontStyles.Bold,
@@ -176,7 +177,7 @@ public class TapCircleController : MonoBehaviour
         _comboText.alignment = TextAlignmentOptions.Left;
 
         _timerText = MakeText(hud, "TimerNum", "30", 20, FontStyles.Bold,
-            Color.white, new Vector2(0f, -15f), new Vector2(80f, 36f));
+            MiniGameTheme.TextPrimary, new Vector2(0f, -15f), new Vector2(80f, 36f));
         _timerText.alignment = TextAlignmentOptions.Center;
 
         // timer bar track
@@ -279,7 +280,7 @@ public class TapCircleController : MonoBehaviour
             }
             _lastTimerSecond = sec;
         }
-        if (sec > 5) _timerText.color = Color.white;
+        if (sec > 5) _timerText.color = MiniGameTheme.TextPrimary;
 
         _scoreText.text = _rawScore.ToString();
         _comboText.text = _combo >= 3 ? $"x{_combo} COMBO" : "";
@@ -346,12 +347,12 @@ public class TapCircleController : MonoBehaviour
         // Чем ближе кольцо к кругу (меньше frac), тем больше очков
         if (frac < 0.30f)
         {
-            baseScore = ScorePerfect; label = "PERFECT!"; popupColor = new Color(0.2f, 1f, 0.5f);
+            baseScore = ScorePerfect; label = "PERFECT!"; popupColor = MiniGameTheme.Success;
             perfect = true;
         }
         else if (frac < 0.65f)
         {
-            baseScore = ScoreGreat;   label = "GREAT";    popupColor = new Color(1f, 0.9f, 0.2f);
+            baseScore = ScoreGreat;   label = "GREAT";    popupColor = MiniGameTheme.Warning;
         }
         else
         {

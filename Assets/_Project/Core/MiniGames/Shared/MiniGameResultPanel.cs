@@ -75,7 +75,7 @@ public class MiniGameResultPanel : MonoBehaviour
 
         // затемнение (блокирует ввод под панелью)
         var dim = go.AddComponent<Image>();
-        dim.color = new Color(0.01f, 0.02f, 0.06f, 0.78f);
+        dim.color = new Color(0.184f, 0.310f, 0.310f, 0.55f);
 
         var panel = go.AddComponent<MiniGameResultPanel>();
         panel._o = options;
@@ -108,7 +108,7 @@ public class MiniGameResultPanel : MonoBehaviour
         // ── вписываем в экран ────────────────────────────────────────────────
         var pr = parent.rect;
         if (pr.height > 10f && pr.width > 10f)
-            _fitScale = Mathf.Min(1f, pr.height * 0.94f / h, pr.width * 0.94f / CardWidth);
+            _fitScale = Mathf.Clamp(Mathf.Min(pr.height * 0.9f / h, pr.width * 0.86f / CardWidth), 0.5f, 3f);
 
         float y = 24f;
 
@@ -145,7 +145,7 @@ public class MiniGameResultPanel : MonoBehaviour
         for (int i = 0; i < statCount; i++)
         {
             var line = MiniGameTheme.CreateText(Card, $"Stat{i}", o.StatLines[i], 17f,
-                new Color(0.86f, 0.89f, 0.96f));
+                MiniGameTheme.TextSecondary);
             Place(line.rectTransform, y, 25f, CardWidth - 30f);
             y += 25f;
         }
@@ -173,7 +173,7 @@ public class MiniGameResultPanel : MonoBehaviour
 
         // buttons
         PrimaryButton = MiniGameTheme.CreateButton(Card, "PrimaryBtn", o.PrimaryLabel ?? "OK",
-            new Vector2(240f, 56f), MiniGameTheme.Accent, MiniGameTheme.TextDark, 22f, FeedbackType.Tap);
+            new Vector2(240f, 56f), MiniGameTheme.Accent, MiniGameTheme.TextOnAccent, 22f, FeedbackType.Tap);
         Place((RectTransform)PrimaryButton.transform, y, 56f, 240f);
         PrimaryButton.onClick.AddListener(() => _o.OnPrimary?.Invoke());
         PrimaryButton.gameObject.SetActive(o.PrimaryVisibleImmediately);
@@ -213,7 +213,7 @@ public class MiniGameResultPanel : MonoBehaviour
 
         for (int i = 0; i < 3; i++)
         {
-            var slot = MiniGameTheme.MakeImage(_starsRow, $"Star{i}", new Color(1f, 1f, 1f, 0.12f));
+            var slot = MiniGameTheme.MakeImage(_starsRow, $"Star{i}", new Color(0f, 0f, 0f, 0.10f));
             slot.sprite = MiniGameTheme.StarSprite;
             slot.raycastTarget = false;
             var srt = slot.rectTransform;
@@ -290,7 +290,7 @@ public class MiniGameResultPanel : MonoBehaviour
         if (ExtraArea == null) return null;
         float w = ExtraArea.sizeDelta.x;
 
-        hintText = MiniGameTheme.CreateText(ExtraArea, "Hint", "", 15f, new Color(0.45f, 1f, 0.68f));
+        hintText = MiniGameTheme.CreateText(ExtraArea, "Hint", "", 15f, MiniGameTheme.Success);
         Place(hintText.rectTransform, 0f, 24f, w);
 
         var left = MiniGameTheme.CreateText(ExtraArea, "SliderL", leftLabel, 14f, MiniGameTheme.TextSecondary,
@@ -301,7 +301,7 @@ public class MiniGameResultPanel : MonoBehaviour
         Place(left.rectTransform, 28f, 22f, TW);
         Place(right.rectTransform, 28f, 22f, TW);
 
-        var trackImg = MiniGameTheme.MakeImage(ExtraArea, "SliderTrack", new Color(0.05f, 0.07f, 0.14f));
+        var trackImg = MiniGameTheme.MakeImage(ExtraArea, "SliderTrack", MiniGameTheme.CardLight);
         MiniGameTheme.ApplyRounded(trackImg, 8f);
         trackImg.raycastTarget = false;
         var track = trackImg.rectTransform;
@@ -329,7 +329,7 @@ public class MiniGameResultPanel : MonoBehaviour
             zrt.anchoredPosition = new Vector2((from + to) * 0.5f, 0f);
         }
 
-        var ind = MiniGameTheme.MakeImage(track, "Indicator", Color.white);
+        var ind = MiniGameTheme.MakeImage(track, "Indicator", MiniGameTheme.TextPrimary);
         MiniGameTheme.ApplyRounded(ind, 3f);
         ind.raycastTarget = false;
         var indRt = ind.rectTransform;

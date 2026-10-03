@@ -48,7 +48,6 @@ public class CharacterService : IInitializable, ITickable
 
         MapShadowHelper.EnableCastShadows(instance.transform);
         CharacterRimApplier.ApplyToHierarchy(instance.transform);
-        instance.AddComponent<BlobShadowDecal>();
         
         _lastCoords = _locationService.GetCoordinates();
     }

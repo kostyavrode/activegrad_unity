@@ -9,7 +9,7 @@ public class CharacterPreviewService : IInitializable, IDisposable
     private GameObject _previewInstance;
     private ClothingApplier _clothing;
 
-    private readonly Vector3 _previewSpawnPoint = new Vector3(0, 0, 0);
+    private readonly Vector3 _previewSpawnPoint = new Vector3(0f, 0.54400003f, -6.87900019f);
 
     public CharacterPreviewService(DiContainer container, UserDataService userData)
     {
@@ -26,7 +26,7 @@ public class CharacterPreviewService : IInitializable, IDisposable
     {
         var prefab = Resources.Load<GameObject>("Character/CharacterBase");
         _previewInstance = _container.InstantiatePrefab(prefab, _previewSpawnPoint, Quaternion.identity, null);
-        _previewInstance.transform.position = new Vector3(-0.0340000018f, 0.870999992f, -5.62200022f);
+        _previewInstance.transform.position = _previewSpawnPoint;
         _previewInstance.transform.rotation = Quaternion.Euler(0,180,0);
         
         Debug.Log("CharacterPreviewService initialized");

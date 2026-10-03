@@ -30,4 +30,14 @@ public class MapVisualStyleConfig : ScriptableObject
     [Header("Park Trees")]
     public bool PlantParkTrees = true;
     public Material TreeMaterial;
+
+    [Header("Labels Overlay (MapLabelsOverlay)")]
+    [Tooltip("Стиль Mapbox Studio «только надписи» с прозрачным фоном, например mapbox://styles/<user>/<styleId> (можно .../draft). Пусто — слой выключен.")]
+    public string LabelsStyleUrl = "";
+    public Material LabelsMaterial;
+
+    [Header("Ground Tiles")]
+    [Tooltip("Разбить плоский тайл земли (4 вершины) на сетку, чтобы изгиб мира был плавным, а надписи/здания/персонаж лежали на земле.")]
+    public bool SubdivideGroundTiles = true;
+    [Range(2, 32)] public int GroundGridResolution = 12;
 }

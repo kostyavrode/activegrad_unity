@@ -28,3 +28,7 @@ MonoBehaviour:
   PathWidthMeters: 2.5
   PlantParkTrees: 1
   TreeMaterial: {fileID: 2100000, guid: 2a771c46de51453091048795ea4fb795, type: 2}
+  LabelsStyleUrl: 
+  LabelsMaterial: {fileID: 2100000, guid: f77112abeb8c4f4aa272109947b09995, type: 2}
+  SubdivideGroundTiles: 1
+  GroundGridResolution: 12

@@ -60,6 +60,10 @@ public class AppLoader : MonoBehaviour
 
     private static int GetTargetFrameRate()
     {
+        // На телефонах 90–120 fps удваивают нагрузку, телефон греется и троттлит — стабильные 60 плавнее.
+        if (Application.isMobilePlatform)
+            return 60;
+
         try
         {
             double hz = Screen.currentResolution.refreshRateRatio.value;

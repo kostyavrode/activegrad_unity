@@ -29,6 +29,7 @@ public class PlayerInputService : ITickable, IDisposable
     // Прямоугольники
     private Rect _topLeftRect;
     private Rect _topRightRect;
+    private Transform _canvasTransform;
 
     [Inject]
     public PlayerInputService(Camera mainCamera, SightsUpdater sightsUpdater, UIManager uiManager, GameEventService gameEventService)
@@ -65,8 +66,13 @@ public class PlayerInputService : ITickable, IDisposable
         if (!_isEnabled) return;
         if (!_uiManager.IsActiveWindow<MenuWindow>()) return;
 
-        var canvas = GameObject.FindGameObjectWithTag("Canvas");
-        if (canvas != null && canvas.transform.childCount > 1) return;
+        // Поиск по тегу каждый кадр дорогой — кэшируем (перепоиск, только если объект уничтожен).
+        if (_canvasTransform == null)
+        {
+            var canvas = GameObject.FindGameObjectWithTag("Canvas");
+            _canvasTransform = canvas != null ? canvas.transform : null;
+        }
+        if (_canvasTransform != null && _canvasTransform.childCount > 1) return;
         
         UpdateRectsPosition();
 

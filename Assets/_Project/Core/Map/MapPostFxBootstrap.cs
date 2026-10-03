@@ -57,6 +57,7 @@ public static class MapPostFxBootstrap
         else if (volume != _runtimeVolume && _patchedVolumeId != volume.GetInstanceID())
         {
             EnsureOverrides(volume.profile); // runtime-копия sharedProfile
+            ApplyMobileBudget(volume.profile);
             _patchedVolumeId = volume.GetInstanceID();
         }
 
@@ -91,6 +92,7 @@ public static class MapPostFxBootstrap
         var profile = ScriptableObject.CreateInstance<VolumeProfile>();
         profile.name = "RuntimeMapPostFx";
         EnsureOverrides(profile);
+        ApplyMobileBudget(profile);
         volume.sharedProfile = profile;
 
         _runtimeVolume = volume;
@@ -131,6 +133,22 @@ public static class MapPostFxBootstrap
             var tonemapping = profile.Add<Tonemapping>(true);
             tonemapping.mode.value = TonemappingMode.Neutral;
         }
+    }
+
+    /// <summary>
+    /// На телефонах HDR выключен (Mobile_RPAsset), поэтому Bloom с порогом выше 1 почти ничего не даёт,
+    /// но стоит несколько полноэкранных проходов. Меняется только runtime-копия профиля.
+    /// </summary>
+    private static void ApplyMobileBudget(VolumeProfile profile)
+    {
+        if (profile == null || !Application.isMobilePlatform)
+            return;
+
+        if (profile.TryGet<Bloom>(out var bloom))
+            bloom.active = false;
+
+        if (profile.TryGet<MotionBlur>(out var motionBlur))
+            motionBlur.active = false;
     }
 
     private static void SetCameraPostProcessing(bool enabled)

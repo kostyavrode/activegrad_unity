@@ -29,6 +29,10 @@ public class LoadingOverlay : MonoBehaviour
         "Загляни в магазин партнёров поблизости",
     };
 
+    // Цвета экранов входа/регистрации
+    private static readonly Color TextDark = new Color32(47, 79, 79, 255);
+    private static readonly Color TextSoft = new Color32(62, 95, 74, 255);
+
     private static LoadingOverlay _instance;
 
     private Canvas _canvas;
@@ -272,7 +276,7 @@ public class LoadingOverlay : MonoBehaviour
         var s = 1f + 0.025f * pulse;
         _titleRect.localScale = new Vector3(s, s, 1f);
         var glowColor = _glow.color;
-        glowColor.a = 0.16f + 0.06f * pulse;
+        glowColor.a = 0.5f + 0.1f * pulse;
         _glow.color = glowColor;
 
         // Советы
@@ -318,30 +322,30 @@ public class LoadingOverlay : MonoBehaviour
 
         var root = (RectTransform)transform;
 
-        // Фон (вертикальный градиент)
+        // Фон (диагональный градиент, как на экранах входа)
         var bg = CreateImage("Background", root, CreateGradientSprite(), Color.white);
         Stretch(bg.rectTransform);
         bg.raycastTarget = true;
 
         // Мягкое свечение за заголовком
-        _glow = CreateImage("Glow", root, CreateSoftCircleSprite(), new Color(1f, 1f, 0.75f, 0.28f));
+        _glow = CreateImage("Glow", root, CreateSoftCircleSprite(), new Color(1f, 1f, 1f, 0.5f));
         _glow.raycastTarget = false;
         SetCentered(_glow.rectTransform, new Vector2(0f, 160f), new Vector2(1000f, 1000f));
 
         // Заголовок
-        var title = CreateText("Title", root, "АктивГрад", 118f, FontStyles.Bold, Color.white);
+        var title = CreateText("Title", root, "АктивГрад", 118f, FontStyles.Bold, TextDark);
         _titleRect = title.rectTransform;
         SetCentered(_titleRect, new Vector2(0f, 160f), new Vector2(1000f, 220f));
 
         // Прогресс-бар
         var pill = CreateRoundedSprite();
-        var barBg = CreateImage("ProgressBg", root, pill, new Color(0.05f, 0.25f, 0.12f, 0.35f));
+        var barBg = CreateImage("ProgressBg", root, pill, new Color(1f, 1f, 1f, 0.75f));
         barBg.type = Image.Type.Sliced;
         barBg.pixelsPerUnitMultiplier = 64f / 28f;
         barBg.raycastTarget = false;
         SetCentered(barBg.rectTransform, new Vector2(0f, -140f), new Vector2(720f, 28f));
 
-        var fill = CreateImage("ProgressFill", barBg.rectTransform, pill, new Color(0.93f, 1f, 0.55f, 1f));
+        var fill = CreateImage("ProgressFill", barBg.rectTransform, pill, TextDark);
         fill.type = Image.Type.Sliced;
         fill.pixelsPerUnitMultiplier = 64f / 28f;
         fill.raycastTarget = false;
@@ -352,7 +356,7 @@ public class LoadingOverlay : MonoBehaviour
         _fill.offsetMax = Vector2.zero;
 
         // Совет
-        _tip = CreateText("Tip", root, Tips[0], 44f, FontStyles.Normal, new Color(1f, 1f, 1f, 0.9f));
+        _tip = CreateText("Tip", root, Tips[0], 44f, FontStyles.Normal, TextSoft);
         var tipRect = _tip.rectTransform;
         tipRect.anchorMin = new Vector2(0.5f, 0f);
         tipRect.anchorMax = new Vector2(0.5f, 0f);
@@ -415,23 +419,24 @@ public class LoadingOverlay : MonoBehaviour
 
     private static Sprite CreateGradientSprite()
     {
-        const int h = 128;
-        var tex = NewTexture(2, h, "LoadingGradient");
-        // Фирменный зелёно-салатовый градиент
-        var top = new Color(0.62f, 0.86f, 0.30f, 1f);
-        var mid = new Color(0.30f, 0.72f, 0.32f, 1f);
-        var bottom = new Color(0.12f, 0.45f, 0.24f, 1f);
-        var pixels = new Color[2 * h];
-        for (var y = 0; y < h; y++)
+        const int size = 64;
+        var tex = NewTexture(size, size, "LoadingGradient");
+        // Мятный (левый верх) → светлый жёлто-зелёный (правый низ)
+        var from = new Color32(160, 200, 196, 255);
+        var mid = new Color32(205, 216, 196, 255);
+        var to = new Color32(222, 221, 176, 255);
+        var pixels = new Color[size * size];
+        for (var y = 0; y < size; y++)
+        for (var x = 0; x < size; x++)
         {
-            var t = y / (float)(h - 1); // 0 = низ, 1 = верх
-            var c = t < 0.5f ? Color.Lerp(bottom, mid, t * 2f) : Color.Lerp(mid, top, (t - 0.5f) * 2f);
-            pixels[y * 2] = c;
-            pixels[y * 2 + 1] = c;
+            var u = x / (float)(size - 1);
+            var v = 1f - y / (float)(size - 1); // 0 = верх
+            var t = (u + v) * 0.5f;
+            pixels[y * size + x] = t < 0.5f ? Color.Lerp(from, mid, t * 2f) : Color.Lerp(mid, to, (t - 0.5f) * 2f);
         }
         tex.SetPixels(pixels);
         tex.Apply(false, true);
-        return Sprite.Create(tex, new Rect(0, 0, 2, h), new Vector2(0.5f, 0.5f), 100f);
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
     }
 
     private static Sprite CreateSoftCircleSprite()

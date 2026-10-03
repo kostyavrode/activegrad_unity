@@ -14,6 +14,7 @@ public class CharacterCustomizationMediator : IInitializable, IDisposable
     private readonly int[] _clothes = new int[4]; // boots, pants, tshirt, cap
     private const int MinValue = 0;
     private const int MaxValue = 4;
+    private const int VariantsCount = MaxValue - MinValue + 1;
 
     public CharacterCustomizationMediator(CharacterCustomizationWindow window, APIService apiService,
         UIManager uiManager, CharacterPreviewService characterPreviewService, SceneLoader sceneLoader)
@@ -34,7 +35,7 @@ public class CharacterCustomizationMediator : IInitializable, IDisposable
         
         _window.SetGender(_isMale);
         for (int i = 0; i < _clothes.Length; i++)
-            _window.SetClothesValue(i, _clothes[i]);
+            _window.SetClothesValue(i, _clothes[i], VariantsCount);
     }
 
     public void Dispose()
@@ -68,7 +69,7 @@ public class CharacterCustomizationMediator : IInitializable, IDisposable
         newValue = Mathf.Clamp(newValue, MinValue, MaxValue);
         _clothes[category] = newValue;
 
-        _window.SetClothesValue(category, newValue);
+        _window.SetClothesValue(category, newValue, VariantsCount);
         _characterPreviewService.ApplyClothing(_clothes);
     }
 

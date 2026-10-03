@@ -122,6 +122,35 @@ Shader "ActiveGrad/StylizedMatcap"
         }
         ENDHLSL
 
+        // Предварительная запись глубины для полупрозрачных объектов (дома): рисуется перед Forward,
+        // и в прозрачном Forward видна только ближняя поверхность, без просвечивания стен друг через друга.
+        // Для непрозрачных материалов этот проход выключен в самом материале (disabledShaderPasses: SRPDefaultUnlit).
+        Pass
+        {
+            Name "TransparentDepthPrepass"
+            Tags { "LightMode" = "SRPDefaultUnlit" }
+
+            ZWrite On
+            ColorMask 0
+            Cull [_Cull]
+
+            HLSLPROGRAM
+            #pragma vertex PrepassVert
+            #pragma fragment PrepassFrag
+            #pragma target 2.0
+
+            float4 PrepassVert(float4 positionOS : POSITION) : SV_POSITION
+            {
+                return TransformWorldToHClip(AG_ApplyCurvature(TransformObjectToWorld(positionOS.xyz)));
+            }
+
+            half4 PrepassFrag() : SV_Target
+            {
+                return 0;
+            }
+            ENDHLSL
+        }
+
         Pass
         {
             Name "Forward"
