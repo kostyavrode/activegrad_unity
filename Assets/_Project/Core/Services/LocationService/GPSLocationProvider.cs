@@ -22,6 +22,12 @@ public class GPSLocationProvider : ILocationProvider, IInitializable, ITickable
     private bool _isRunning = false;
     private bool _gpsRequestInProgress = false;
 
+    // Сколько ждём первый фикс, прежде чем перезапустить сервис (холодный старт GPS бывает долгим)
+    private const float GpsInitTimeoutSec = 60f;
+    // Как часто проверяем, что GPS всё ещё включён и сервис жив
+    private const float GpsHealthCheckIntervalSec = 1f;
+    private float _healthCheckTimer;
+
 #if UNITY_EDITOR || UNITY_STANDALONE
     private bool _isTestMode = false;
     private const double StartLongitude = 30.394770;
@@ -66,34 +72,42 @@ public class GPSLocationProvider : ILocationProvider, IInitializable, ITickable
             Permission.RequestUserPermission(Permission.FineLocation);
 
         while (!Permission.HasUserAuthorizedPermission(Permission.FineLocation))
-            yield return new WaitForSeconds(1f);
+            yield return new WaitForSecondsRealtime(1f);
 #endif
 
 #if UNITY_ANDROID || UNITY_IOS
-        while (!Input.location.isEnabledByUser)
-            yield return new WaitForSeconds(2f);
-
         while (true)
         {
+#if UNITY_ANDROID
+            // GPS выключен в системе — ждём, пока пользователь его включит (в том числе уже после входа в игру)
+            while (!Input.location.isEnabledByUser)
+                yield return new WaitForSecondsRealtime(1f);
+#endif
+
+            // Чистый перезапуск: после выключения/включения GPS старая подписка может не получать обновления
             Input.location.Stop();
             Input.location.Start(1f, 1f);
 
-            int maxWait = 20;
-            while (Input.location.status == LocationServiceStatus.Initializing && maxWait > 0)
+            // Пока сервис в Initializing — не трогаем его: перезапуск сбрасывает поиск спутников
+            float waited = 0f;
+            while (Input.location.status == LocationServiceStatus.Initializing
+                   && waited < GpsInitTimeoutSec
+                   && Input.location.isEnabledByUser)
             {
-                yield return new WaitForSeconds(1);
-                maxWait--;
+                yield return new WaitForSecondsRealtime(0.5f);
+                waited += 0.5f;
             }
 
             if (Input.location.status == LocationServiceStatus.Running)
             {
                 _isRunning = true;
+                _healthCheckTimer = 0f;
                 _gpsRequestInProgress = false;
                 yield break;
             }
 
             Input.location.Stop();
-            yield return new WaitForSeconds(2f);
+            yield return new WaitForSecondsRealtime(2f);
         }
 #else
         _gpsRequestInProgress = false;
@@ -113,7 +127,24 @@ public class GPSLocationProvider : ILocationProvider, IInitializable, ITickable
         if (Application.isEditor)
             return;
 
-        if (_isRunning && Input.location.status == LocationServiceStatus.Running)
+        if (!_isRunning)
+            return;
+
+        // Раз в секунду проверяем, что GPS не выключили и сервис не упал (Stopped/Failed, возврат из фона)
+        _healthCheckTimer += Time.unscaledDeltaTime;
+        if (_healthCheckTimer >= GpsHealthCheckIntervalSec)
+        {
+            _healthCheckTimer = 0f;
+            if (Input.location.status != LocationServiceStatus.Running || !Input.location.isEnabledByUser)
+            {
+                // Последнюю известную точку оставляем: карта и маркеры не пропадают, пока GPS возвращается
+                _isRunning = false;
+                BeginGpsRequest();
+                return;
+            }
+        }
+
+        if (Input.location.status == LocationServiceStatus.Running)
         {
             var data = Input.location.lastData;
 
@@ -121,13 +152,6 @@ public class GPSLocationProvider : ILocationProvider, IInitializable, ITickable
             {
                 SetCoords(data.longitude, data.latitude);
             }
-        }
-        else if (_isRunning && Input.location.status == LocationServiceStatus.Stopped)
-        {
-            _isRunning = false;
-            SetCoords(0, 0);
-            _gpsRequestInProgress = false;
-            BeginGpsRequest();
         }
 #else
         if (!Application.isEditor)

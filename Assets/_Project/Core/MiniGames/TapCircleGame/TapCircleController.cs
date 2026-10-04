@@ -85,6 +85,10 @@ public class TapCircleController : MonoBehaviour
     private void BuildUI()
     {
         // ── background ───────────────────────────────────────────────────────
+        // Ничего не рисуем за пределами окна мини-игры
+        if (GetComponent<RectMask2D>() == null)
+            gameObject.AddComponent<RectMask2D>();
+
         MakeFullPanel(transform, "BG", MiniGameTheme.Background);
 
         // ── start screen ─────────────────────────────────────────────────────
@@ -100,19 +104,19 @@ public class TapCircleController : MonoBehaviour
     private void BuildStartScreen(Transform parent)
     {
         // card
-        var card = MiniGameTheme.CreateCard(parent, "Card", new Vector2(300f, 390f), out _, MiniGameTheme.Card, 26f);
-        card.localScale = Vector3.one * MiniGameTheme.UiScale(parent as RectTransform, new Vector2(300f, 390f));
+        var card = MiniGameTheme.CreateCard(parent, "Card", new Vector2(300f, 460f), out _, MiniGameTheme.Card, 26f);
+        card.localScale = Vector3.one * MiniGameTheme.UiScale(parent as RectTransform, new Vector2(300f, 460f));
 
         // title
         MakeText(card, "Title", "ТАП-РИТМ", 36, FontStyles.Bold,
-            MiniGameTheme.Accent, new Vector2(0f, 130f), new Vector2(280f, 60f));
+            MiniGameTheme.Accent, new Vector2(0f, 165f), new Vector2(280f, 60f));
 
         // icon circles decorative row
         var iconRowGo = new GameObject("IconRow");
         iconRowGo.transform.SetParent(card, false);
         var iconRow = iconRowGo.AddComponent<RectTransform>();
         iconRow.sizeDelta = new Vector2(280f, 60f);
-        iconRow.anchoredPosition = new Vector2(0f, 65f);
+        iconRow.anchoredPosition = new Vector2(0f, 100f);
         float[] xs = { -90f, 0f, 90f };
         Color[] previewColors = { CircleColors[0], CircleColors[1], CircleColors[2] };
         for (int i = 0; i < 3; i++)
@@ -132,59 +136,57 @@ public class TapCircleController : MonoBehaviour
 
         // instructions
         MakeText(card, "Desc1", "Нажимай на кружки до того,", 15, FontStyles.Normal,
-            MiniGameTheme.TextSecondary, new Vector2(0f, 5f), new Vector2(260f, 28f));
+            MiniGameTheme.TextSecondary, new Vector2(0f, 40f), new Vector2(260f, 28f));
         MakeText(card, "Desc2", "как сожмётся кольцо!", 15, FontStyles.Normal,
-            MiniGameTheme.TextSecondary, new Vector2(0f, -22f), new Vector2(260f, 28f));
+            MiniGameTheme.TextSecondary, new Vector2(0f, 13f), new Vector2(260f, 28f));
 
         // score legend
-        MakeText(card, "Leg1", "⬤  Рано  +300", 13, FontStyles.Normal,
-            MiniGameTheme.Success, new Vector2(0f, -65f), new Vector2(240f, 24f));
-        MakeText(card, "Leg2", "⬤  Хорошо  +150", 13, FontStyles.Normal,
-            MiniGameTheme.Warning, new Vector2(0f, -90f), new Vector2(240f, 24f));
-        MakeText(card, "Leg3", "⬤  Поздно  +50", 13, FontStyles.Normal,
-            new Color(1.00f, 0.55f, 0.25f), new Vector2(0f, -115f), new Vector2(240f, 24f));
+        MakeText(card, "Leg1", "Рано  +300", 13, FontStyles.Normal,
+            MiniGameTheme.Success, new Vector2(0f, -30f), new Vector2(240f, 24f));
+        MakeText(card, "Leg2", "Хорошо  +150", 13, FontStyles.Normal,
+            MiniGameTheme.Warning, new Vector2(0f, -55f), new Vector2(240f, 24f));
+        MakeText(card, "Leg3", "Поздно  +50", 13, FontStyles.Normal,
+            new Color(1.00f, 0.55f, 0.25f), new Vector2(0f, -80f), new Vector2(240f, 24f));
 
-        MakeText(card, "Dur", "⏱  30 секунд", 14, FontStyles.Normal,
-            MiniGameTheme.TextSecondary, new Vector2(0f, -148f), new Vector2(240f, 26f));
+        MakeText(card, "Dur", "30 секунд", 14, FontStyles.Normal,
+            MiniGameTheme.TextSecondary, new Vector2(0f, -113f), new Vector2(240f, 26f));
 
         // start button
-        var startBtn = MiniGameTheme.CreateButton(card, "StartBtn", "НАЧАТЬ", new Vector2(200f, 50f),
+        var startBtn = MiniGameTheme.CreateButton(card, "StartBtn", "НАЧАТЬ", new Vector2(220f, 50f),
             MiniGameTheme.Accent, MiniGameTheme.TextOnAccent);
-        ((RectTransform)startBtn.transform).anchoredPosition = new Vector2(0f, -180f);
+        ((RectTransform)startBtn.transform).anchoredPosition = new Vector2(0f, -150f);
         startBtn.onClick.AddListener(StartGame);
 
         // close button
-        var closeBtn = MiniGameTheme.CreateButton(card, "CloseBtn", "✕", new Vector2(40f, 40f),
-            MiniGameTheme.CardLight, MiniGameTheme.TextPrimary, 20f, FeedbackType.Close);
-        ((RectTransform)closeBtn.transform).anchoredPosition = new Vector2(120f, 175f);
+        var closeBtn = MiniGameTheme.CreateExitButton(card, new Vector2(0f, -203f));
         closeBtn.onClick.AddListener(() => _gameEvent?.CloseGame());
     }
 
     private void BuildGameScreen(Transform parent)
     {
-        // ── HUD bar ──────────────────────────────────────────────────────────
-        var hud = MakePanel(parent, "HUD", MiniGameTheme.Card,
-            new Vector2(0f, 1f), new Vector2(1f, 1f));
-        hud.anchoredPosition = Vector2.zero;
-        hud.sizeDelta = new Vector2(0f, 72f);
+        // ── HUD bar: комбо слева, таймер по центру, счёт справа ──────────────
+        var hud = MiniGameTheme.CreateHudBar(parent);
 
-        _scoreText = MakeText(hud, "Score", "0", 26, FontStyles.Bold,
-            MiniGameTheme.TextPrimary, new Vector2(-10f, -18f), new Vector2(160f, 40f));
-        _scoreText.alignment = TextAlignmentOptions.Right;
+        _scoreText = MakeText(hud, "Score", "0", 56, FontStyles.Bold,
+            MiniGameTheme.TextPrimary, Vector2.zero, Vector2.zero);
+        _scoreText.alignment = TextAlignmentOptions.MidlineRight;
+        MiniGameTheme.PlaceHudText(_scoreText, 1f, new Vector2(-40f, 8f), new Vector2(270f, 100f));
 
-        _comboText = MakeText(hud, "Combo", "", 18, FontStyles.Bold,
-            MiniGameTheme.Warning, new Vector2(10f, -18f), new Vector2(160f, 40f));
-        _comboText.alignment = TextAlignmentOptions.Left;
+        _comboText = MakeText(hud, "Combo", "", 36, FontStyles.Bold,
+            MiniGameTheme.Warning, Vector2.zero, Vector2.zero);
+        _comboText.alignment = TextAlignmentOptions.MidlineLeft;
+        MiniGameTheme.PlaceHudText(_comboText, 0f, new Vector2(40f, 8f), new Vector2(270f, 100f));
 
-        _timerText = MakeText(hud, "TimerNum", "30", 20, FontStyles.Bold,
-            MiniGameTheme.TextPrimary, new Vector2(0f, -15f), new Vector2(80f, 36f));
+        _timerText = MakeText(hud, "TimerNum", "30", 72, FontStyles.Bold,
+            MiniGameTheme.TextPrimary, Vector2.zero, Vector2.zero);
         _timerText.alignment = TextAlignmentOptions.Center;
+        MiniGameTheme.PlaceHudText(_timerText, 0.5f, new Vector2(0f, 8f), new Vector2(200f, 110f));
 
         // timer bar track
         var timerTrack = MakePanel(hud, "TimerTrack", MiniGameTheme.CardLight,
             new Vector2(0f, 0f), new Vector2(1f, 0f));
-        timerTrack.sizeDelta = new Vector2(0f, 7f);
-        timerTrack.anchoredPosition = new Vector2(0f, 0f);
+        timerTrack.sizeDelta = new Vector2(-96f, 10f);
+        timerTrack.anchoredPosition = new Vector2(0f, 18f);
 
         // timer bar fill (left-anchored so it shrinks from right)
         var timerFillGo = new GameObject("TimerFill");
@@ -204,7 +206,7 @@ public class TapCircleController : MonoBehaviour
         var gameArea = MakePanel(parent, "GameArea", Color.clear,
             new Vector2(0f, 0f), new Vector2(1f, 1f));
         gameArea.offsetMin = new Vector2(0f, 0f);
-        gameArea.offsetMax = new Vector2(0f, -72f);
+        gameArea.offsetMax = new Vector2(0f, -MiniGameTheme.HudZoneHeight);
         _gameAreaRect = gameArea;
     }
 

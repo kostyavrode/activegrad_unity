@@ -292,7 +292,7 @@ public static class RewardUiFactory
             string label = entry.Icon != null && entry.Amount > 0
                 ? $"+{entry.Amount} {entry.Label}"
                 : (entry.Label ?? "");
-            MakeText(root, "Label", label, size * 0.2f, FontStyles.Bold, new Color(1f, 1f, 1f, 0.92f),
+            MakeText(root, "Label", label, size * 0.2f, FontStyles.Bold, new Color(0.243f, 0.373f, 0.290f),
                 new Vector2(0f, -size * 0.72f), new Vector2(size * 1.6f, size * 0.36f));
         }
 

@@ -9,6 +9,7 @@ using UnityEngine;
 /// Шейдер StylizedMatcap читает UV1: x = теплота (-1 холоднее .. +1 теплее), y = светлота (-1 .. +1).
 /// Амплитуда оттенков задаётся в материале (Warmth/Lightness Range), здесь — только «какой» и «как часто».
 /// Выбор детерминирован по ID фичи: при перезагрузке тайла здание сохраняет свой цвет.
+/// Заодно переписывает UV0 стен под процедурные окна шейдера: на каждую стену — целое число окон и этажей.
 /// </summary>
 [CreateAssetMenu(menuName = "ActiveGrad/Map/Building Tint Modifier")]
 public class MapBuildingTintModifier : MeshModifier
@@ -39,9 +40,18 @@ public class MapBuildingTintModifier : MeshModifier
         new(2f, 0.2f, -0.7f),   // чуть темнее
     };
 
+    [Header("Windows (UV0 стен)")]
+    [SerializeField, Min(0.5f)] private float _windowStepMeters = 3.2f;
+    [SerializeField, Min(0.5f)] private float _floorHeightMeters = 3f;
+
     public override void Run(VectorFeatureUnity feature, MeshData md, UnityTile tile = null)
     {
-        if (md?.Vertices == null || md.Vertices.Count == 0 || _palette == null || _palette.Length == 0)
+        if (md?.Vertices == null || md.Vertices.Count == 0)
+            return;
+
+        FitWindowUv(md, tile != null ? tile.TileScale : 1f);
+
+        if (_palette == null || _palette.Length == 0)
             return;
 
         var id = feature?.Data != null ? feature.Data.Id : 0UL;
@@ -58,6 +68,62 @@ public class MapBuildingTintModifier : MeshModifier
         uv1.Clear();
         for (var i = 0; i < md.Vertices.Count; i++)
             uv1.Add(value);
+    }
+
+    // Стена из HeightModifier — четвёрка вершин: верх-лево, верх-право, низ-лево, низ-право.
+    // Пишем UV так, чтобы 1 единица = одно окно по горизонтали и один этаж по вертикали,
+    // а на стену приходилось целое их число. Слишком короткие стены (скосы углов) остаются без окон.
+    private void FitWindowUv(MeshData md, float scale)
+    {
+        if (md.Normals == null || md.Normals.Count != md.Vertices.Count
+            || md.UV == null || md.UV.Count == 0 || md.UV[0].Count != md.Vertices.Count)
+            return;
+
+        var step = Mathf.Max(0.01f, _windowStepMeters * scale);
+        var floor = Mathf.Max(0.01f, _floorHeightMeters * scale);
+        var uv = md.UV[0];
+        var count = md.Vertices.Count;
+
+        for (var i = 0; i + 3 < count;)
+        {
+            if (!IsWallQuad(md, i))
+            {
+                i++;
+                continue;
+            }
+
+            var topLeft = md.Vertices[i];
+            var topRight = md.Vertices[i + 1];
+            var length = new Vector2(topRight.x - topLeft.x, topRight.z - topLeft.z).magnitude;
+            var height = topLeft.y - md.Vertices[i + 2].y;
+
+            var windows = Mathf.FloorToInt(length / step + 0.35f);
+            var floors = windows > 0 ? Mathf.Max(1, Mathf.RoundToInt(height / floor)) : 0;
+
+            uv[i] = new Vector2(0f, floors);
+            uv[i + 1] = new Vector2(windows, floors);
+            uv[i + 2] = new Vector2(0f, 0f);
+            uv[i + 3] = new Vector2(windows, 0f);
+            i += 4;
+        }
+    }
+
+    private static bool IsWallQuad(MeshData md, int i)
+    {
+        for (var k = 0; k < 4; k++)
+        {
+            if (Mathf.Abs(md.Normals[i + k].y) > 0.1f)
+                return false;
+        }
+
+        return SameXZ(md.Vertices[i], md.Vertices[i + 2])
+               && SameXZ(md.Vertices[i + 1], md.Vertices[i + 3])
+               && md.Vertices[i].y > md.Vertices[i + 2].y;
+    }
+
+    private static bool SameXZ(Vector3 a, Vector3 b)
+    {
+        return Mathf.Abs(a.x - b.x) < 1e-3f && Mathf.Abs(a.z - b.z) < 1e-3f;
     }
 
     private TintEntry Pick(float t)

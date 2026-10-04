@@ -84,7 +84,8 @@ public class TrainMapGenerator
         endStation.SetAsEnd();
 
         // Строим рёбра
-        GenerateLayeredPaths(stationsByLayer, paths, container, mapW, mapH);
+        // Слои идут по вертикали: «длина» карты для расчётов путей — высота, «ширина слоя» — ширина.
+        GenerateLayeredPaths(stationsByLayer, paths, container, mapH, mapW);
         AssignCargoStations(stations, totalCount);
         ApplyPathVisuals(paths);
     }
@@ -93,40 +94,41 @@ public class TrainMapGenerator
     // POSITION GENERATION
     // ══════════════════════════════════════════════════════════════════════════
 
+    // Слои идут снизу вверх (окно игры вертикальное): старт внизу, финиш вверху,
+    // станции одного слоя разложены по ширине.
     private List<List<Vector2>> BuildLayerPositions(int[] pattern, float mapW, float mapH)
     {
-        int numLayers  = pattern.Length;
-        float margin   = 28f;
-        float usableW  = mapW - margin * 2f;
-        float usableH  = mapH - margin * 2f;
-        float layerStep = numLayers > 1 ? usableW / (numLayers - 1) : 0f;
+        int numLayers = pattern.Length;
+        float margin = 40f; // станция (46) + пульсация не вылезают за поле
+        float usableAcross = mapW - margin * 2f;
+        float usableAlong = mapH - margin * 2f;
+        float layerStep = numLayers > 1 ? usableAlong / (numLayers - 1) : 0f;
 
         var result = new List<List<Vector2>>();
 
         for (int l = 0; l < numLayers; l++)
         {
             int count = pattern[l];
-            float centerX = -usableW * 0.5f + layerStep * l;
+            float centerY = -usableAlong * 0.5f + layerStep * l;
 
-            // Горизонтальный джиттер (кроме первого и последнего слоя)
-            float xJitter = (l == 0 || l == numLayers - 1) ? 0f : layerStep * 0.20f;
+            // Вертикальный джиттер (кроме первого и последнего слоя)
+            float yJitter = (l == 0 || l == numLayers - 1) ? 0f : layerStep * 0.18f;
 
             var positions = new List<Vector2>();
 
             if (count == 1)
             {
-                float y = Random.Range(-usableH * 0.12f, usableH * 0.12f);
-                positions.Add(new Vector2(
-                    centerX + Random.Range(-xJitter, xJitter), y));
+                float x = Random.Range(-usableAcross * 0.12f, usableAcross * 0.12f);
+                positions.Add(new Vector2(x, centerY + Random.Range(-yJitter, yJitter)));
             }
             else
             {
-                float step = usableH / (count - 1);
+                float step = usableAcross / (count - 1);
                 for (int i = 0; i < count; i++)
                 {
-                    float y = -usableH * 0.5f + step * i
-                              + Random.Range(-step * 0.20f, step * 0.20f);
-                    float x = centerX + Random.Range(-xJitter, xJitter);
+                    float x = -usableAcross * 0.5f + step * i + Random.Range(-step * 0.15f, step * 0.15f);
+                    x = Mathf.Clamp(x, -usableAcross * 0.5f, usableAcross * 0.5f);
+                    float y = centerY + Random.Range(-yJitter, yJitter);
                     positions.Add(new Vector2(x, y));
                 }
             }
@@ -325,6 +327,7 @@ public class TrainMapGenerator
         labelObj.transform.SetParent(stationObj.transform, false);
         var labelTmp = labelObj.AddComponent<TextMeshProUGUI>();
         labelTmp.fontSize      = 14;
+        labelTmp.fontStyle     = FontStyles.Bold;
         labelTmp.color         = Color.white;
         labelTmp.alignment     = TextAlignmentOptions.Center;
         labelTmp.raycastTarget = false;

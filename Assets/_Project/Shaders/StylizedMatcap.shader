@@ -6,6 +6,7 @@
 //                          (StylizedFogController), в материале только интенсивность.
 //  - Per-object tint     — оттенок здания из UV1 (MapBuildingTintModifier) и цвет вершин (деревья).
 //  - Curved World        — мир «загибается» вниз к горизонту (глобально, CurvedWorldController).
+//  - Windows             — процедурные окна на стенах домов (без текстур), часть окон «горит».
 // Совместим с SRP Batcher: все свойства материала в UnityPerMaterial, одинаково во всех проходах.
 Shader "ActiveGrad/StylizedMatcap"
 {
@@ -51,6 +52,15 @@ Shader "ActiveGrad/StylizedMatcap"
         [Header(Linear Fog)]
         _FogIntensity ("Fog Intensity", Range(0, 1)) = 1
 
+        [Header(Windows)]
+        _WindowIntensity ("Windows", Range(0, 1)) = 0
+        _WindowGlassColor ("Glass Tint (unlit)", Color) = (0.62, 0.70, 0.80, 1)
+        [HDR] _WindowLitColor ("Lit Window", Color) = (1.0, 0.86, 0.55, 1)
+        _WindowLitAmount ("Lit Share", Range(0, 1)) = 0.3
+        _WindowLitDay ("Lit Glow By Day", Range(0, 1)) = 0.7
+        _WindowFadeStart ("Window Fade Start", Float) = 60
+        _WindowFadeRange ("Window Fade Range", Float) = 40
+
         [Header(Emission)]
         [HDR] _EmissionColor ("Emission", Color) = (0, 0, 0, 1)
 
@@ -88,6 +98,13 @@ Shader "ActiveGrad/StylizedMatcap"
             float4 _GradientTopColor;
             float4 _EmissionColor;
             float4 _ShadowColor;
+            float4 _WindowGlassColor;
+            float4 _WindowLitColor;
+            float _WindowIntensity;
+            float _WindowLitAmount;
+            float _WindowLitDay;
+            float _WindowFadeStart;
+            float _WindowFadeRange;
             float _ColorVariation;
             float _MatcapIntensity;
             float _MatcapBrightness;
@@ -187,6 +204,9 @@ Shader "ActiveGrad/StylizedMatcap"
             float4 _AG_LinearFogColor;
             float4 _AG_LinearFogParams;
 
+            // 0 = день, 1 = ночь. Ставит MapVisualGlobals.
+            float _AG_DayNightBlend;
+
             struct Attributes
             {
                 float4 positionOS : POSITION;
@@ -203,6 +223,7 @@ Shader "ActiveGrad/StylizedMatcap"
                 float3 normalWS : TEXCOORD1;
                 float3 uvHeight : TEXCOORD2; // xy = uv, z = высота для градиента
                 float3 tint : TEXCOORD3;     // цвет вершин * оттенок объекта
+                float4 window : TEXCOORD4;   // xy = UV окон (целое число ячеек на стену), z = маска стены, w = сид стены
             };
 
             Varyings vert(Attributes input)
@@ -226,6 +247,13 @@ Shader "ActiveGrad/StylizedMatcap"
                 objectTint = lerp(float3(1.0, 1.0, 1.0), objectTint, _TintIntensity);
                 float3 vertexColor = lerp(float3(1.0, 1.0, 1.0), input.color.rgb, _VertexColorIntensity);
                 output.tint = objectTint * vertexColor;
+
+                // Окна: UV0 стен переписан в MapBuildingTintModifier так, что на каждую стену приходится
+                // целое число окон и этажей (1 ячейка = 1 единица UV) — окна не режутся углом и крышей.
+                float2 normalXZ = input.normalOS.xz;
+                float wallAmount = length(normalXZ);
+                float2 alongWall = wallAmount > 1e-4 ? float2(-normalXZ.y, normalXZ.x) / wallAmount : float2(1.0, 0.0);
+                output.window = float4(input.uv, wallAmount, dot(alongWall, float2(12.9898, 78.233)));
                 return output;
             }
 
@@ -281,6 +309,20 @@ Shader "ActiveGrad/StylizedMatcap"
                 lighting *= lerp(float3(1.0, 1.0, 1.0), shadowTint, _ShadowStrength);
 
                 float3 color = albedo * lighting;
+
+                // --- Windows (только вертикальные стены, вдали растворяются, чтобы не рябило)
+                float2 windowUv = input.window.xy;
+                float2 windowCell = frac(windowUv);
+                float2 windowId = floor(windowUv);
+                float windowFrame =
+                    smoothstep(0.20, 0.26, windowCell.x) * (1.0 - smoothstep(0.74, 0.80, windowCell.x)) *
+                    smoothstep(0.24, 0.30, windowCell.y) * (1.0 - smoothstep(0.72, 0.78, windowCell.y));
+                float windowFade = 1.0 - saturate((cameraDistance - _WindowFadeStart) / max(_WindowFadeRange, 1e-3));
+                float windowMask = windowFrame * smoothstep(0.6, 0.9, input.window.z) * windowFade * _WindowIntensity;
+                float windowLit = step(1.0 - _WindowLitAmount, AG_Hash21(fmod(windowId, 61.0) + input.window.w));
+                windowLit *= lerp(_WindowLitDay, 1.0, _AG_DayNightBlend);
+                float3 windowColor = lerp(color * _WindowGlassColor.rgb, _WindowLitColor.rgb, windowLit);
+                color = lerp(color, windowColor, windowMask);
 
                 // --- Matcap reflection
                 float3 reflection = SAMPLE_TEXTURE2D(_ReflectTex, sampler_ReflectTex, ReflectUV(viewDirVS, normalVS)).rgb;

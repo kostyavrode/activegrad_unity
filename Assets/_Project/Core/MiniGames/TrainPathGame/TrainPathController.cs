@@ -27,6 +27,11 @@ public class TrainPathController : MonoBehaviour
     // Fallback размеры карты (используются только если Canvas.ForceUpdateCanvases не успел отработать)
     private const float MapW = 278f;
     private const float MapH = 398f;
+    // Карта свёрстана под эту ширину; под реальное окно она масштабируется целиком
+    private const float DesignMapWidth = 330f;
+    private const float MapSideInset = 24f;
+    private const float MapBorderWidth = 6f;
+    private const float MapInnerPadding = 10f;
 
     // ── Train ─────────────────────────────────────────────────────────────────
     private RectTransform _trainRect;
@@ -65,7 +70,7 @@ public class TrainPathController : MonoBehaviour
     private static readonly Color ColMapBorder = new Color(0.745f, 0.851f, 0.706f);
     private static readonly Color ColHeader    = new Color(1f, 1f, 1f, 0.96f);
     private static readonly Color ColTrain     = new Color(0.184f, 0.310f, 0.310f);
-    private static readonly Color ColTrainGlow = new Color(0.184f, 0.310f, 0.310f, 0.22f);
+    private static readonly Color ColTrainGlow = new Color(0.184f, 0.310f, 0.310f, 0.4f);
 
     // ── Shared sprites ────────────────────────────────────────────────────────
     private static Sprite _whiteSquare;
@@ -94,6 +99,10 @@ public class TrainPathController : MonoBehaviour
     {
         var root = GetComponent<RectTransform>();
         _rootRect = root;
+
+        // Ничего не рисуем за пределами окна мини-игры
+        if (root.GetComponent<RectMask2D>() == null)
+            root.gameObject.AddComponent<RectMask2D>();
 
         // Background
         var bgGo = new GameObject("BG");
@@ -132,7 +141,7 @@ public class TrainPathController : MonoBehaviour
 
         // Legend row
         var leg = MakeText(rt, "Legend",
-            "🟢 Старт   🔴 Финиш   🟠 Груз   🟡 Доступна",
+            "<color=#339E66>С</color> старт    <color=#D64D4D>Ф</color> финиш    <color=#C7870A>Г</color> груз",
             14, new Vector2(0, -5), TextAlignmentOptions.Center);
         leg.color = MiniGameTheme.TextSecondary;
 
@@ -149,9 +158,7 @@ public class TrainPathController : MonoBehaviour
         startBtn.onClick.AddListener(StartGame);
 
         // Close button
-        var closeBtn = MakeButton(rt, "✕  Выйти",
-            MiniGameTheme.CardLight, new Vector2(0, -180), new Vector2(220, 44));
-        MiniGameTheme.StyleButton(closeBtn, MiniGameTheme.CardLight, MiniGameTheme.TextPrimary, 19f, 16f, FeedbackType.Close);
+        var closeBtn = MiniGameTheme.CreateExitButton(rt, new Vector2(0f, -180f));
         closeBtn.onClick.AddListener(() => _gameEvent?.CloseGame());
 
         return screen;
@@ -166,69 +173,68 @@ public class TrainPathController : MonoBehaviour
 
         var rt = screen.GetComponent<RectTransform>();
 
-        // Header
-        var hdrGo = new GameObject("Header");
-        hdrGo.transform.SetParent(rt, false);
-        var hdrRt = hdrGo.AddComponent<RectTransform>();
-        hdrRt.anchorMin = new Vector2(0, 1); hdrRt.anchorMax = new Vector2(1, 1);
-        hdrRt.sizeDelta        = new Vector2(0, 68);
-        hdrRt.anchoredPosition = new Vector2(0, -34);
-        hdrGo.AddComponent<Image>().color = ColHeader;
+        // HUD: груз слева, таймер по центру, полоса времени снизу
+        var hud = MiniGameTheme.CreateHudBar(rt);
 
-        // Timer
-        _timerTxt = MakeText(hdrRt, "Timer", "2:00", 34, new Vector2(0, 6), TextAlignmentOptions.Center);
+        _timerTxt = MakeText(hud, "Timer", "2:00", 72, Vector2.zero, TextAlignmentOptions.Center);
         _timerTxt.fontStyle = FontStyles.Bold;
+        MiniGameTheme.PlaceHudText(_timerTxt, 0.5f, new Vector2(0f, 8f), new Vector2(260f, 110f));
 
-        // Timer progress bar
+        _cargoTxt = MakeText(hud, "Cargo", "Груз 0/0", 34, Vector2.zero, TextAlignmentOptions.MidlineLeft);
+        _cargoTxt.fontStyle = FontStyles.Bold;
+        _cargoTxt.color = new Color(0.80f, 0.52f, 0.05f);
+        _cargoTxt.enableAutoSizing = true;
+        _cargoTxt.fontSizeMin = 20f;
+        _cargoTxt.fontSizeMax = 34f;
+        MiniGameTheme.PlaceHudText(_cargoTxt, 0f, new Vector2(40f, 8f), new Vector2(270f, 96f));
+
         var barBg = new GameObject("BarBg");
-        barBg.transform.SetParent(hdrRt, false);
+        barBg.transform.SetParent(hud, false);
         var barBgRt = barBg.AddComponent<RectTransform>();
-        barBgRt.anchorMin = new Vector2(0.05f, 0); barBgRt.anchorMax = new Vector2(0.95f, 0);
-        barBgRt.sizeDelta        = new Vector2(0, 5);
-        barBgRt.anchoredPosition = new Vector2(0, 9);
+        barBgRt.anchorMin = new Vector2(0f, 0f); barBgRt.anchorMax = new Vector2(1f, 0f);
+        barBgRt.sizeDelta        = new Vector2(-96f, 10f);
+        barBgRt.anchoredPosition = new Vector2(0f, 18f);
         barBg.AddComponent<Image>().color = MiniGameTheme.CardLight;
 
         var barFillGo = new GameObject("BarFill");
         barFillGo.transform.SetParent(barBg.transform, false);
         var barFillRt = barFillGo.AddComponent<RectTransform>();
-        barFillRt.anchorMin = barFillRt.anchorMax = Vector2.zero;
-        barFillRt.pivot     = new Vector2(0, 0.5f);
-        barFillRt.anchorMin = new Vector2(0, 0); barFillRt.anchorMax = new Vector2(0, 1);
+        barFillRt.anchorMin = Vector2.zero; barFillRt.anchorMax = Vector2.one;
         barFillRt.offsetMin = barFillRt.offsetMax = Vector2.zero;
         _timerBarFill = barFillGo.AddComponent<Image>();
-        _timerBarFill.color = new Color(0.20f, 0.85f, 0.44f);
+        _timerBarFill.color = MiniGameTheme.Success;
         _timerBarFill.type  = Image.Type.Filled;
         _timerBarFill.fillMethod = Image.FillMethod.Horizontal;
         _timerBarFill.fillAmount = 1f;
 
-        // Cargo counter
-        _cargoTxt = MakeText(hdrRt, "Cargo", "📦 0/0", 16, new Vector2(0, -20), TextAlignmentOptions.Center);
-        _cargoTxt.color = new Color(0.80f, 0.52f, 0.05f);
-
-        // Map border — растягивается на весь экран под хедером (68px)
+        // Рамка карты — под HUD, с отступами от краёв окна
         var borderGo = new GameObject("MapBorder");
         borderGo.transform.SetParent(rt, false);
         var borderRt = borderGo.AddComponent<RectTransform>();
         borderRt.anchorMin = Vector2.zero; borderRt.anchorMax = Vector2.one;
-        borderRt.offsetMin = new Vector2(0, 0);
-        borderRt.offsetMax = new Vector2(0, -68);
-        borderGo.AddComponent<Image>().color = ColMapBorder;
+        borderRt.offsetMin = new Vector2(MapSideInset, MapSideInset);
+        borderRt.offsetMax = new Vector2(-MapSideInset, -MiniGameTheme.HudZoneHeight);
+        var borderImg = borderGo.AddComponent<Image>();
+        borderImg.color = ColMapBorder;
+        MiniGameTheme.ApplyRounded(borderImg, 32f);
 
-        // Map panel — 3px inset от border
+        // Поле карты — 6px внутрь рамки
         var mapPanelGo = new GameObject("MapPanel");
         mapPanelGo.transform.SetParent(rt, false);
         var mapPanelRt = mapPanelGo.AddComponent<RectTransform>();
         mapPanelRt.anchorMin = Vector2.zero; mapPanelRt.anchorMax = Vector2.one;
-        mapPanelRt.offsetMin = new Vector2(3, 3);
-        mapPanelRt.offsetMax = new Vector2(-3, -71);
-        mapPanelGo.AddComponent<Image>().color = ColMapBg;
+        mapPanelRt.offsetMin = new Vector2(MapSideInset + MapBorderWidth, MapSideInset + MapBorderWidth);
+        mapPanelRt.offsetMax = new Vector2(-MapSideInset - MapBorderWidth, -MiniGameTheme.HudZoneHeight - MapBorderWidth);
+        var mapPanelImg = mapPanelGo.AddComponent<Image>();
+        mapPanelImg.color = ColMapBg;
+        MiniGameTheme.ApplyRounded(mapPanelImg, 26f);
 
-        // Map container — 10px inset внутри панели
+        // Контейнер карты: размер и масштаб выставляются в GenerateNewMap под реальное окно
         var mcGo = new GameObject("MapContainer");
         mcGo.transform.SetParent(mapPanelGo.transform, false);
         _mapContainer = mcGo.AddComponent<RectTransform>();
-        _mapContainer.anchorMin = Vector2.zero; _mapContainer.anchorMax = Vector2.one;
-        _mapContainer.offsetMin = new Vector2(10, 10); _mapContainer.offsetMax = new Vector2(-10, -10);
+        _mapContainer.anchorMin = _mapContainer.anchorMax = new Vector2(0.5f, 0.5f);
+        _mapContainer.sizeDelta = new Vector2(MapW, MapH);
 
         return screen;
     }
@@ -296,10 +302,25 @@ public class TrainPathController : MonoBehaviour
         _trainImg  = null;
 
         // Читаем реальный размер контейнера (после ForceUpdateCanvases он уже корректный)
-        float mapW = _mapContainer.rect.width;
-        float mapH = _mapContainer.rect.height;
-        if (mapW < 10f) mapW = MapW;   // fallback на случай если layout ещё не рассчитан
-        if (mapH < 10f) mapH = MapH;
+        // Свободное место под карту считаем от корня игры (экран карты в этот момент может быть выключен).
+        float mapW = MapW;
+        float mapH = MapH;
+        float mapScale = 1f;
+        float inset = MapSideInset + MapBorderWidth + MapInnerPadding;
+        float freeW = _rootRect.rect.width - inset * 2f;
+        float freeH = _rootRect.rect.height - MiniGameTheme.HudZoneHeight - MapBorderWidth - MapInnerPadding - inset;
+        if (freeW > 10f && freeH > 10f)
+        {
+            // Станции, пути и подписи заданы в «дизайнерских» единицах — растягиваем их под окно,
+            // чтобы на большом канвасе они не были крошечными.
+            mapScale = Mathf.Max(1f, freeW / DesignMapWidth);
+            mapW = freeW / mapScale;
+            mapH = freeH / mapScale;
+        }
+
+        _mapContainer.sizeDelta = new Vector2(mapW, mapH);
+        _mapContainer.anchoredPosition = Vector2.zero;
+        _mapContainer.localScale = Vector3.one * mapScale;
 
         _mapGenerator.GenerateMap(_mapContainer,
             out _stations, out _paths, out _startStation, out _endStation,
@@ -315,7 +336,7 @@ public class TrainPathController : MonoBehaviour
 
         _trainRect = trainGo.AddComponent<RectTransform>();
         _trainRect.anchorMin = _trainRect.anchorMax = new Vector2(0.5f, 0.5f);
-        _trainRect.sizeDelta = new Vector2(22f, 14f);
+        _trainRect.sizeDelta = new Vector2(28f, 18f);
         _trainRect.anchoredPosition = _startStation?.Position ?? Vector2.zero;
 
         // Glow halo (behind body)
@@ -323,14 +344,17 @@ public class TrainPathController : MonoBehaviour
         glowGo.transform.SetParent(trainGo.transform, false);
         var glowRt = glowGo.AddComponent<RectTransform>();
         glowRt.anchorMin = glowRt.anchorMax = new Vector2(0.5f, 0.5f);
-        glowRt.sizeDelta = new Vector2(36f, 28f);
-        glowGo.AddComponent<Image>().color = ColTrainGlow;
+        glowRt.sizeDelta = new Vector2(52f, 52f);
+        var glowImg = glowGo.AddComponent<Image>();
+        glowImg.sprite = MiniGameTheme.SoftCircleSprite;
+        glowImg.color = ColTrainGlow;
+        glowImg.raycastTarget = false;
         glowGo.transform.SetAsFirstSibling();
 
         // Body
         _trainImg        = trainGo.AddComponent<Image>();
         _trainImg.color  = ColTrain;
-        _trainImg.sprite = _whiteSquare;
+        MiniGameTheme.ApplyRounded(_trainImg, 6f);
 
         // Nose indicator
         var noseGo = new GameObject("Nose");
@@ -657,7 +681,7 @@ public class TrainPathController : MonoBehaviour
         {
             float t = _countdownTime > 0 ? _remainingTime / _countdownTime : 0f;
             _timerBarFill.fillAmount = t;
-            _timerBarFill.color = t > 0.5f ? new Color(0.20f, 0.85f, 0.44f)
+            _timerBarFill.color = t > 0.5f ? MiniGameTheme.Success
                                 : t > 0.25f ? new Color(0.95f, 0.75f, 0.10f)
                                 :             new Color(0.90f, 0.20f, 0.20f);
         }
@@ -666,8 +690,8 @@ public class TrainPathController : MonoBehaviour
         {
             bool done = _cargoCollected >= _totalCargo && _totalCargo > 0;
             _cargoTxt.text = done
-                ? $"📦 {_cargoCollected}/{_totalCargo}  ✓  Теперь к финишу!"
-                : $"📦 {_cargoCollected}/{_totalCargo}";
+                ? $"Груз {_cargoCollected}/{_totalCargo} — к финишу!"
+                : $"Груз {_cargoCollected}/{_totalCargo}";
         }
     }
 

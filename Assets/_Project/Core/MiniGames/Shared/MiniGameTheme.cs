@@ -244,6 +244,50 @@ public static class MiniGameTheme
         return rt;
     }
 
+    // ── общие элементы игр ───────────────────────────────────────────────────
+
+    public const string ExitLabel = "Выйти";
+    public static readonly Vector2 ExitButtonSize = new Vector2(220f, 44f);
+
+    /// <summary>Единая кнопка выхода из мини-игры (светлая, с тёмной подписью).</summary>
+    public static Button CreateExitButton(Transform parent, Vector2 position)
+    {
+        var btn = CreateButton(parent, "ExitBtn", ExitLabel, ExitButtonSize, CardLight, TextPrimary, 19f, FeedbackType.Close);
+        ((RectTransform)btn.transform).anchoredPosition = position;
+        return btn;
+    }
+
+    public const float HudBarHeight = 150f;
+    public const float HudTopMargin = 24f;
+    public const float HudSideMargin = 24f;
+    /// <summary>Высота зоны сверху, занятой HUD-плашкой (с отступами).</summary>
+    public const float HudZoneHeight = HudTopMargin + HudBarHeight + 16f;
+
+    /// <summary>Белая скруглённая HUD-плашка у верхнего края игры.</summary>
+    public static RectTransform CreateHudBar(Transform parent)
+    {
+        var img = MakeImage(parent, "HUD", Card);
+        var rt = img.rectTransform;
+        rt.anchorMin = new Vector2(0f, 1f);
+        rt.anchorMax = new Vector2(1f, 1f);
+        rt.pivot = new Vector2(0.5f, 1f);
+        rt.sizeDelta = new Vector2(-HudSideMargin * 2f, HudBarHeight);
+        rt.anchoredPosition = new Vector2(0f, -HudTopMargin);
+        ApplyRounded(img, 40f);
+        img.raycastTarget = false;
+        return rt;
+    }
+
+    /// <summary>Ставит текст в HUD-плашку: anchorX 0 = слева, 0.5 = центр, 1 = справа.</summary>
+    public static void PlaceHudText(TMP_Text txt, float anchorX, Vector2 pos, Vector2 size)
+    {
+        var rt = txt.rectTransform;
+        rt.anchorMin = rt.anchorMax = new Vector2(anchorX, 0.5f);
+        rt.pivot = new Vector2(anchorX, 0.5f);
+        rt.sizeDelta = size;
+        rt.anchoredPosition = pos;
+    }
+
     public static Image MakeImage(Transform parent, string name, Color color)
     {
         var go = new GameObject(name);

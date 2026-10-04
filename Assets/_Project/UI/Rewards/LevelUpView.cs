@@ -40,11 +40,11 @@ public class LevelUpView : MonoBehaviour
     {
         var go = gameObject;
 
-        var backdrop = RewardUiFactory.MakeBackdrop(_root, new Color(0.01f, 0.07f, 0.03f, 0f));
+        var backdrop = RewardUiFactory.MakeBackdrop(_root, new Color(0.804f, 0.847f, 0.769f, 0f));
         var backdropBtn = backdrop.gameObject.AddComponent<Button>();
         backdropBtn.transition = Selectable.Transition.None;
         backdropBtn.onClick.AddListener(Close);
-        backdrop.DOFade(0.8f, 0.3f).U(go);
+        backdrop.DOFade(0.94f, 0.3f).U(go);
 
         _cardScale = Mathf.Min(1f, _root.rect.width * 0.92f / 880f);
 
@@ -54,17 +54,17 @@ public class LevelUpView : MonoBehaviour
         _card.DOScale(_cardScale, 0.5f).SetEase(Ease.OutBack).U(go);
 
         // Лучи + свечение за числом
-        var rays = RewardUiFactory.MakeImage(content, "Rays", RewardUiFactory.Rays, new Color(0.75f, 1f, 0.4f, 0f),
+        var rays = RewardUiFactory.MakeImage(content, "Rays", RewardUiFactory.Rays, new Color(1f, 1f, 1f, 0f),
             new Vector2(0f, 40f), Vector2.one * 1400f);
         rays.DOFade(0.6f, 0.5f).U(go);
         rays.rectTransform.DORotate(new Vector3(0f, 0f, 360f), 16f, RotateMode.FastBeyond360)
             .SetEase(Ease.Linear).SetLoops(-1, LoopType.Restart).U(go);
-        var glow = RewardUiFactory.MakeImage(content, "Glow", RewardUiFactory.SoftCircle, new Color(0.7f, 1f, 0.45f, 0f),
+        var glow = RewardUiFactory.MakeImage(content, "Glow", RewardUiFactory.SoftCircle, new Color(1f, 1f, 1f, 0f),
             new Vector2(0f, 40f), Vector2.one * 640f);
-        glow.DOFade(0.5f, 0.5f).U(go);
+        glow.DOFade(0.8f, 0.5f).U(go);
 
         var header = RewardUiFactory.MakeText(content, "Header", "НОВЫЙ УРОВЕНЬ", 84f, FontStyles.Bold,
-            new Color(1f, 0.85f, 0.3f), new Vector2(0f, 400f), new Vector2(860f, 120f));
+            new Color(0.184f, 0.310f, 0.310f), new Vector2(0f, 400f), new Vector2(860f, 120f));
         header.enableAutoSizing = true;
         header.fontSizeMin = 40f;
         header.fontSizeMax = 84f;
@@ -73,8 +73,8 @@ public class LevelUpView : MonoBehaviour
 
         // Круглый бейдж уровня
         var badge = RewardUiFactory.MakeRect(content, "LevelBadge", new Vector2(0f, 40f), Vector2.one * 420f);
-        RewardUiFactory.MakeImage(badge, "Ring", RewardUiFactory.SoftCircle, new Color(1f, 0.8f, 0.3f), Vector2.zero, Vector2.one * 420f);
-        RewardUiFactory.MakeImage(badge, "Fill", RewardUiFactory.SoftCircle, new Color(0.20f, 0.56f, 0.28f), Vector2.zero, Vector2.one * 370f);
+        RewardUiFactory.MakeImage(badge, "Ring", RewardUiFactory.SoftCircle, Color.white, Vector2.zero, Vector2.one * 420f);
+        RewardUiFactory.MakeImage(badge, "Fill", RewardUiFactory.SoftCircle, new Color(0.184f, 0.310f, 0.310f), Vector2.zero, Vector2.one * 370f);
         RewardUiFactory.MakeImage(badge, "Shine", RewardUiFactory.SoftCircle, new Color(1f, 1f, 1f, 0.18f), new Vector2(-60f, 70f), Vector2.one * 150f);
 
         var number = RewardUiFactory.MakeText(badge, "Number", oldLevel.ToString(), 210f, FontStyles.Bold, Color.white,
@@ -88,15 +88,15 @@ public class LevelUpView : MonoBehaviour
         RectTransform pointsRt = null;
         if (statPointsGained > 0)
         {
-            var pill = RewardUiFactory.MakeImage(content, "PointsBadge", RewardUiFactory.Rounded, new Color(0.3f, 0.8f, 0.4f),
+            var pill = RewardUiFactory.MakeImage(content, "PointsBadge", RewardUiFactory.Rounded, Color.white,
                 new Vector2(0f, -250f), new Vector2(560f, 96f));
             RewardUiFactory.MakeText(pill.transform, "Label", $"+{statPointsGained} очков прокачки", 42f, FontStyles.Bold,
-                Color.white, Vector2.zero, new Vector2(540f, 90f));
+                new Color(0.184f, 0.310f, 0.310f), Vector2.zero, new Vector2(540f, 90f));
             pointsRt = pill.rectTransform;
             pointsRt.localScale = Vector3.zero;
         }
 
-        var btn = RewardUiFactory.MakeButton(content, "OkButton", "Отлично!", new Color(1f, 0.72f, 0.2f), new Color(0.2f, 0.1f, 0.05f),
+        var btn = RewardUiFactory.MakeButton(content, "OkButton", "Отлично!", new Color(0.184f, 0.310f, 0.310f), Color.white,
             new Vector2(0f, -420f), new Vector2(440f, 124f), 50f);
         btn.onClick.AddListener(Close);
         var btnRt = (RectTransform)btn.transform;

@@ -46,7 +46,7 @@ public class Station : MonoBehaviour
         if (_image != null)
             _image.sprite = config?.StationSprite ?? GetOrCreateCircleSprite();
 
-        _baseColor = config?.ColorDefault ?? new Color(0.30f, 0.42f, 0.75f);
+        _baseColor = config?.ColorDefault ?? new Color(0.45f, 0.62f, 0.60f);
         ApplyColor();
 
         // Clean label — no wait time shown
@@ -57,13 +57,13 @@ public class Station : MonoBehaviour
     public void SetAsStart()
     {
         _isStart   = true;
-        _baseColor = _config?.ColorStart ?? new Color(0.15f, 0.85f, 0.35f);
+        _baseColor = _config?.ColorStart ?? new Color(0.20f, 0.62f, 0.40f);
 
         if (_config?.StartStationSprite != null && _image != null)
             _image.sprite = _config.StartStationSprite;
 
         ApplyColor();
-        SetLabel("▶", 12);
+        SetLabel("С", 22);
 
         // Subtle outer ring pulse
         _pulseTween?.Kill();
@@ -76,25 +76,25 @@ public class Station : MonoBehaviour
     public void SetAsEnd()
     {
         _isEnd     = true;
-        _baseColor = _config?.ColorEnd ?? new Color(0.85f, 0.18f, 0.28f);
+        _baseColor = _config?.ColorEnd ?? new Color(0.84f, 0.30f, 0.30f);
 
         if (_config?.EndStationSprite != null && _image != null)
             _image.sprite = _config.EndStationSprite;
 
         ApplyColor();
-        SetLabel("■", 12);
+        SetLabel("Ф", 22);
     }
 
     public void SetAsCargo()
     {
         _isCargo   = true;
-        _baseColor = _config?.ColorCargo ?? new Color(0.95f, 0.60f, 0.10f);
+        _baseColor = _config?.ColorCargo ?? new Color(0.93f, 0.66f, 0.10f);
 
         if (_config?.CargoStationSprite != null && _image != null)
             _image.sprite = _config.CargoStationSprite;
 
         ApplyColor();
-        SetLabel("📦", 10);
+        SetLabel("Г", 22);
 
         // Cargo stations pulse until collected
         _cargoPulseTween?.Kill();
@@ -111,7 +111,7 @@ public class Station : MonoBehaviour
         _cargoPulseTween?.Kill();
         _pulseTween?.Kill();
 
-        Color collected = _config?.ColorCollected ?? new Color(0.28f, 0.32f, 0.40f);
+        Color collected = _config?.ColorCollected ?? new Color(0.70f, 0.76f, 0.72f);
 
         // Burst → shrink back
         var rt = GetComponent<RectTransform>();
@@ -125,7 +125,7 @@ public class Station : MonoBehaviour
             .SetDelay(0.05f).SetUpdate(true);
 
         _baseColor = collected;
-        SetLabel("✓", 14);
+        SetLabel("", 14);
     }
 
     public void SetHighlight(bool highlight)
@@ -136,7 +136,7 @@ public class Station : MonoBehaviour
         _pulseTween?.Kill();
         var rt = GetComponent<RectTransform>();
 
-        Color hlColor = _config?.ColorHighlight ?? new Color(1f, 0.92f, 0.10f);
+        Color hlColor = _config?.ColorHighlight ?? new Color(1f, 0.85f, 0.25f);
 
         if (highlight && !_isCargo)
         {

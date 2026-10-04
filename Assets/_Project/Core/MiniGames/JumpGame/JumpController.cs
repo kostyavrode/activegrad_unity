@@ -132,6 +132,10 @@ public class JumpController : MonoBehaviour
         var root = GetComponent<RectTransform>();
         _rootRect = root;
 
+        // Обрезаем всё, что выходит за окно мини-игры (холмы, препятствия, тряска фона)
+        if (root.GetComponent<RectMask2D>() == null)
+            root.gameObject.AddComponent<RectMask2D>();
+
         var bg = MakePanel(root, "BG", _cfg != null ? _cfg.skyColor : MiniGameTheme.Background);
         bg.anchorMin = Vector2.zero; bg.anchorMax = Vector2.one;
         bg.offsetMin = Vector2.zero; bg.offsetMax = Vector2.zero;
@@ -281,14 +285,12 @@ public class JumpController : MonoBehaviour
             20, new Vector2(0, 35), TextAlignmentOptions.Center);
         sub.color = MiniGameTheme.TextSecondary;
 
-        var btn = MakeButton(srt, "Начать",
+        var btn = MakeButton(srt, "НАЧАТЬ",
             MiniGameTheme.Accent, new Vector2(0, -110), new Vector2(220, 56));
         MiniGameTheme.StyleButton(btn, MiniGameTheme.Accent, MiniGameTheme.TextOnAccent);
         btn.onClick.AddListener(StartGame);
 
-        var closeBtn = MakeButton(srt, "✕  Выйти",
-            MiniGameTheme.CardLight, new Vector2(0, -180), new Vector2(220, 44));
-        MiniGameTheme.StyleButton(closeBtn, MiniGameTheme.CardLight, MiniGameTheme.TextPrimary, 19f, 16f, FeedbackType.Close);
+        var closeBtn = MiniGameTheme.CreateExitButton(srt, new Vector2(0f, -180f));
         closeBtn.onClick.AddListener(() => _gameEvent?.CloseGame());
 
         return screen;

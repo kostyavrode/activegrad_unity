@@ -56,7 +56,7 @@ public class TrainPathConnection : MonoBehaviour
         var label = GetComponentInChildren<TextMeshProUGUI>();
         if (label != null)
         {
-            label.text     = $"{_travelTime:F1}s";
+            label.text     = $"{_travelTime:F1} с";
             label.fontSize = config?.PathTimeFontSize ?? 10;
             label.color    = new Color(lineColor.r * 0.55f, lineColor.g * 0.55f, lineColor.b * 0.55f, 1f);
         }

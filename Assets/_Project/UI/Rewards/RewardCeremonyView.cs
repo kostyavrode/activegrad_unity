@@ -72,7 +72,7 @@ public class RewardCeremonyView : MonoBehaviour
     {
         var go = gameObject;
 
-        _backdrop = RewardUiFactory.MakeBackdrop(_root, new Color(0f, 0f, 0f, 0f));
+        _backdrop = RewardUiFactory.MakeBackdrop(_root, new Color(0.184f, 0.310f, 0.310f, 0f));
         AddClaimClick(_backdrop.gameObject);
         _backdrop.DOFade(0.75f, 0.3f).U(go);
 
@@ -80,7 +80,7 @@ public class RewardCeremonyView : MonoBehaviour
         _cardScale = Mathf.Min(1f, _root.rect.width * 0.92f / cardW);
 
         // Лучи и свечение за карточкой
-        _rays = RewardUiFactory.MakeImage(_root, "Rays", RewardUiFactory.Rays, new Color(1f, 0.85f, 0.35f, 0f),
+        _rays = RewardUiFactory.MakeImage(_root, "Rays", RewardUiFactory.Rays, new Color(1f, 1f, 1f, 0f),
             new Vector2(0f, 230f * _cardScale), Vector2.one * 1500f * _cardScale).rectTransform;
         var raysImg = _rays.GetComponent<Image>();
         _rays.localScale = Vector3.one * 0.3f;
@@ -89,12 +89,12 @@ public class RewardCeremonyView : MonoBehaviour
         _rays.DORotate(new Vector3(0f, 0f, -360f), 14f, RotateMode.FastBeyond360)
             .SetEase(Ease.Linear).SetLoops(-1, LoopType.Restart).U(go);
 
-        var glow = RewardUiFactory.MakeImage(_root, "Glow", RewardUiFactory.SoftCircle, new Color(1f, 0.9f, 0.5f, 0f),
+        var glow = RewardUiFactory.MakeImage(_root, "Glow", RewardUiFactory.SoftCircle, new Color(1f, 1f, 1f, 0f),
             new Vector2(0f, 230f * _cardScale), Vector2.one * 700f * _cardScale);
         glow.DOFade(0.45f, 0.5f).U(go);
 
         // Карточка
-        var cardImg = RewardUiFactory.MakeImage(_root, "Card", RewardUiFactory.Rounded, new Color(0.07f, 0.24f, 0.13f, 0.97f),
+        var cardImg = RewardUiFactory.MakeImage(_root, "Card", RewardUiFactory.Rounded, Color.white,
             Vector2.zero, new Vector2(cardW, cardH), raycast: true);
         _card = cardImg.rectTransform;
         _cardGroup = _card.gameObject.AddComponent<CanvasGroup>();
@@ -103,23 +103,23 @@ public class RewardCeremonyView : MonoBehaviour
         _card.DOScale(_cardScale, 0.5f).SetEase(Ease.OutBack).U(go);
         _cardGroup.DOFade(1f, 0.2f).U(go);
 
-        RewardUiFactory.MakeImage(_card, "TopStripe", RewardUiFactory.Rounded, new Color(1f, 0.78f, 0.22f),
+        RewardUiFactory.MakeImage(_card, "TopStripe", RewardUiFactory.Rounded, new Color(0.745f, 0.851f, 0.706f),
             new Vector2(0f, cardH * 0.5f - 12f), new Vector2(cardW - 60f, 10f));
 
         var header = RewardUiFactory.MakeText(_card, "Header", "Квест выполнен!", 64f, FontStyles.Bold,
-            new Color(1f, 0.84f, 0.3f), new Vector2(0f, 250f), new Vector2(cardW - 60f, 90f));
+            new Color(0.184f, 0.310f, 0.310f), new Vector2(0f, 250f), new Vector2(cardW - 60f, 90f));
         header.transform.localScale = Vector3.zero;
         header.transform.DOScale(1f, 0.4f).SetEase(Ease.OutBack).SetDelay(0.2f).U(go);
 
         var titleText = RewardUiFactory.MakeText(_card, "QuestTitle", questTitle ?? "", 38f, FontStyles.Normal,
-            new Color(1f, 1f, 1f, 0.9f), new Vector2(0f, 165f), new Vector2(cardW - 100f, 90f));
+            new Color(0.243f, 0.373f, 0.290f), new Vector2(0f, 165f), new Vector2(cardW - 100f, 90f));
         titleText.enableAutoSizing = true;
         titleText.fontSizeMin = 22f;
         titleText.fontSizeMax = 38f;
 
         BuildIconRow(_card, rewards, new Vector2(0f, 10f), 150f, 210f, cardW - 80f, 0.4f);
 
-        var btn = RewardUiFactory.MakeButton(_card, "ClaimButton", "Забрать", new Color(0.3f, 0.8f, 0.4f), Color.white,
+        var btn = RewardUiFactory.MakeButton(_card, "ClaimButton", "Забрать", new Color(0.184f, 0.310f, 0.310f), Color.white,
             new Vector2(0f, -250f), new Vector2(420f, 120f), 48f);
         btn.onClick.AddListener(Claim);
         var btnRt = (RectTransform)btn.transform;
@@ -144,14 +144,14 @@ public class RewardCeremonyView : MonoBehaviour
     {
         var go = gameObject;
 
-        _backdrop = RewardUiFactory.MakeBackdrop(_root, new Color(0f, 0f, 0f, 0f));
+        _backdrop = RewardUiFactory.MakeBackdrop(_root, new Color(0.184f, 0.310f, 0.310f, 0f));
         AddClaimClick(_backdrop.gameObject);
         _backdrop.DOFade(0.35f, 0.25f).U(go);
 
         const float cardW = 900f, cardH = 360f;
         _cardScale = Mathf.Min(1f, _root.rect.width * 0.94f / cardW);
 
-        var cardImg = RewardUiFactory.MakeImage(_root, "Card", RewardUiFactory.Rounded, new Color(0.07f, 0.24f, 0.13f, 0.97f),
+        var cardImg = RewardUiFactory.MakeImage(_root, "Card", RewardUiFactory.Rounded, Color.white,
             Vector2.zero, new Vector2(cardW, cardH), raycast: true);
         AddClaimClick(cardImg.gameObject);
         _card = cardImg.rectTransform;
@@ -164,11 +164,11 @@ public class RewardCeremonyView : MonoBehaviour
         _card.anchoredPosition = new Vector2(0f, _compactHiddenY);
         _card.DOAnchorPos(new Vector2(0f, shownY), 0.45f).SetEase(Ease.OutBack).U(go);
 
-        RewardUiFactory.MakeImage(_card, "TopStripe", RewardUiFactory.Rounded, new Color(0.3f, 0.8f, 0.4f),
+        RewardUiFactory.MakeImage(_card, "TopStripe", RewardUiFactory.Rounded, new Color(0.745f, 0.851f, 0.706f),
             new Vector2(0f, cardH * 0.5f - 12f), new Vector2(cardW - 60f, 10f));
 
         RewardUiFactory.MakeText(_card, "Header", headerText ?? "", 48f, FontStyles.Bold,
-            new Color(1f, 0.86f, 0.35f), new Vector2(0f, 120f), new Vector2(cardW - 60f, 70f));
+            new Color(0.184f, 0.310f, 0.310f), new Vector2(0f, 120f), new Vector2(cardW - 60f, 70f));
 
         BuildIconRow(_card, rewards, new Vector2(0f, -10f), 120f, 190f, cardW - 60f, 0.25f);
 

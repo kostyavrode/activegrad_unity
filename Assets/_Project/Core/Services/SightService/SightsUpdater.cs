@@ -43,6 +43,7 @@ public class SightsUpdater : IInitializable, IDisposable
     private Vector2 _lastUpdateCoords;
     private float _lastUpdateTime;
     private bool _lastUpdateCoordsInitialized;
+    private bool _isLoadingDetails;
 
     public SightsUpdater(ISightService sightService, LocationService locationService, SightDetailsView.Factory sightDetailsViewFactory, PartnerStoreDetailsView.Factory partnerStoreDetailsViewFactory, IPopupService popupService, SpawnOnMap spawnOnMap,
         APIService apiService, UserDataService userDataService, IInventoryService inventoryService,
@@ -164,28 +165,50 @@ public class SightsUpdater : IInitializable, IDisposable
     {
         while (_isRunning)
         {
-            Vector2 coords = _locationService.GetCoordinates();
-            if (coords != Vector2.zero)
+            // Любая ошибка сети/парсинга раньше обрывала цикл навсегда — маркеры переставали обновляться.
+            try
             {
-                float timeSinceUpdate = _lastUpdateCoordsInitialized ? Time.realtimeSinceStartup - _lastUpdateTime : float.MaxValue;
-                float distDegrees = _lastUpdateCoordsInitialized ? Vector2.Distance(coords, _lastUpdateCoords) : float.MaxValue;
-                bool timeOk = timeSinceUpdate >= MinUpdateIntervalSec;
-                bool distanceOk = distDegrees >= MinDistanceDegrees;
-                bool staleByTime = timeSinceUpdate >= MaxUpdateWithoutMovementSec;
-
-                if (timeOk && (distanceOk || staleByTime))
-                {
-                    // Partner stores first: UpdateSights() spends a long time on Wikipedia details + image
-                    // loading before it returns; otherwise partner markers only appear after that work finishes.
-                    await UpdatePartnerStores(coords);
-                    await UpdateSights();
-                    _lastUpdateCoords = _locationService.GetCoordinates();
-                    _lastUpdateTime = Time.realtimeSinceStartup;
-                    _lastUpdateCoordsInitialized = true;
-                }
+                await UpdateIfNeeded();
             }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[SightsUpdater] Update cycle failed, will retry: {e.Message}");
+            }
+
             await Task.Delay((int)(PollIntervalSec * 1000));
         }
+    }
+
+    private async Task UpdateIfNeeded()
+    {
+        Vector2 coords = _locationService.GetCoordinates();
+        if (coords == Vector2.zero)
+            return;
+
+        float timeSinceUpdate = _lastUpdateCoordsInitialized ? Time.realtimeSinceStartup - _lastUpdateTime : float.MaxValue;
+        float distDegrees = _lastUpdateCoordsInitialized ? Vector2.Distance(coords, _lastUpdateCoords) : float.MaxValue;
+        bool timeOk = timeSinceUpdate >= MinUpdateIntervalSec;
+        bool distanceOk = distDegrees >= MinDistanceDegrees;
+        bool staleByTime = timeSinceUpdate >= MaxUpdateWithoutMovementSec;
+
+        if (!timeOk || !(distanceOk || staleByTime))
+            return;
+
+        // Отметку времени ставим сразу: при ошибке повторим через MinUpdateIntervalSec, а не каждые 3 секунды.
+        _lastUpdateTime = Time.realtimeSinceStartup;
+        _lastUpdateCoordsInitialized = true;
+        _lastUpdateCoords = coords;
+
+        try
+        {
+            await UpdatePartnerStores(coords);
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[SightsUpdater] Partner stores update failed: {e.Message}");
+        }
+
+        await UpdateSights(coords);
     }
 
     private async Task<List<SightFullInfo>> LoadSightDetailsBatchSafe(List<int> pageIds)
@@ -235,38 +258,66 @@ public class SightsUpdater : IInitializable, IDisposable
         }
     }
 
-    private async Task UpdateSights()
+    private async Task UpdateSights(Vector2 coords)
     {
-        Vector2 coords = await WaitForValidCoordinates();
-        
         var nearestList = await _sightService.LoadNearestSightsAsync(coords, 5000);
-         
-        CachedNearestSights = nearestList
-            .Where(s => s != null)
-            .ToDictionary(s => s.PageId, s => s);
 
+        var nearest = (nearestList ?? new List<SightShortInfo>())
+            .Where(s => s != null)
+            .GroupBy(s => s.PageId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        // Пустой ответ чаще всего означает сбой сети — не стираем уже показанные маркеры.
+        if (nearest.Count == 0 && CachedNearestSights != null && CachedNearestSights.Count > 0)
+        {
+            Debug.LogWarning("[SightsUpdater] Nearest sights came back empty, keeping current markers");
+            return;
+        }
+
+        CachedNearestSights = nearest;
+
+        // Маркеры на карте обновляем сразу, как только известен список рядом с игроком.
         PushToSpawnOnMap(CachedNearestSights.Values.ToArray());
         _spawnOnMap.SpawnObjects();
-        
-        CachedSights ??= new Dictionary<int, SightFullInfo>();
-        
-        var pageIdsToLoad = CachedNearestSights.Keys
-            .Where(pageId => !CachedSights.ContainsKey(pageId))
-            .ToList();
-        
-        if (pageIdsToLoad.Count > 0)
-        {
-            await LoadSightDetailsBatchedAsync(pageIdsToLoad);
-        }
-        
-        await LoadAllImages();
-        var (s, message) = await _apiService.GetSightsList(_userData.ID);
-        if (s)
-            _userData.SetSights(_apiService.ParseExternalIds(message));
-        else
-            Debug.LogWarning($"[SightsUpdater] Не удалось получить список отмеченных мест: {message}");
 
-        OnSightsUpdated?.Invoke();
+        CachedSights ??= new Dictionary<int, SightFullInfo>();
+
+        // Описания и картинки грузятся долго (батчи с паузами) — в фоне, чтобы не задерживать
+        // следующее обновление маркеров, когда игрок уходит дальше.
+        if (!_isLoadingDetails)
+            _ = LoadDetailsInBackground();
+    }
+
+    private async Task LoadDetailsInBackground()
+    {
+        _isLoadingDetails = true;
+        try
+        {
+            var pageIdsToLoad = CachedNearestSights.Keys
+                .Where(pageId => !CachedSights.ContainsKey(pageId))
+                .ToList();
+
+            if (pageIdsToLoad.Count > 0)
+                await LoadSightDetailsBatchedAsync(pageIdsToLoad);
+
+            await LoadAllImages();
+
+            var (s, message) = await _apiService.GetSightsList(_userData.ID);
+            if (s)
+                _userData.SetSights(_apiService.ParseExternalIds(message));
+            else
+                Debug.LogWarning($"[SightsUpdater] Не удалось получить список отмеченных мест: {message}");
+
+            OnSightsUpdated?.Invoke();
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[SightsUpdater] Details loading failed: {e.Message}");
+        }
+        finally
+        {
+            _isLoadingDetails = false;
+        }
     }
 
     private async Task UpdatePartnerStores(Vector2 coords)
